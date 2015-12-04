@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: sjes-elasticsearch
+  cloud:
+    config:
+      uri: http://srv3.sanjiang.info:8888
+      fail-fast: true

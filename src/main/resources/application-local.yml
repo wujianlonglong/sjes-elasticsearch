@@ -1,0 +1,15 @@
+server:
+  port: 8899
+  cache:
+    cache-names: sjes-elasticsearch
+eureka:
+  instance:
+    hostname: srv3.sanjiang.info
+  client:
+    serviceUrl:
+      defaultZone: http://srv3.sanjiang.info:8761/eureka/
+
+spring:
+  data:
+    elasticsearch:
+      cluster-nodes: 115.159.50.53:9300
