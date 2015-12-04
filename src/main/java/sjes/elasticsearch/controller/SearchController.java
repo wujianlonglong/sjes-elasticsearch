@@ -20,7 +20,8 @@ public class SearchController {
     public String index() {
 
         try {
-            searchService.index();
+            //searchService.initService();
+            searchService.testIndex();//TODO 临时测试，可删除
         } catch (ServiceException e) {
             e.printStackTrace();
         }
@@ -40,16 +41,16 @@ public class SearchController {
         return "delete";
     }
 
-    @RequestMapping("/search")
-    public String search(@RequestParam(value = "name") String name) {
-
-        String result = null;
-        try {
-            result = searchService.searchProduct(name);
-        } catch (ServiceException e) {
-            e.printStackTrace();
-        }
-
-        return result;
-    }
+//    @RequestMapping("/search")
+//    public String search(@RequestParam(value = "name") String name) {
+//
+//        String result = null;
+//        try {
+//            result = searchService.searchProduct(name);
+//        } catch (ServiceException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return result;
+//    }
 }

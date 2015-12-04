@@ -1,24 +1,17 @@
 package sjes.elasticsearch.service;
 
-import com.google.common.collect.Lists;
+import com.oracle.tools.packager.Log;
 import org.apache.commons.collections.CollectionUtils;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
-import sjes.elasticsearch.domain.CategoryIndex;
-import sjes.elasticsearch.domain.Product;
-import sjes.elasticsearch.domain.ProductIndex;
+import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.repository.CategoryIndexModelRepository;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.elasticsearch.index.query.QueryBuilders.*;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -42,10 +35,11 @@ public class SearchService {
         try {
             List<CategoryIndex> categoryIndexes = categoryService.getCategoryIndexs();
             if (CollectionUtils.isNotEmpty(categoryIndexes)) {
-                // TODO
 
-
-            }
+                for (CategoryIndex categoryIndex : categoryIndexes) {
+                    categoryIndexModelRepository.save(categoryIndex);
+                }
+           }
         } catch (Exception e) {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
@@ -53,33 +47,62 @@ public class SearchService {
     }
 
     /**
-     * 建立索引
+     * 建立单个索引
      * @throws ServiceException
      */
-    public void index() throws ServiceException {
-
-        CategoryIndex categoryIndex = new CategoryIndex();
-
-        List<ProductIndex> productIndexList = Lists.newArrayList();
-
-        ProductIndex productIndex = new ProductIndex();
-        productIndex.setName("康师傅红烧牛肉面");
-        productIndex.setBrandName("康师傅");
-
-        productIndexList.add(productIndex);
-        //categoryIndex.setId("12345");
-        categoryIndex.setProductIndexes(productIndexList);
-
+    public void index(CategoryIndex categoryIndex) throws ServiceException {
         categoryIndexModelRepository.save(categoryIndex);
     }
 
     /**
-     * 删除索引
+     * 建立索引(临时测试，用完删)
+     * @throws ServiceException
+     */
+    public void testIndex() throws ServiceException {
+        LOGGER.info("start index");
+        CategoryIndex categoryIndex = new CategoryIndex();
+        ProductIndex productIndex1 = new ProductIndex();
+        productIndex1.setName("康师傅红烧牛肉面");
+        ProductIndex productIndex2 = new ProductIndex();
+        productIndex2.setName("统一老坛酸菜牛肉面");
+        ProductIndex productIndex3 = new ProductIndex();
+        productIndex3.setName("康师傅海鲜牛肉面");
+        List<ProductIndex> list = new ArrayList<>();
+        list.add(productIndex1);
+        list.add(productIndex2);
+        list.add(productIndex3);
+        categoryIndex.setProductIndexes(list);
+
+        categoryIndexModelRepository.save(categoryIndex);
+
+        LOGGER.info("stop index" + categoryIndexModelRepository.count());
+    }
+
+    /**
+     * 删除全部索引
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
+        categoryIndexModelRepository.deleteAll();
+    }
 
-        categoryIndexModelRepository.delete("12345");
+    /**
+     * 删除指定索引
+     * @throws ServiceException
+     */
+    public void deleteIndex(String categoryId) throws ServiceException {
+
+        categoryIndexModelRepository.delete(categoryId);
+
+    }
+
+    /**
+     * 删除指定索引
+     * @throws ServiceException
+     */
+    public void deleteIndex(CategoryIndex categoryIndex) throws ServiceException {
+
+        categoryIndexModelRepository.delete(categoryIndex);
 
     }
 
@@ -106,20 +129,20 @@ public class SearchService {
      * @return
      * @throws ServiceException
      */
-    public String searchProduct(String name) throws ServiceException {
-
-        //BoolQueryBuilder builder = boolQuery().must(QueryBuilders.matchQuery("products.name", name));
-
-        QueryBuilder builder = nestedQuery("products", boolQuery().must(matchQuery("name", name)));
-        SearchQuery searchQuery = new NativeSearchQueryBuilder().withQuery(builder).build();
-
-        List<CategoryIndex> cate = categoryIndexModelRepository.search(searchQuery).getContent();
-        if(cate.size() > 0) {
-            return cate.get(0).getProductIndexes().get(0).getName();
-
-
-        }else{
-            return "not found";
-        }
-    }
+//    public String searchProduct(String name) throws ServiceException {
+//
+//        //BoolQueryBuilder builder = boolQuery().must(QueryBuilders.matchQuery("products.name", name));
+//
+//        QueryBuilder builder = nestedQuery("products", boolQuery().must(matchQuery("name", name)));
+//        SearchQuery searchQuery = new NativeSearchQueryBuilder().withQuery(builder).build();
+//
+//        List<CategoryIndex> cate = categoryIndexModelRepository.search(searchQuery).getContent();
+//        if(cate.size() > 0) {
+//            return cate.get(0).getProductIndexes().get(0).getName();
+//
+//
+//        }else{
+//            return "not found";
+//        }
+//    }
 }

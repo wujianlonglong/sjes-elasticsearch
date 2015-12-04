@@ -1,6 +1,8 @@
 package sjes.elasticsearch.domain;
 
 import lombok.Data;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.io.Serializable;
 
