@@ -1,8 +1,6 @@
-package sjes.elasticsearch.domain;
+package sjes.elasticsearch.feigns.item.model;
 
 import lombok.Data;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.io.Serializable;
 
@@ -11,6 +9,8 @@ import java.io.Serializable;
  */
 @Data
 public class ProductAttributeValue implements Serializable {
+
+    private Long id; // 主键
 
     private Long productId; // 单品Id
 
@@ -21,5 +21,7 @@ public class ProductAttributeValue implements Serializable {
     private Long attributeOptionId; // 属性选项Id
 
     private String attributeOptionName; // 属性选项名称
+
+    private String attributeValue; // 属性选项值
 
 }

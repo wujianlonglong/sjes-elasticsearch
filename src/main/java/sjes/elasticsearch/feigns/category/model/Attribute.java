@@ -1,4 +1,4 @@
-package sjes.elasticsearch.domain;
+package sjes.elasticsearch.feigns.category.model;
 
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;

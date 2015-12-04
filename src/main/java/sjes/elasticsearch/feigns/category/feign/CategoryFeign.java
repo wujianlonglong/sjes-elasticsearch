@@ -4,7 +4,8 @@ package sjes.elasticsearch.feigns.category.feign;
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import sjes.elasticsearch.domain.Category;
+import org.springframework.web.bind.annotation.RequestParam;
+import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.feigns.constants.CategoryConstant;
 
 import java.util.List;
@@ -22,6 +23,6 @@ public interface CategoryFeign {
      * @return 分类列表信息
      */
     @RequestMapping(value = "grade", method = RequestMethod.GET)
-    List<Category> findByGrade(Integer grade);
+    List<Category> findByGrade(@RequestParam("grade") Integer grade);
 
 }

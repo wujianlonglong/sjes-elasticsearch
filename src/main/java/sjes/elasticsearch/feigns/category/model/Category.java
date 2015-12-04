@@ -1,11 +1,10 @@
-package sjes.elasticsearch.domain;
+package sjes.elasticsearch.feigns.category.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.elasticsearch.annotations.Document;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 
@@ -13,21 +12,35 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Created by mac on 15/9/15.
+ * 商品分类表
+ * @author qinhailong
  */
 @Data
-@Document(indexName="brands", type="brand")
-public class Brand implements Serializable {
+public class Category implements Serializable {
 
     private Long id; // 主键
 
-    private String name; // 品牌名称
+    private String name; // 分类名称
 
-    private String logo; // logo
+    private Long parentId; // 父分类ID
 
-    private String url; // URL
+    private Integer grade; // 级别
+
+    private String treePath; // 路径
 
     private Integer orders; // 排序
+
+    private Boolean display; // 是否显示
+
+    private String speciHref; // 专题页链接
+
+    private Boolean isRedLabel; // 文本标红
+
+    private String tagName; // 分类标签名
+
+    private String classes; // 样式
+
+    private Long seoId; // seoId
 
     @CreatedDate
     @JsonDeserialize(using = CustomDateDeSerializer.class)
@@ -38,4 +51,5 @@ public class Brand implements Serializable {
     @JsonDeserialize(using = CustomDateDeSerializer.class)
     @JsonSerialize(using = CustomDateSerializer.class)
     private LocalDateTime updateDate; // 更新时间
+
 }

@@ -4,7 +4,7 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import sjes.elasticsearch.domain.AttributeOption;
+import sjes.elasticsearch.feigns.category.model.AttributeOption;
 import sjes.elasticsearch.feigns.constants.CategoryConstant;
 
 

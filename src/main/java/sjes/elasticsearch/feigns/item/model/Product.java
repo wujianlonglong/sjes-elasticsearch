@@ -1,10 +1,8 @@
-package sjes.elasticsearch.domain;
+package sjes.elasticsearch.feigns.item.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 

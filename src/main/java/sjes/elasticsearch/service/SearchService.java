@@ -1,13 +1,13 @@
 package sjes.elasticsearch.service;
 
-import com.oracle.tools.packager.Log;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
-import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.domain.CategoryIndex;
+import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.repository.CategoryIndexModelRepository;
 
 import java.util.ArrayList;

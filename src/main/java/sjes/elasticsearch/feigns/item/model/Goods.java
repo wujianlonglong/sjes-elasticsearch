@@ -1,14 +1,11 @@
-package sjes.elasticsearch.domain;
+package sjes.elasticsearch.feigns.item.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 
@@ -16,35 +13,20 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 商品分类表
- * @author qinhailong
+ * Entity - 主商品
+ * Created by qinhailong on 15-8-21.
  */
 @Data
-public class Category implements Serializable {
+@Document(indexName="goodses", type="goods")
+public class Goods implements Serializable {
 
-    private String id; // 主键
+    private Long id; // 主键
 
-    private String name; // 分类名称
+    private String code; // 商品内码(顺序号)
 
-    private Long parentId; // 父分类ID
+    private Long erpGoodsId; // 商品管理码
 
-    private Integer grade; // 级别
-
-    private String treePath; // 路径
-
-    private Integer orders; // 排序
-
-    private Boolean display; // 是否显示
-
-    private String speciHref; // 专题页链接
-
-    private Boolean isRedLabel; // 文本标红
-
-    private String tagName; // 分类标签名
-
-    private String classes; // 样式
-
-    private Long seoId; // seoId
+    private String goodsName; //商品名
 
     @CreatedDate
     @JsonDeserialize(using = CustomDateDeSerializer.class)
