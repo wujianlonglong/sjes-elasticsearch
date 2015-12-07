@@ -2,7 +2,6 @@ package sjes.elasticsearch.feigns.item.feign;
 
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.feigns.constants.ItemConstant;
@@ -23,6 +22,6 @@ public interface ProductFeign {
      * @return 商品列表
      */
     @RequestMapping(value = "categoryIds", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    List<Product> listByCategoryIds(@RequestBody List<Long> categoryIds);
+    List<Product> listByCategoryIds(List<Long> categoryIds);
 
 }

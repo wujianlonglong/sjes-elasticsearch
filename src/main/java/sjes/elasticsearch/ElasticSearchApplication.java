@@ -9,7 +9,7 @@ import org.springframework.cloud.netflix.feign.EnableFeignClients;
  * @author xieyuanliang
  */
 @SpringBootApplication
-@EnableDiscoveryClient()
+@EnableDiscoveryClient
 @EnableFeignClients("sjes.elasticsearch.feigns")
 public class ElasticSearchApplication {
 

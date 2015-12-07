@@ -2,7 +2,6 @@ package sjes.elasticsearch.feigns.category.feign;
 
 
 import org.springframework.cloud.netflix.feign.FeignClient;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.feigns.category.model.AttributeModel;
@@ -24,6 +23,6 @@ public interface AttributeFeign {
      * @return AttributeModel列表
      */
     @RequestMapping(value = "categoryIds", method = RequestMethod.POST)
-    List<AttributeModel> lists(@RequestBody List<Long> categoryIds);
+    List<AttributeModel> lists(List<Long> categoryIds);
 
 }
