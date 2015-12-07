@@ -27,7 +27,7 @@ public class AttributeService {
     public List<AttributeModel> lists(List<Long> categoryIds) {
         List<AttributeModel> attributeModels = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(categoryIds)) {
-            List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, 10);
+            List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, 25);
             for (List<Long> cateIds : categoryIdsList) {
                 attributeModels.addAll(attributeFeign.lists(cateIds));
             }

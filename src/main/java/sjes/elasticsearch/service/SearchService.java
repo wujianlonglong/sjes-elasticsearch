@@ -27,6 +27,9 @@ public class SearchService {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private CategoryBasicAttributesService categoryBasicAttributesService;
+
     /**
      * 初始化索引
      */
@@ -36,6 +39,7 @@ public class SearchService {
             List<CategoryIndex> categoryIndexes = categoryService.getCategoryIndexs();
             if (CollectionUtils.isNotEmpty(categoryIndexes)) {
                 categoryIndexModelRepository.save(categoryIndexes);
+                categoryBasicAttributesService.saveOrUpdate(categoryIndexes);
             }
             return categoryIndexes;
         } catch (Exception e) {
