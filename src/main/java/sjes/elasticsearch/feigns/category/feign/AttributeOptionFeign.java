@@ -4,14 +4,14 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.category.model.AttributeOption;
-import sjes.elasticsearch.feigns.constants.CategoryConstant;
 
 
 /**
  * Created by qinhailong on 15-11-16.
  */
-@FeignClient(CategoryConstant.SJES_API_CATEGORY)
+@FeignClient(Constants.SJES_API_CATEGORY)
 @RequestMapping("attributeOptions")
 public interface AttributeOptionFeign {
 

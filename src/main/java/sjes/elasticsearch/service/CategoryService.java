@@ -6,13 +6,13 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.feigns.category.feign.CategoryFeign;
 import sjes.elasticsearch.feigns.category.model.AttributeModel;
 import sjes.elasticsearch.feigns.category.model.AttributeOption;
 import sjes.elasticsearch.feigns.category.model.Category;
-import sjes.elasticsearch.feigns.constants.CategoryConstant;
 import sjes.elasticsearch.feigns.item.model.Product;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 
@@ -43,7 +43,7 @@ public class CategoryService {
      * @return 分类索引文档列表
      */
     public List<CategoryIndex> getCategoryIndexs() {
-        List<Category> categories = categoryFeign.findByGrade(CategoryConstant.CategoryGradeConstants.GRADE_THREE);
+        List<Category> categories = categoryFeign.findByGrade(Constants.CategoryGradeConstants.GRADE_THREE);
         Map<Long, CategoryIndex> categoryIndexMap = Maps.newHashMap();
         if (CollectionUtils.isNotEmpty(categories)) {
             categories.forEach(category -> {
@@ -52,9 +52,10 @@ public class CategoryService {
                 BeanUtils.copyProperties(category, categoryIndex);
                 categoryIndexMap.put(category.getId(), categoryIndex);
             });
-            List<Long> categoryId = Lists.newArrayList(categoryIndexMap.keySet());
-            List<Product> products = productService.listByCategoryIds(categoryId);
-            List<AttributeModel> attributeModels = attributeService.lists(categoryId);
+
+            List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
+            List<Product> products = productService.listByCategoryIds(categoryIds);
+            List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
             Map<Long, String> attributeNameMaps = Maps.newHashMap();
             Map<Long, String> attributeOptionValueMaps = Maps.newHashMap();
             if (CollectionUtils.isNotEmpty(attributeModels)) {

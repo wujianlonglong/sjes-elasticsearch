@@ -30,16 +30,14 @@ public class SearchService {
     /**
      * 初始化索引
      */
-    public void initService() throws ServiceException {
+    public  List<CategoryIndex> initService() throws ServiceException {
         LOGGER.debug("开始初始化索引！");
         try {
             List<CategoryIndex> categoryIndexes = categoryService.getCategoryIndexs();
             if (CollectionUtils.isNotEmpty(categoryIndexes)) {
-
-                for (CategoryIndex categoryIndex : categoryIndexes) {
-                    categoryIndexModelRepository.save(categoryIndex);
-                }
-           }
+                categoryIndexModelRepository.save(categoryIndexes);
+            }
+            return categoryIndexes;
         } catch (Exception e) {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
@@ -90,10 +88,8 @@ public class SearchService {
      * 删除指定索引
      * @throws ServiceException
      */
-    public void deleteIndex(String categoryId) throws ServiceException {
-
+    public void deleteIndex(Long categoryId) throws ServiceException {
         categoryIndexModelRepository.delete(categoryId);
-
     }
 
     /**

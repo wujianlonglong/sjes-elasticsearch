@@ -4,7 +4,7 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import sjes.elasticsearch.feigns.constants.ItemConstant;
+import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.item.model.Product;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Created by mac on 15/8/28.
  */
-@FeignClient(ItemConstant.SJES_API_ITEM)
+@FeignClient(Constants.SJES_API_ITEM)
 @RequestMapping(value = "products")
 public interface ProductFeign {
 

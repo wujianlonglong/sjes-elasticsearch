@@ -5,7 +5,7 @@ package sjes.elasticsearch.common;
  */
 public class ServiceException extends Exception {
 
-    private String messageCode = null;
+    private String messageCode = "SJES_ELASTICSEARCH";
 
     public void setMessageCode(String messageCode) {
         this.messageCode = messageCode;

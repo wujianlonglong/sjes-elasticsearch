@@ -13,3 +13,10 @@ spring:
   data:
     elasticsearch:
       cluster-nodes: 115.159.50.53:9300
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 10000

@@ -2,10 +2,12 @@ package sjes.elasticsearch.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sjes.elasticsearch.common.ServiceException;
+import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.service.SearchService;
+
+import java.util.List;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -16,20 +18,13 @@ public class SearchController {
     @Autowired
     private SearchService searchService;
 
-    @RequestMapping("/index")
-    public String index() {
-
-        try {
-            //searchService.initService();
-            searchService.testIndex();//TODO 临时测试，可删除
-        } catch (ServiceException e) {
-            e.printStackTrace();
-        }
-
-        return "index";
+    @RequestMapping("index")
+    public List<CategoryIndex> index() throws ServiceException {
+        return searchService.initService();
+        // searchService.testIndex();//TODO 临时测试，可删除
     }
 
-    @RequestMapping("/delete")
+    @RequestMapping("delete")
     public String deleteIndex() {
 
         try {
