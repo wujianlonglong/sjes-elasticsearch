@@ -19,4 +19,5 @@ public class CategoryBasicAttributesModel implements Serializable {
     private List<String> places; // 产地
 
     private List<CategoryBasicAttribute> categoryAttributes; // 分类属性项
+
 }
