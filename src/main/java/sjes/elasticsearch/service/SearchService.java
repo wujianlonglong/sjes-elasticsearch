@@ -127,7 +127,7 @@ public class SearchService {
      * @param size 页面大小
      * @return 分页商品信息
      */
-    public PageModel<ProductImageModel> search(String keyword, Long categoryId,  Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductImageModel> search(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
         if (StringUtils.isNotBlank(keyword)) { // 关键字查询
 
