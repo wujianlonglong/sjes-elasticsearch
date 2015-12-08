@@ -4,7 +4,6 @@ import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.feigns.category.model.Tag;
-import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 
 import java.util.List;
 
@@ -18,7 +17,7 @@ public class ProductIndex extends ProductIndexModel {
      * 商品分类属性值
      */
     @Field(type= FieldType.Nested)
-    private List<ProductAttributeValue> productAttributeValues;
+    private List<AttributeOptionValueModel> attributeOptionValueModels;
 
     /**
      * 商品有关的标签

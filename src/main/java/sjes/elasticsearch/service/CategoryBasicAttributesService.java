@@ -9,14 +9,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
+import sjes.elasticsearch.domain.AttributeOptionValueModel;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.feigns.category.feign.CategoryBasicAttributesFeign;
-import sjes.elasticsearch.feigns.category.model.CategoryBasicAttribute;
-import sjes.elasticsearch.feigns.category.model.CategoryBasicAttributeOption;
-import sjes.elasticsearch.feigns.category.model.CategoryBasicAttributesModel;
-import sjes.elasticsearch.feigns.category.model.NameValueModel;
-import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
+import sjes.elasticsearch.feigns.category.model.*;
 
 import java.util.List;
 import java.util.Map;
@@ -63,36 +60,43 @@ public class CategoryBasicAttributesService {
                         if (null != place) {
                             placeSet.add(place); // 添加分类产地
                         }
-                        List<ProductAttributeValue> productAttributeValues = productIndex.getProductAttributeValues();
-                        if (CollectionUtils.isNotEmpty(productAttributeValues)) { // 添加分类属性
-                            productAttributeValues.forEach(productAttributeValue -> {
+                        List<AttributeOptionValueModel> attributeOptionValueModels = productIndex.getAttributeOptionValueModels();
+                        if (CollectionUtils.isNotEmpty(attributeOptionValueModels)) { // 添加分类属性
+                            attributeOptionValueModels.forEach(attributeOptionValueModel -> {
                                 CategoryBasicAttribute categoryBasicAttribute = null;
-                                String attributeName = StringUtils.trim(productAttributeValue.getAttributeName());
-                                String attributeOptionName = StringUtils.trim(productAttributeValue.getAttributeOptionName());
-                                if (!attributeNameMap.containsKey(attributeName)) {
-                                    categoryBasicAttribute = new CategoryBasicAttribute();
-                                    categoryBasicAttribute.setAttributeName(attributeName);
-                                    categoryBasicAttribute.setAttributeId(productAttributeValue.getAttributeId());
-                                    CategoryBasicAttributeOption categoryBasicAttributeOption = new CategoryBasicAttributeOption();
-                                    categoryBasicAttributeOption.setAttributeOptionId(productAttributeValue.getAttributeOptionId());
-                                    categoryBasicAttributeOption.setAttributeOptionName(attributeOptionName);
-                                    categoryBasicAttribute.setCategoryAttributeOptions(Lists.newArrayList(categoryBasicAttributeOption));
-                                    attributeNameMap.put(attributeName, categoryBasicAttribute);
-                                    attributeOptionNamesMap.put(attributeName, Sets.newHashSet(attributeOptionName));
-                                    categoryBasicAttributesModel.getCategoryAttributes().add(categoryBasicAttribute);
-                                }
-                                else {
-                                    categoryBasicAttribute = attributeNameMap.get(attributeName);
-                                    if (null != categoryBasicAttribute) {
-                                        Set<String> attributeOptionNames = (Set<String>) MapUtils.getObject(attributeOptionNamesMap, attributeName, Sets.newHashSet());
-                                        if (attributeOptionNames.add(attributeOptionName)) {
-                                            CategoryBasicAttributeOption categoryBasicAttributeOption = new CategoryBasicAttributeOption();
-                                            categoryBasicAttributeOption.setAttributeOptionId(productAttributeValue.getAttributeOptionId());
-                                            categoryBasicAttributeOption.setAttributeOptionName(attributeOptionName);
-                                            categoryBasicAttribute.getCategoryAttributeOptions().add(categoryBasicAttributeOption);
+                                String attributeName = StringUtils.trim(attributeOptionValueModel.getName());
+                                AttributeOption attributeOption = attributeOptionValueModel.getAttributeOption();
+                                if (null != attributeOption) {
+                                    String attributeOptionValue = StringUtils.trim(attributeOption.getValue());
+                                    if (!attributeNameMap.containsKey(attributeName)) {
+                                        categoryBasicAttribute = new CategoryBasicAttribute();
+                                        categoryBasicAttribute.setAttributeName(attributeName);
+                                        categoryBasicAttribute.setAttributeId(attributeOptionValueModel.getId());
+                                        categoryBasicAttribute.setOrders(attributeOptionValueModel.getOrders());
+                                        CategoryBasicAttributeOption categoryBasicAttributeOption = new CategoryBasicAttributeOption();
+                                        categoryBasicAttributeOption.setAttributeOptionId(attributeOption.getId());
+                                        categoryBasicAttributeOption.setAttributeOptionName(attributeOptionValue);
+                                        categoryBasicAttributeOption.setOrders(attributeOption.getOrders());
+                                        categoryBasicAttribute.setCategoryAttributeOptions(Lists.newArrayList(categoryBasicAttributeOption));
+                                        attributeNameMap.put(attributeName, categoryBasicAttribute);
+                                        attributeOptionNamesMap.put(attributeName, Sets.newHashSet(attributeOptionValue));
+                                        categoryBasicAttributesModel.getCategoryAttributes().add(categoryBasicAttribute);
+                                    }
+                                    else {
+                                        categoryBasicAttribute = attributeNameMap.get(attributeName);
+                                        if (null != categoryBasicAttribute) {
+                                            Set<String> attributeOptionNames = (Set<String>) MapUtils.getObject(attributeOptionNamesMap, attributeName, Sets.newHashSet());
+                                            if (attributeOptionNames.add(attributeOptionValue)) {
+                                                CategoryBasicAttributeOption categoryBasicAttributeOption = new CategoryBasicAttributeOption();
+                                                categoryBasicAttributeOption.setAttributeOptionId(attributeOption.getId());
+                                                categoryBasicAttributeOption.setAttributeOptionName(attributeOptionValue);
+                                                categoryBasicAttributeOption.setOrders(attributeOption.getOrders());
+                                                categoryBasicAttribute.getCategoryAttributeOptions().add(categoryBasicAttributeOption);
+                                            }
                                         }
                                     }
                                 }
+
                             });
                         }
                     });

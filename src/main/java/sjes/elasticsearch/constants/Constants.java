@@ -61,5 +61,5 @@ public class Constants {
     /**
      * 分拆列表大小
      */
-    public static final int SPLIT_SUB_LIST_SIZE = 50;
+    public static final int SPLIT_SUB_LIST_SIZE = 30;
 }

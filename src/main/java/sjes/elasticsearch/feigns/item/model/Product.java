@@ -3,6 +3,7 @@ package sjes.elasticsearch.feigns.item.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @Data
 public class Product implements Serializable {
 
+    @Id
     private Long id; // 主键
 
     private Long goodsId; // 主商品ID

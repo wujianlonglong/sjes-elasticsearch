@@ -1,10 +1,10 @@
 package sjes.elasticsearch.repository;
 
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import sjes.elasticsearch.domain.CategoryIndex;
+import sjes.elasticsearch.feigns.category.model.Category;
 
 /**
  * Created by qinhailong on 15-12-3.
  */
-public interface CategoryIndexModelRepository extends ElasticsearchRepository<CategoryIndex, Long> {
+public interface CategoryRepository extends ElasticsearchRepository<Category, Long> {
 }

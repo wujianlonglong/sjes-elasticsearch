@@ -1,5 +1,7 @@
 package sjes.elasticsearch.service;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.BoolFilterBuilder;
@@ -10,19 +12,21 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
-import sjes.elasticsearch.domain.CategoryIndex;
-import sjes.elasticsearch.domain.PageModel;
-import sjes.elasticsearch.domain.Pageable;
-import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.repository.CategoryIndexModelRepository;
+import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.feigns.category.model.*;
+import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
+import sjes.elasticsearch.feigns.item.model.ProductTag;
+import sjes.elasticsearch.repository.CategoryRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -36,10 +40,25 @@ public class SearchService {
     private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
 
     @Autowired
-    private CategoryIndexModelRepository categoryIndexModelRepository;
+    private CategoryRepository categoryRepository;
 
     @Autowired
     private CategoryService categoryService;
+
+    @Autowired
+    private ProductService productService;
+
+    @Autowired
+    private ProductAttributeValueService productAttributeValueService;
+
+    @Autowired
+    private AttributeService attributeService;
+
+    @Autowired
+    private TagService tagService;
+
+    @Autowired
+    private ProductIndexService productIndexService;
 
     @Autowired
     private CategoryBasicAttributesService categoryBasicAttributesService;
@@ -50,12 +69,76 @@ public class SearchService {
     public  List<CategoryIndex> initService() throws ServiceException {
         LOGGER.debug("开始初始化索引！");
         try {
-            List<CategoryIndex> categoryIndexes = categoryService.getCategoryIndexs();
-            if (CollectionUtils.isNotEmpty(categoryIndexes)) {
-                categoryIndexModelRepository.save(categoryIndexes);
-                categoryBasicAttributesService.saveOrUpdate(categoryIndexes);
+            List<Category> categories = categoryService.listByGradeThree();
+            Map<Long, CategoryIndex> categoryIndexMap = Maps.newHashMap();
+            if (CollectionUtils.isNotEmpty(categories)) {
+                // 分类索引
+                categoryRepository.save(categories);
+                categories.forEach(category -> {
+                    CategoryIndex categoryIndex = new CategoryIndex();
+                    categoryIndex.setProductIndexes(Lists.newArrayList());
+                    BeanUtils.copyProperties(category, categoryIndex);
+                    categoryIndexMap.put(category.getId(), categoryIndex);
+                });
+                List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
+                List<ProductIndexModel> productIndexModels = productService.listByCategoryIds(categoryIds);
+
+                List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
+                Map<Long, Attribute> attributeNameMaps = Maps.newHashMap();
+                Map<Long, AttributeOption> attributeOptionValueMaps = Maps.newHashMap();
+                if (CollectionUtils.isNotEmpty(attributeModels)) {
+                    attributeModels.forEach(attributeModel -> {
+                        attributeNameMaps.put(attributeModel.getId(), attributeModel);
+                        List<AttributeOption> attributeOptions = attributeModel.getAttributeOptions();
+                        if (CollectionUtils.isNotEmpty(attributeOptions)) {
+                            attributeOptions.forEach(attributeOption -> {
+                                attributeOptionValueMaps.put(attributeOption.getId(), attributeOption);
+                            });
+                        }
+                    });
+                }
+                List<Tag> tags = tagService.all();
+                Map<Long, Tag> tagMap = Maps.newHashMapWithExpectedSize(tags.size());
+                if (CollectionUtils.isNotEmpty(tags)) {
+                    tags.forEach(tag -> {
+                        tagMap.put(tag.getId(), tag);
+                    });
+                }
+                Map<Long, ProductIndex> productMap = Maps.newHashMap();
+                if (CollectionUtils.isNotEmpty(productIndexModels)) {
+                    productIndexModels.forEach(productIndexModel -> {
+                        ProductIndex productIndex = new ProductIndex();
+                        productIndex.setTags(Lists.newArrayList());
+                        productIndex.setAttributeOptionValueModels(Lists.newArrayList());
+                        BeanUtils.copyProperties(productIndexModel, productIndex);
+                        List<ProductTag> productTags = productIndex.getProductTags();
+                        if (CollectionUtils.isNotEmpty(productTags)) {
+                            productTags.forEach(productTag -> {
+                                productIndex.getTags().add(tagMap.get(productTag.getTagId()));
+                            });
+                        }
+                        categoryIndexMap.get(productIndexModel.getCategoryId()).getProductIndexes().add(productIndex);
+                        productMap.put(productIndexModel.getId(), productIndex);
+                    });
+                }
+                List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productMap.keySet()));
+                if (CollectionUtils.isNotEmpty(productAttributeValues)) {
+                    productAttributeValues.forEach(productAttributeValue -> {
+                        AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
+                        Attribute attribute = attributeNameMaps.get(productAttributeValue.getAttributeId());
+                        AttributeOption attributeOption = attributeOptionValueMaps.get(productAttributeValue.getAttributeOptionId());
+                        BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                        attributeOptionValueModel.setAttributeOption(attributeOption);
+                        productMap.get(productAttributeValue.getProductId()).getAttributeOptionValueModels().add(attributeOptionValueModel);
+                    });
+                }
+                // productIndex索引
+                productIndexService.saveBat(Lists.newArrayList(productMap.values()));
             }
-            return categoryIndexes;
+            List<CategoryIndex> categoryList = Lists.newArrayList(categoryIndexMap.values());
+            // 分类查询条件
+            categoryBasicAttributesService.saveOrUpdate(categoryList);
+            return categoryList;
         } catch (Exception e) {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
@@ -67,7 +150,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public void index(CategoryIndex categoryIndex) throws ServiceException {
-        categoryIndexModelRepository.save(categoryIndex);
+        categoryRepository.save(categoryIndex);
     }
 
     /**
@@ -75,7 +158,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
-        categoryIndexModelRepository.deleteAll();
+        categoryRepository.deleteAll();
     }
 
     /**
@@ -83,7 +166,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex(Long categoryId) throws ServiceException {
-        categoryIndexModelRepository.delete(categoryId);
+        categoryRepository.delete(categoryId);
     }
 
     /**
@@ -91,8 +174,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex(CategoryIndex categoryIndex) throws ServiceException {
-
-        categoryIndexModelRepository.delete(categoryIndex);
+        categoryRepository.delete(categoryIndex);
 
     }
 
@@ -164,13 +246,13 @@ public class SearchService {
 
         //return new PageModel<> (Lists.newArrayList(), 0, pageable);
 
-        List<CategoryIndex> categoryIndexList = categoryIndexModelRepository.search(searchQuery).getContent();
-        LOGGER.info(categoryIndexList.size() + "");
-        if (categoryIndexList.size() > 0) {
-            for (CategoryIndex categoryIndex : categoryIndexList) {
-                list.addAll(categoryIndex.getProductIndexes());
-            }
-        }
+//        List<CategoryIndex> categoryIndexList = categoryIndexModelRepository.search(searchQuery).getContent();
+//        LOGGER.info(categoryIndexList.size() + "");
+//        if (categoryIndexList.size() > 0) {
+//            for (CategoryIndex categoryIndex : categoryIndexList) {
+//                list.addAll(categoryIndex.getProductIndexes());
+//            }
+//        }
 
         return new PageModel<>(list, 0, pageable);
     }
