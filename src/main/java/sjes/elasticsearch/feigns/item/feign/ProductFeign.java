@@ -5,7 +5,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.constants.Constants;
-import sjes.elasticsearch.feigns.item.model.Product;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 
 import java.util.List;
 
@@ -22,6 +22,6 @@ public interface ProductFeign {
      * @return 商品列表
      */
     @RequestMapping(value = "categoryIds", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
-    List<Product> listByCategoryIds(List<Long> categoryIds);
+    List<ProductImageModel> listByCategoryIds(List<Long> categoryIds);
 
 }

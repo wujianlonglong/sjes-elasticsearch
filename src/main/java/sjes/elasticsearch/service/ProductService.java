@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.item.feign.ProductFeign;
-import sjes.elasticsearch.feigns.item.model.Product;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.utils.ListUtils;
 
 import java.util.List;
@@ -28,14 +28,14 @@ public class ProductService {
      * @return 商品列表
      */
     @RequestMapping(value = "categoryIds", method = RequestMethod.POST)
-    public List<Product> listByCategoryIds(List<Long> categoryIds) {
-        List<Product> products = Lists.newArrayList();
+    public List<ProductImageModel> listByCategoryIds(List<Long> categoryIds) {
+        List<ProductImageModel> productImageModels = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(categoryIds)) {
             List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, Constants.SPLIT_SUB_LIST_SIZE);
             for (List<Long> cateIds : categoryIdsList) {
-                products.addAll(productFeign.listByCategoryIds(cateIds));
+                productImageModels.addAll(productFeign.listByCategoryIds(cateIds));
             }
         }
-        return products;
+        return productImageModels;
     }
 }

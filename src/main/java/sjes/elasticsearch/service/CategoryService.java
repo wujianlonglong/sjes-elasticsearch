@@ -13,8 +13,8 @@ import sjes.elasticsearch.feigns.category.feign.CategoryFeign;
 import sjes.elasticsearch.feigns.category.model.AttributeModel;
 import sjes.elasticsearch.feigns.category.model.AttributeOption;
 import sjes.elasticsearch.feigns.category.model.Category;
-import sjes.elasticsearch.feigns.item.model.Product;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 
 import java.util.List;
 import java.util.Map;
@@ -54,7 +54,7 @@ public class CategoryService {
             });
 
             List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-            List<Product> products = productService.listByCategoryIds(categoryIds);
+            List<ProductImageModel> productImageModels = productService.listByCategoryIds(categoryIds);
             List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
             Map<Long, String> attributeNameMaps = Maps.newHashMap();
             Map<Long, String> attributeOptionValueMaps = Maps.newHashMap();
@@ -70,13 +70,13 @@ public class CategoryService {
                 });
             }
             Map<Long, ProductIndex> productMap = Maps.newHashMap();
-            if (CollectionUtils.isNotEmpty(products)) {
-                products.forEach(product -> {
+            if (CollectionUtils.isNotEmpty(productImageModels)) {
+                productImageModels.forEach(productImageModel -> {
                     ProductIndex productIndex = new ProductIndex();
                     productIndex.setProductAttributeValues(Lists.newArrayList());
-                    BeanUtils.copyProperties(product, productIndex);
-                    categoryIndexMap.get(product.getCategoryId()).getProductIndexes().add(productIndex);
-                    productMap.put(product.getId(), productIndex);
+                    BeanUtils.copyProperties(productImageModel, productIndex);
+                    categoryIndexMap.get(productImageModel.getCategoryId()).getProductIndexes().add(productIndex);
+                    productMap.put(productImageModel.getId(), productIndex);
                 });
             }
             List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productMap.keySet()));
