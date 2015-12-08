@@ -9,7 +9,7 @@ import lombok.Data;
 public class ProductImageModel extends Product {
 
     /**
-     * 商品图片
+     * 商品图片(不分析)
      */
     private ProductImage productImage;
 
