@@ -1,13 +1,18 @@
 package sjes.elasticsearch.service;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
+import sjes.elasticsearch.domain.PageModel;
+import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.domain.ProductIndex;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryIndexModelRepository;
 
 import java.util.ArrayList;
@@ -107,21 +112,30 @@ public class SearchService {
     }
 
     /**
-     * 查询
-     * @return
-     * @throws ServiceException
+     * 查询分类商品列表
+     * @param keyword 关键字
+     * @param categoryId 分类id
+     * @param brandId 品牌id
+     * @param brandName 品牌名称
+     * @param shopId 门店id
+     * @param sortType 排序类型
+     * @param attributes 属性
+     * @param stock 库存
+     * @param startPrice 价格satrt
+     * @param endPrice 价格 end
+     * @param page 页面
+     * @param size 页面大小
+     * @return 分页商品信息
      */
-    public Object search() throws ServiceException {
-        return null;
-    }
+    public PageModel<ProductImageModel> search(String keyword, Long categoryId,  Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+        Pageable pageable = new Pageable(page, size);
+        if (StringUtils.isNotBlank(keyword)) { // 关键字查询
 
-    /**
-     * 分类查询
-     * @return
-     * @throws ServiceException
-     */
-    public Object searchCategory()throws ServiceException  {
-        return null;
+        }
+        else if (null != categoryId) { // 分类商品列表
+
+        }
+        return new PageModel<> (Lists.newArrayList(), 0, pageable);
     }
 
     /**
