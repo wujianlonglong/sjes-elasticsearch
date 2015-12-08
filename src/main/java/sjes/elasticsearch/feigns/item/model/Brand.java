@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Created by mac on 15/9/15.
+ * Created by qinhailong on 15/9/15.
  */
 @Data
 public class Brand implements Serializable {

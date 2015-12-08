@@ -6,7 +6,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import java.io.Serializable;
 
 /**
- * Created by mac on 15/9/21.
+ * Created by qinhailong on 15/9/21.
  */
 @Data
 @Document(indexName="productTags", type="productTag")

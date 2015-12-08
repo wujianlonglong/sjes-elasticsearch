@@ -6,7 +6,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.netflix.feign.EnableFeignClients;
 
 /**
- * @author xieyuanliang
+ * @author qinhailong
  */
 @SpringBootApplication
 @EnableDiscoveryClient

@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * 分类属性
- * Created by mac on 15/9/18.
+ * Created by qinhailong on 15/9/18.
  */
 @Data
 public class CategoryBasicAttributesModel implements Serializable {

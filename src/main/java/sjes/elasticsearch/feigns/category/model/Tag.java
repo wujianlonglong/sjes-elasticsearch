@@ -13,7 +13,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * Created by mac on 15/9/14.
+ * Created by qinhailong on 15/9/14.
  */
 @Data
 @Document(indexName="tags", type="tag")

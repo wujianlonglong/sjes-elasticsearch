@@ -12,7 +12,7 @@ import java.util.List;
 
 
 /**
- * Created by mac on 15/8/27.
+ * Created by qinhailong on 15/8/27.
  */
 @FeignClient(Constants.SJES_API_CATEGORY)
 @RequestMapping("attributes")

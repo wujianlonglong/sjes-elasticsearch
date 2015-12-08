@@ -7,7 +7,7 @@ import java.util.List;
 
 
 /**
- * Created by mac on 15/9/8.
+ * Created by qinhailong on 15/9/8.
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

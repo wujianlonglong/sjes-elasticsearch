@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * Created by mac on 15/8/31.
+ * Created by qinhailong on 15/8/31.
  */
 @Data
 public class ProductAttributeValue implements Serializable {
