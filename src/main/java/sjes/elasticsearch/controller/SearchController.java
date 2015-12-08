@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
+import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.service.SearchService;
 
@@ -54,7 +55,7 @@ public class SearchController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductImageModel> categorySearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndex> categorySearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         return searchService.search(keyword, categoryId, brandId, brandName, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
     }
 

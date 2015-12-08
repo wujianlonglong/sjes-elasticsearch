@@ -1,22 +1,31 @@
 package sjes.elasticsearch.service;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolFilterBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.NestedFilterBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
+import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
 import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryIndexModelRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.elasticsearch.index.query.FilterBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -62,30 +71,6 @@ public class SearchService {
     }
 
     /**
-     * 建立索引(临时测试，用完删)
-     * @throws ServiceException
-     */
-    public void testIndex() throws ServiceException {
-        LOGGER.info("start index");
-        CategoryIndex categoryIndex = new CategoryIndex();
-        ProductIndex productIndex1 = new ProductIndex();
-        productIndex1.setName("康师傅红烧牛肉面");
-        ProductIndex productIndex2 = new ProductIndex();
-        productIndex2.setName("统一老坛酸菜牛肉面");
-        ProductIndex productIndex3 = new ProductIndex();
-        productIndex3.setName("康师傅海鲜牛肉面");
-        List<ProductIndex> list = new ArrayList<>();
-        list.add(productIndex1);
-        list.add(productIndex2);
-        list.add(productIndex3);
-        categoryIndex.setProductIndexes(list);
-
-        categoryIndexModelRepository.save(categoryIndex);
-
-        LOGGER.info("stop index" + categoryIndexModelRepository.count());
-    }
-
-    /**
      * 删除全部索引
      * @throws ServiceException
      */
@@ -127,36 +112,97 @@ public class SearchService {
      * @param size 页面大小
      * @return 分页商品信息
      */
-    public PageModel<ProductImageModel> search(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndex> search(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
+        List<ProductIndex> list = new ArrayList<>();
+        SearchQuery searchQuery = null;
+
         if (StringUtils.isNotBlank(keyword)) { // 关键字查询
 
-        }
-        else if (null != categoryId) { // 分类商品列表
+            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik")).boost(5);    //根据分类名称检索，分析器为中文分词 ik，分数设置为5
+            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.name", keyword).analyzer("ik"))).boost(1);
+            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.brandName", keyword).analyzer("ik"))).boost(3);
 
+
+            NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
+
+            BoolFilterBuilder boolFilterBuilder = boolFilter();
+
+            //添加过滤器
+            if (null != categoryId) {
+                boolFilterBuilder.must(termFilter("id", categoryId));
+            }
+
+            if(null != startPrice) {
+                boolFilterBuilder.must(new NestedFilterBuilder("productIndexes", rangeFilter("productIndexes.salePrice").gte(startPrice)));
+            }
+
+            if(null != endPrice) {
+                boolFilterBuilder.must(new NestedFilterBuilder("productIndexes", rangeFilter("productIndexes.salePrice").lte(endPrice)));
+            }
+
+
+            if(null != categoryId || null != startPrice || null != endPrice) {
+                nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+            }
+
+
+            SortBuilder sortBuilder = SortBuilders.fieldSort("id").order(SortOrder.DESC);//排序
+
+            //构造查询
+            searchQuery = nativeSearchQueryBuilder.withSort(sortBuilder).build();
+        } else if (null != categoryId) { // 分类商品列表
+
+            BoolFilterBuilder boolFilterBuilder = boolFilter().must(termFilter("id", categoryId));
+
+            if(null != brandId){
+                boolFilterBuilder.must(new NestedFilterBuilder("productIndexes", termFilter("productIndexes.brandId", brandId)));
+            }
+
+            searchQuery = new NativeSearchQueryBuilder().withQuery(matchAllQuery()).withFilter(boolFilterBuilder).build();
         }
-        return new PageModel<> (Lists.newArrayList(), 0, pageable);
+
+        //return new PageModel<> (Lists.newArrayList(), 0, pageable);
+
+        List<CategoryIndex> categoryIndexList = categoryIndexModelRepository.search(searchQuery).getContent();
+        LOGGER.info(categoryIndexList.size() + "");
+        if (categoryIndexList.size() > 0) {
+            for (CategoryIndex categoryIndex : categoryIndexList) {
+                list.addAll(categoryIndex.getProductIndexes());
+            }
+        }
+
+        return new PageModel<>(list, 0, pageable);
     }
 
+
     /**
-     * 产品查询
-     * @return
-     * @throws ServiceException
+     * 搜索建议，自动补全搜索结结果
+     * @param indices 索引库名称
+     * @param prefix 搜索前缀词
+     * @return 建议列表
      */
-//    public String searchProduct(String name) throws ServiceException {
-//
-//        //BoolQueryBuilder builder = boolQuery().must(QueryBuilders.matchQuery("products.name", name));
-//
-//        QueryBuilder builder = nestedQuery("products", boolQuery().must(matchQuery("name", name)));
-//        SearchQuery searchQuery = new NativeSearchQueryBuilder().withQuery(builder).build();
-//
-//        List<CategoryIndex> cate = categoryIndexModelRepository.search(searchQuery).getContent();
-//        if(cate.size() > 0) {
-//            return cate.get(0).getProductIndexes().get(0).getName();
-//
-//
-//        }else{
-//            return "not found";
+//    public static List<String> getCompletionSuggest(String indices,
+//                                                    String prefix) {
+//        CompletionSuggestionBuilder suggestionsBuilder = new CompletionSuggestionBuilder(
+//                "complete");
+//        suggestionsBuilder.text(prefix);
+//        suggestionsBuilder.field("suggest");
+//        suggestionsBuilder.size(10);
+//        SuggestResponse resp = client.prepareSuggest(indices)
+//                .addSuggestion(suggestionsBuilder).execute().actionGet();
+//        List<? extends Entry<? extends Option>> list = resp.getSuggest()
+//                .getSuggestion("complete").getEntries();
+//        List<String> suggests = new ArrayList<String>();
+//        if (list == null) {
+//            return null;
+//        } else {
+//            for (Entry<? extends Option> e : list) {
+//                for (Option option : e) {
+//                    suggests.add(option.getText().toString());
+//                }
+//            }
+//            return suggests;
 //        }
 //    }
 }
