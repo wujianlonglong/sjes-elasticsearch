@@ -179,8 +179,8 @@ public class SearchService {
 
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
-            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik").boost(5));    //根据商品名称检索，分析器为中文分词 ik，分数设置为5
-            boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));  //根据商品品牌名称搜索
+            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik，分数设置为5
+            boolQueryBuilder.should(matchQuery("brandName", keyword));  //根据商品品牌名称搜索
 //            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.name", keyword).analyzer("ik"))).boost(1);
 
             boolQueryBuilder.minimumNumberShouldMatch(1);
@@ -197,19 +197,23 @@ public class SearchService {
         }
 
         if (null != brandName) {      //限定品牌
-            boolFilterBuilder.must(termFilter("brandId", brandId));
+            boolFilterBuilder.must(termFilter("brandName", brandName));
+            filterFlag = true;
         }
 
-        if (null != brandId && null == brandName) {        //限定品牌,优先匹配名称
-            boolFilterBuilder.must(termFilter("brandName", brandName));
+        if (null != brandId) {        //限定品牌
+            boolFilterBuilder.must(termFilter("brandId", brandId));
+            filterFlag = true;
         }
 
         if (null != startPrice) {    //限定最低价格
-            boolFilterBuilder.must(rangeFilter("salePrice").gte(startPrice));
+            boolFilterBuilder.must(rangeFilter("salePrice").gt(startPrice));
+            filterFlag = true;
         }
 
         if (null != endPrice) {      //限定最高价格
-            boolFilterBuilder.must(rangeFilter("salePrice").lte(startPrice));
+            boolFilterBuilder.must(rangeFilter("salePrice").lt(endPrice));
+            filterFlag = true;
         }
 
         if (filterFlag) {

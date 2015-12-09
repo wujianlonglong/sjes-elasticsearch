@@ -18,12 +18,13 @@ public class ProductIndex extends ProductIndexModel {
     /**
      * 商品分类属性值
      */
-    @Field(type= FieldType.Nested)
+    @Field(type = FieldType.Nested)
     private List<AttributeOptionValueModel> attributeOptionValueModels;
 
     /**
      * 商品有关的标签
      */
+    @Field(type = FieldType.Nested)
     private List<Tag> tags;
 
 }

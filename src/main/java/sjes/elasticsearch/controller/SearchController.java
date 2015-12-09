@@ -29,7 +29,7 @@ public class SearchController {
         return searchService.initService();
     }
 
-    @RequestMapping(value = "delete", method = RequestMethod.DELETE)
+    @RequestMapping(value = "delete",method = RequestMethod.DELETE)
     public String deleteIndex() {
         try {
             searchService.deleteIndex();

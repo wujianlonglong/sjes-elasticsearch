@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
  * Created by qinhailong on 15-8-21.
  */
 @Data
-@Document(indexName="goodses", type="goods")
 public class Goods implements Serializable {
 
     private Long id; // 主键

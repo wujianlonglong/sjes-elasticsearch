@@ -9,7 +9,6 @@ import java.io.Serializable;
  * Created by qinhailong on 15/9/21.
  */
 @Data
-@Document(indexName="productTags", type="productTag")
 public class ProductTag implements Serializable {
 
     private Long id; // 主键

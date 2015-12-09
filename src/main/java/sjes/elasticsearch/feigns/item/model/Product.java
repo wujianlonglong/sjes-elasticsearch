@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 
@@ -17,7 +20,6 @@ import java.time.LocalDateTime;
 @Data
 public class Product implements Serializable {
 
-    @Id
     private Long id; // 主键
 
     private Long goodsId; // 主商品ID
@@ -30,7 +32,7 @@ public class Product implements Serializable {
 
     private String barCode; // 商品条码
 
-   // @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String name; // 商品名称
 
     private Double salePrice; // 销售价
@@ -56,7 +58,7 @@ public class Product implements Serializable {
 
     private Long brandId; // 品牌ID
 
- //   @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String brandName; // 品牌名称
 
     private Integer status; // 0/1/2; 正常销售/下架停售/未审核
