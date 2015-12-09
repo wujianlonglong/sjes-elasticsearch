@@ -173,6 +173,19 @@ public class SearchService {
      * @return 分页商品信息
      */
     public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+        if (StringUtils.isNotBlank(attributes)) {
+            String[] attrs = StringUtils.split(attributes, ",");
+            if (attrs.length > 0) {
+                for (String attr : attrs) {
+                    String[] attrValues = StringUtils.split(attr, "-");
+                    if (attrValues.length == 2) {
+                        String attributeId = attrValues[0];
+                        String attributeOptionId = attrValues[1];
+
+                    }
+                }
+            }
+        }
         Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
