@@ -8,6 +8,7 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
 import sjes.elasticsearch.domain.ProductIndex;
+import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.service.SearchService;
 
@@ -28,7 +29,7 @@ public class SearchController {
         return searchService.initService();
     }
 
-    @RequestMapping(method = RequestMethod.DELETE)
+    @RequestMapping(value = "delete", method = RequestMethod.DELETE)
     public String deleteIndex() {
         try {
             searchService.deleteIndex();
@@ -39,7 +40,7 @@ public class SearchController {
     }
 
     /**
-     * 查询分类商品列表
+     * 查询商品列表
      * @param keyword 关键字
      * @param categoryId 分类id
      * @param brandId 品牌id
@@ -55,8 +56,22 @@ public class SearchController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndex> categorySearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
-        return searchService.search(keyword, categoryId, brandId, brandName, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
+    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+        return searchService.productSearch(keyword, categoryId, brandId, brandName, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
+    }
+
+    /**
+     * 查询分类列表
+     * @param keyword 关键字
+     * @param categoryId 分类 id
+     * @param page
+     * @param size
+     * @return
+     * @throws ServiceException
+     */
+    @RequestMapping(value = "categorySearch",method = RequestMethod.GET)
+    public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
+        return searchService.categorySearch(keyword, categoryId, page, size);
     }
 
 }

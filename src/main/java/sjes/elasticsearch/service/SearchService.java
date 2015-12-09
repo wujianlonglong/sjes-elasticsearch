@@ -20,9 +20,11 @@ import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
+import sjes.elasticsearch.feigns.item.model.Product;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.feigns.item.model.ProductTag;
 import sjes.elasticsearch.repository.CategoryRepository;
+import sjes.elasticsearch.repository.ProductIndexRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +43,9 @@ public class SearchService {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private ProductIndexRepository productRepository;
 
     @Autowired
     private CategoryService categoryService;
@@ -146,36 +151,12 @@ public class SearchService {
     }
 
     /**
-     * 建立单个索引
-     * @throws ServiceException
-     */
-    public void index(CategoryIndex categoryIndex) throws ServiceException {
-        categoryRepository.save(categoryIndex);
-    }
-
-    /**
      * 删除全部索引
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
         categoryRepository.deleteAll();
-    }
-
-    /**
-     * 删除指定索引
-     * @throws ServiceException
-     */
-    public void deleteIndex(Long categoryId) throws ServiceException {
-        categoryRepository.delete(categoryId);
-    }
-
-    /**
-     * 删除指定索引
-     * @throws ServiceException
-     */
-    public void deleteIndex(CategoryIndex categoryIndex) throws ServiceException {
-        categoryRepository.delete(categoryIndex);
-
+        productRepository.deleteAll();
     }
 
     /**
@@ -194,67 +175,101 @@ public class SearchService {
      * @param size 页面大小
      * @return 分页商品信息
      */
-    public PageModel<ProductIndex> search(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
-        List<ProductIndex> list = new ArrayList<>();
-        SearchQuery searchQuery = null;
+        NativeSearchQueryBuilder nativeSearchQueryBuilder;
+        boolean filterFlag = false; //判断是否需要过滤的标记
 
-        if (StringUtils.isNotBlank(keyword)) { // 关键字查询
+        //根据关键字查询商品
+        if (StringUtils.isNotBlank(keyword)) {
+            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik").boost(5));    //根据商品名称检索，分析器为中文分词 ik，分数设置为5
+            boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));  //根据商品品牌名称搜索
+//            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.name", keyword).analyzer("ik"))).boost(1);
 
-            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik")).boost(5);    //根据分类名称检索，分析器为中文分词 ik，分数设置为5
-            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.name", keyword).analyzer("ik"))).boost(1);
-            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.brandName", keyword).analyzer("ik"))).boost(3);
-
-
-            NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
-
-            BoolFilterBuilder boolFilterBuilder = boolFilter();
-
-            //添加过滤器
-            if (null != categoryId) {
-                boolFilterBuilder.must(termFilter("id", categoryId));
-            }
-
-            if(null != startPrice) {
-                boolFilterBuilder.must(new NestedFilterBuilder("productIndexes", rangeFilter("productIndexes.salePrice").gte(startPrice)));
-            }
-
-            if(null != endPrice) {
-                boolFilterBuilder.must(new NestedFilterBuilder("productIndexes", rangeFilter("productIndexes.salePrice").lte(endPrice)));
-            }
-
-
-            if(null != categoryId || null != startPrice || null != endPrice) {
-                nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
-            }
-
-
-            SortBuilder sortBuilder = SortBuilders.fieldSort("id").order(SortOrder.DESC);//排序
-
-            //构造查询
-            searchQuery = nativeSearchQueryBuilder.withSort(sortBuilder).build();
-        } else if (null != categoryId) { // 分类商品列表
-
-            BoolFilterBuilder boolFilterBuilder = boolFilter().must(termFilter("id", categoryId));
-
-            if(null != brandId){
-                boolFilterBuilder.must(new NestedFilterBuilder("productIndexes", termFilter("productIndexes.brandId", brandId)));
-            }
-
-            searchQuery = new NativeSearchQueryBuilder().withQuery(matchAllQuery()).withFilter(boolFilterBuilder).build();
+            boolQueryBuilder.minimumNumberShouldMatch(1);
+            nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
+        } else {
+            nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
         }
 
-        //return new PageModel<> (Lists.newArrayList(), 0, pageable);
+        BoolFilterBuilder boolFilterBuilder = boolFilter();
 
-//        List<CategoryIndex> categoryIndexList = categoryIndexModelRepository.search(searchQuery).getContent();
-//        LOGGER.info(categoryIndexList.size() + "");
-//        if (categoryIndexList.size() > 0) {
-//            for (CategoryIndex categoryIndex : categoryIndexList) {
-//                list.addAll(categoryIndex.getProductIndexes());
-//            }
-//        }
+        if (null != categoryId) {   //限定商品分类
+            boolFilterBuilder.must(termFilter("categoryId", categoryId));
+            filterFlag = true;
+        }
 
-        return new PageModel<>(list, 0, pageable);
+        if (null != brandName) {      //限定品牌
+            boolFilterBuilder.must(termFilter("brandId", brandId));
+        }
+
+        if (null != brandId && null == brandName) {        //限定品牌,优先匹配名称
+            boolFilterBuilder.must(termFilter("brandName", brandName));
+        }
+
+        if (null != startPrice) {    //限定最低价格
+            boolFilterBuilder.must(rangeFilter("salePrice").gte(startPrice));
+        }
+
+        if (null != endPrice) {      //限定最高价格
+            boolFilterBuilder.must(rangeFilter("salePrice").lte(startPrice));
+        }
+
+        if (filterFlag) {
+            nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+        }
+
+        if (null != sortType) {       //排序
+            SortBuilder sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);    //按价格逆序
+            nativeSearchQueryBuilder.withSort(sortBuilder);
+        }
+
+        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
+
+        List<ProductIndex> productIndexes = productRepository.search(searchQuery).getContent();
+        LOGGER.info("found products size:" + productIndexes.size());
+
+        return new PageModel<>(productIndexes, 0, pageable);
+    }
+
+    /**
+     * 查询分类
+     * @param keyword 关键字
+     * @param categoryId 分类 id
+     * @param page 页面
+     * @param size 页面大小
+     * @return 分类信息
+     * @throws ServiceException
+     */
+    public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
+        Pageable pageable = new Pageable(page, size);
+        NativeSearchQueryBuilder nativeSearchQueryBuilder;
+        boolean filterFlag = false; //判断是否需要过滤的标记
+
+        if(StringUtils.isNotBlank(keyword)){
+            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik"));
+            nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
+        }else{
+            nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
+        }
+
+        BoolFilterBuilder boolFilterBuilder = boolFilter();
+
+        if (null != categoryId) {
+            boolFilterBuilder.must(termFilter("id", categoryId));
+            filterFlag = true;
+        }
+
+        if(filterFlag){
+            nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+        }
+
+        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
+
+        List<Category> categories = categoryRepository.search(searchQuery).getContent();
+        LOGGER.info("found categories size:" + categories.size());
+
+        return new PageModel<>(categories, 0, pageable);
     }
 
 

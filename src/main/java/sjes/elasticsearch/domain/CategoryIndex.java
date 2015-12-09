@@ -12,7 +12,7 @@ import java.util.List;
  * Created by qinhailong on 15-12-3.
  */
 @Data
-@Document(indexName = "sjes", type = "categoryIndex")
+//@Document(indexName = "sjes", type = "categoryIndex")
 public class CategoryIndex extends Category {
 
     // 商品列表
