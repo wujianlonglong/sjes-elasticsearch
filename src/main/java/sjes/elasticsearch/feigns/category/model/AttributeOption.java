@@ -9,7 +9,6 @@ import java.io.Serializable;
  * Created by qinhailong on 15/8/27.
  */
 @Data
-@Document(indexName="attributeOptions", type="attributeOption")
 public class AttributeOption implements Serializable {
 
     private Long id; // 主键

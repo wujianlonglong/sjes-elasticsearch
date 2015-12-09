@@ -3,6 +3,7 @@ package sjes.elasticsearch.feigns.category.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
@@ -15,9 +16,10 @@ import java.time.LocalDateTime;
  * @author qinhailong
  */
 @Data
-@Document(indexName = "sjes", type = "categorys")
+@Document(indexName = "sjes", type = "categories")
 public class Category implements Serializable {
 
+    @Id
     private Long id; // 主键
 
     private String name; // 分类名称

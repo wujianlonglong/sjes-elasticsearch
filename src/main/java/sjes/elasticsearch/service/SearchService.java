@@ -209,11 +209,6 @@ public class SearchService {
             filterFlag = true;
         }
 
-        if (null != brandName) {      //限定品牌
-            boolFilterBuilder.must(termFilter("brandName", brandName));
-            filterFlag = true;
-        }
-
         if (null != brandId) {        //限定品牌
             boolFilterBuilder.must(termFilter("brandId", brandId));
             filterFlag = true;
