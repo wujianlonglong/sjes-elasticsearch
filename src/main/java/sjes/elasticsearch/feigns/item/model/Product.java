@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 @Data
 public class Product implements Serializable {
 
+    @Id
     private Long id; // 主键
 
     private Long goodsId; // 主商品ID

@@ -222,19 +222,6 @@ public class SearchService {
             }
         }
 
-        // TODO 限制地区
-//        if (StringUtils.isNotBlank(palceNames)) {
-//            String[] palceNameArr = StringUtils.split(palceNames, "_");
-//            for (String palceName : palceNameArr) {
-//                boolFilterBuilder.must(termFilter("palce", palceName));
-//                filterFlag = true;
-//            }
-//        }
-//        if (null != brandId) {        //限定品牌
-//            boolFilterBuilder.must(termFilter("brandId", brandId));
-//            filterFlag = true;
-//        }
-
         if (null != startPrice) {    //限定最低价格
             boolFilterBuilder.must(rangeFilter("salePrice").gt(startPrice));
             filterFlag = true;
