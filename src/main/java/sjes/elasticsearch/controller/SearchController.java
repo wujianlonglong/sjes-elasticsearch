@@ -9,7 +9,6 @@ import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
 import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.feigns.category.model.Category;
-import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.service.SearchService;
 
 import java.util.List;
@@ -43,8 +42,8 @@ public class SearchController {
      * 查询商品列表
      * @param keyword 关键字
      * @param categoryId 分类id
-     * @param brandId 品牌id
-     * @param brandName 品牌名称
+     * @param brandIds 品牌ids
+     * @param palceNames 地区
      * @param shopId 门店id
      * @param sortType 排序类型
      * @param attributes 属性
@@ -56,8 +55,8 @@ public class SearchController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
-        return searchService.productSearch(keyword, categoryId, brandId, brandName, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
+    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+        return searchService.productSearch(keyword, categoryId, brandIds, palceNames, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
     }
 
     /**

@@ -160,8 +160,8 @@ public class SearchService {
      * 查询分类商品列表
      * @param keyword 关键字
      * @param categoryId 分类id
-     * @param brandId 品牌id
-     * @param brandName 品牌名称
+     * @param brandIds 品牌id
+     * @param palceNames 地区
      * @param shopId 门店id
      * @param sortType 排序类型
      * @param attributes 属性
@@ -172,9 +172,9 @@ public class SearchService {
      * @param size 页面大小
      * @return 分页商品信息
      */
-    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, Long brandId, String brandName, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         if (StringUtils.isNotBlank(attributes)) {
-            String[] attrs = StringUtils.split(attributes, ",");
+            String[] attrs = StringUtils.split(attributes, "_");
             if (attrs.length > 0) {
                 for (String attr : attrs) {
                     String[] attrValues = StringUtils.split(attr, "-");
@@ -209,15 +209,31 @@ public class SearchService {
             filterFlag = true;
         }
 
-        if (null != brandName) {      //限定品牌
-            boolFilterBuilder.must(termFilter("brandName", brandName));
-            filterFlag = true;
+//        if (null != brandName) {      //限定品牌
+//            boolFilterBuilder.must(termFilter("brandName", brandName));
+//            filterFlag = true;
+//        }
+
+        if (StringUtils.isNotBlank(brandIds)) { //限定品牌
+            String[] brandIdArr = StringUtils.split(attributes, "_");
+            for (String brandId : brandIdArr) {
+                boolFilterBuilder.must(termFilter("brandId", brandId));
+                filterFlag = true;
+            }
         }
 
-        if (null != brandId) {        //限定品牌
-            boolFilterBuilder.must(termFilter("brandId", brandId));
-            filterFlag = true;
-        }
+        // TODO 限制地区
+//        if (StringUtils.isNotBlank(palceNames)) {
+//            String[] palceNameArr = StringUtils.split(palceNames, "_");
+//            for (String palceName : palceNameArr) {
+//                boolFilterBuilder.must(termFilter("palce", palceName));
+//                filterFlag = true;
+//            }
+//        }
+//        if (null != brandId) {        //限定品牌
+//            boolFilterBuilder.must(termFilter("brandId", brandId));
+//            filterFlag = true;
+//        }
 
         if (null != startPrice) {    //限定最低价格
             boolFilterBuilder.must(rangeFilter("salePrice").gt(startPrice));
