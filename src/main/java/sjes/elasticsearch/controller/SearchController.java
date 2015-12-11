@@ -25,7 +25,7 @@ public class SearchController {
 
     @RequestMapping(value = "index", method = RequestMethod.GET)
     public List<CategoryIndex> index() throws ServiceException {
-        return searchService.initService();
+         return searchService.initService();
     }
 
     @RequestMapping(value = "delete",method = RequestMethod.DELETE)

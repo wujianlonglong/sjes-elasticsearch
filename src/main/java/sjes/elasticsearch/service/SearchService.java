@@ -42,7 +42,7 @@ public class SearchService {
     private CategoryRepository categoryRepository;
 
     @Autowired
-    private ProductIndexRepository productRepository;
+    private ProductIndexRepository productIndexRepository;
 
     @Autowired
     private CategoryService categoryService;
@@ -153,7 +153,7 @@ public class SearchService {
      */
     public void deleteIndex() throws ServiceException {
         categoryRepository.deleteAll();
-        productRepository.deleteAll();
+        productIndexRepository.deleteAll();
     }
 
     /**
@@ -173,19 +173,6 @@ public class SearchService {
      * @return 分页商品信息
      */
     public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
-        if (StringUtils.isNotBlank(attributes)) {
-            String[] attrs = StringUtils.split(attributes, "_");
-            if (attrs.length > 0) {
-                for (String attr : attrs) {
-                    String[] attrValues = StringUtils.split(attr, "-");
-                    if (attrValues.length == 2) {
-                        String attributeId = attrValues[0];
-                        String attributeOptionId = attrValues[1];
-
-                    }
-                }
-            }
-        }
         Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
@@ -194,8 +181,6 @@ public class SearchService {
         if (StringUtils.isNotBlank(keyword)) {
             BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik，分数设置为5
             boolQueryBuilder.should(matchQuery("brandName", keyword));  //根据商品品牌名称搜索
-//            boolQueryBuilder.should(nestedQuery("productIndexes", matchQuery("productIndexes.name", keyword).analyzer("ik"))).boost(1);
-
             boolQueryBuilder.minimumNumberShouldMatch(1);
             nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
         } else {
@@ -204,20 +189,31 @@ public class SearchService {
 
         BoolFilterBuilder boolFilterBuilder = boolFilter();
 
-        if (null != categoryId) {   //限定商品分类
+        if (null != categoryId) {       //限定商品分类
             boolFilterBuilder.must(termFilter("categoryId", categoryId));
             filterFlag = true;
         }
 
-//        if (null != brandName) {      //限定品牌
-//            boolFilterBuilder.must(termFilter("brandName", brandName));
-//            filterFlag = true;
-//        }
+        if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
+            String[] brandIdArr = StringUtils.split(brandIds, "_");
+            if(brandIdArr.length > 0){
+                BoolFilterBuilder brandIdsBoolFilterBuilder = boolFilter();
+                for (String brandId : brandIdArr) {
+                    brandIdsBoolFilterBuilder.should(termFilter("brandId", brandId));
+                }
+                boolFilterBuilder.must(brandIdsBoolFilterBuilder);
+                filterFlag = true;
+            }
+        }
 
-        if (StringUtils.isNotBlank(brandIds)) { //限定品牌
-            String[] brandIdArr = StringUtils.split(attributes, "_");
-            for (String brandId : brandIdArr) {
-                boolFilterBuilder.must(termFilter("brandId", brandId));
+        if (StringUtils.isNotBlank(palceNames)) {     //限定产地
+            String[] palceNameArr = StringUtils.split(palceNames, "_");
+            if(palceNameArr.length > 0){
+                BoolFilterBuilder palceNamesBoolFilterBuilder = boolFilter();
+                for (String palceName : palceNameArr) {
+                    palceNamesBoolFilterBuilder.should(termFilter("place", palceName));
+                }
+                boolFilterBuilder.must(palceNamesBoolFilterBuilder);
                 filterFlag = true;
             }
         }
@@ -232,7 +228,27 @@ public class SearchService {
             filterFlag = true;
         }
 
-        if (filterFlag) {
+        if (StringUtils.isNotBlank(attributes)) {  //限定商品参数
+            String[] attrs = StringUtils.split(attributes, "_");
+            if (attrs.length > 0) {
+                for (String attr : attrs) {
+                    String[] attrValues = StringUtils.split(attr, "-");
+                    if (attrValues.length == 2) {
+                        String attributeId = attrValues[0];
+                        String attributeOptionId = attrValues[1];
+
+                        boolFilterBuilder.must(nestedFilter("attributeOptionValueModels",
+                                nestedFilter("attributeOptionValueModels.attributeOption",
+                                        boolFilter().must(termFilter("attributeOptionValueModels.attributeOption.attributeId",Long.valueOf(attributeId)))
+                                                .must(termFilter("attributeOptionValueModels.attributeOption.id",Long.valueOf(attributeOptionId))))));
+
+                        filterFlag = true;
+                    }
+                }
+            }
+        }
+
+        if (filterFlag) {   //判断是否有限定条件
             nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
 
@@ -242,8 +258,7 @@ public class SearchService {
         }
 
         SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-
-        List<ProductIndex> productIndexes = productRepository.search(searchQuery).getContent();
+        List<ProductIndex> productIndexes = productIndexRepository.search(searchQuery).getContent();
         LOGGER.info("found products size:" + productIndexes.size());
 
         return new PageModel<>(productIndexes, 0, pageable);
@@ -282,41 +297,9 @@ public class SearchService {
         }
 
         SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-
         List<Category> categories = categoryRepository.search(searchQuery).getContent();
         LOGGER.info("found categories size:" + categories.size());
 
         return new PageModel<>(categories, 0, pageable);
     }
-
-
-    /**
-     * 搜索建议，自动补全搜索结结果
-     * @param indices 索引库名称
-     * @param prefix 搜索前缀词
-     * @return 建议列表
-     */
-//    public static List<String> getCompletionSuggest(String indices,
-//                                                    String prefix) {
-//        CompletionSuggestionBuilder suggestionsBuilder = new CompletionSuggestionBuilder(
-//                "complete");
-//        suggestionsBuilder.text(prefix);
-//        suggestionsBuilder.field("suggest");
-//        suggestionsBuilder.size(10);
-//        SuggestResponse resp = client.prepareSuggest(indices)
-//                .addSuggestion(suggestionsBuilder).execute().actionGet();
-//        List<? extends Entry<? extends Option>> list = resp.getSuggest()
-//                .getSuggestion("complete").getEntries();
-//        List<String> suggests = new ArrayList<String>();
-//        if (list == null) {
-//            return null;
-//        } else {
-//            for (Entry<? extends Option> e : list) {
-//                for (Option option : e) {
-//                    suggests.add(option.getText().toString());
-//                }
-//            }
-//            return suggests;
-//        }
-//    }
 }
