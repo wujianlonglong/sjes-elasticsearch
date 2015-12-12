@@ -22,6 +22,7 @@ public class Category implements Serializable {
     @Id
     private Long id; // 主键
 
+
     private String name; // 分类名称
 
     private Long parentId; // 父分类ID
