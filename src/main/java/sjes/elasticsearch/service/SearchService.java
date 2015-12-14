@@ -13,14 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
-import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.repository.CategoryRepository;
@@ -217,8 +217,8 @@ public class SearchService {
      * @param size       页面大小
      * @return 分页商品信息
      */
-    public PageModel<ProductIndex> productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
-        Pageable pageable = new Pageable(page, size);
+    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+        // Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
 
@@ -307,51 +307,11 @@ public class SearchService {
             SortBuilder sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);    //按价格逆序
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
+        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build();
+        Pageable pageable = new Pageable(page, size);
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(searchQuery);
+        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
-        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new org.springframework.data.domain.Pageable() {
-            @Override
-            public int getPageNumber() {
-                return pageable.getPage();
-            }
-
-            @Override
-            public int getPageSize() {
-                return pageable.getSize();
-            }
-
-            @Override
-            public int getOffset() {
-                return 0;
-            }
-
-            @Override
-            public Sort getSort() {
-                return null;
-            }
-
-            @Override
-            public org.springframework.data.domain.Pageable next() {
-                return null;
-            }
-
-            @Override
-            public org.springframework.data.domain.Pageable previousOrFirst() {
-                return null;
-            }
-
-            @Override
-            public org.springframework.data.domain.Pageable first() {
-                return null;
-            }
-
-            @Override
-            public boolean hasPrevious() {
-                return 1 != page;
-            }
-        }).build();
-        List<ProductIndex> productIndexes = productIndexRepository.search(searchQuery).getContent();
-
-        return new PageModel<>(productIndexes, 0, pageable);
     }
 
     /**
@@ -365,7 +325,6 @@ public class SearchService {
      * @throws ServiceException
      */
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
-        Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
 
@@ -387,50 +346,9 @@ public class SearchService {
             nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
 
-        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new org.springframework.data.domain.Pageable() {
-            @Override
-            public int getPageNumber() {
-                return pageable.getPage();
-            }
-
-            @Override
-            public int getPageSize() {
-                return pageable.getSize();
-            }
-
-            @Override
-            public int getOffset() {
-                return 0;
-            }
-
-            @Override
-            public Sort getSort() {
-                return null;
-            }
-
-            @Override
-            public org.springframework.data.domain.Pageable next() {
-                return null;
-            }
-
-            @Override
-            public org.springframework.data.domain.Pageable previousOrFirst() {
-                return null;
-            }
-
-            @Override
-            public org.springframework.data.domain.Pageable first() {
-                return null;
-            }
-
-            @Override
-            public boolean hasPrevious() {
-                return 1 != page;
-            }
-        }).build();
-        List<Category> categories = categoryRepository.search(searchQuery).getContent();
-
-        return new PageModel<>(categories, 0, pageable);
+        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build();
+        FacetedPage<Category> facetedPage = categoryRepository.search(searchQuery);
+        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), new Pageable(page, size));
     }
 
     /**
