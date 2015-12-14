@@ -57,7 +57,7 @@ public class CategoryBasicAttributesService {
                             nameValueModel.setValue(null == brandId ? "" : brandId.toString());
                             nameValueModels.add(nameValueModel);
                         }
-                        if (null != place) {
+                        if (StringUtils.isNotBlank(place)) {
                             placeSet.add(place); // 添加分类产地
                         }
                         List<AttributeOptionValueModel> attributeOptionValueModels = productIndex.getAttributeOptionValueModels();

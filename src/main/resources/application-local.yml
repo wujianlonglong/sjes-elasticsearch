@@ -12,7 +12,7 @@ eureka:
 spring:
   data:
     elasticsearch:
-      cluster-nodes: 127.0.0.1:9300 #115.159.50.53:9300
+      cluster-nodes: srv4.sanjiang.info:9300 #115.159.50.53:9300
 hystrix:
   command:
     default:
