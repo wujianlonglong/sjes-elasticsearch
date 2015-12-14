@@ -40,12 +40,15 @@ public class Category implements Serializable {
 
     private Boolean display; // 是否显示
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String speciHref; // 专题页链接
 
     private Boolean isRedLabel; // 文本标红
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String tagName; // 分类标签名
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String classes; // 样式
 
     private Long seoId; // seoId

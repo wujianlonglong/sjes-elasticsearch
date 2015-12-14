@@ -27,10 +27,13 @@ public class Product implements Serializable {
 
     private Long erpGoodsId; // 对应ERP GoodsID
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String goodsCode; // 商品内码(顺序号)
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String sn; // 商品编码
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String barCode; // 商品条码
 
     @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
@@ -40,11 +43,13 @@ public class Product implements Serializable {
 
     private Double memberPrice; // 会员价
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String weight; // 商品重量
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String place; // 商品产地
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String source; // 商品来源, 枚举(自营/联营)
 
     private Long sales; //　销量
