@@ -309,8 +309,17 @@ public class SearchService {
             nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
 
-        if (null != sortType) {       //排序
-            SortBuilder sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);    //按价格逆序
+        if (null != sortType && !sortType.equals("default")) {       //排序
+            SortBuilder sortBuilder = null;
+            if(sortType.equals("sales")) {  //销量降序
+                sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.DESC);
+            }else if(sortType.equals("salesUp")) {  //销量升序
+                sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.ASC);
+            }else if(sortType.equals("price")) {  //价格降序
+                sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);
+            }else if(sortType.equals("priceUp")) {  //销价格升序
+                sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.ASC);
+            }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
         FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
