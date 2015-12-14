@@ -13,12 +13,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.repository.CategoryRepository;
@@ -306,9 +308,48 @@ public class SearchService {
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
 
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new org.springframework.data.domain.Pageable() {
+            @Override
+            public int getPageNumber() {
+                return pageable.getPage();
+            }
+
+            @Override
+            public int getPageSize() {
+                return pageable.getSize();
+            }
+
+            @Override
+            public int getOffset() {
+                return 0;
+            }
+
+            @Override
+            public Sort getSort() {
+                return null;
+            }
+
+            @Override
+            public org.springframework.data.domain.Pageable next() {
+                return null;
+            }
+
+            @Override
+            public org.springframework.data.domain.Pageable previousOrFirst() {
+                return null;
+            }
+
+            @Override
+            public org.springframework.data.domain.Pageable first() {
+                return null;
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                return 1 != page;
+            }
+        }).build();
         List<ProductIndex> productIndexes = productIndexRepository.search(searchQuery).getContent();
-        LOGGER.info("found products size:" + productIndexes.size());
 
         return new PageModel<>(productIndexes, 0, pageable);
     }
@@ -346,9 +387,48 @@ public class SearchService {
             nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
 
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new org.springframework.data.domain.Pageable() {
+            @Override
+            public int getPageNumber() {
+                return pageable.getPage();
+            }
+
+            @Override
+            public int getPageSize() {
+                return pageable.getSize();
+            }
+
+            @Override
+            public int getOffset() {
+                return 0;
+            }
+
+            @Override
+            public Sort getSort() {
+                return null;
+            }
+
+            @Override
+            public org.springframework.data.domain.Pageable next() {
+                return null;
+            }
+
+            @Override
+            public org.springframework.data.domain.Pageable previousOrFirst() {
+                return null;
+            }
+
+            @Override
+            public org.springframework.data.domain.Pageable first() {
+                return null;
+            }
+
+            @Override
+            public boolean hasPrevious() {
+                return 1 != page;
+            }
+        }).build();
         List<Category> categories = categoryRepository.search(searchQuery).getContent();
-        LOGGER.info("found categories size:" + categories.size());
 
         return new PageModel<>(categories, 0, pageable);
     }
