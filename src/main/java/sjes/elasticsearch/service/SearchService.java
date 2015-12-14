@@ -307,10 +307,8 @@ public class SearchService {
             SortBuilder sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);    //按价格逆序
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
-        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build();
-        Pageable pageable = new Pageable(page, size);
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(searchQuery);
-        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build());
+        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), new Pageable(page, size));
 
     }
 
@@ -346,8 +344,7 @@ public class SearchService {
             nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
 
-        SearchQuery searchQuery = nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build();
-        FacetedPage<Category> facetedPage = categoryRepository.search(searchQuery);
+        FacetedPage<Category> facetedPage = categoryRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), new Pageable(page, size));
     }
 
