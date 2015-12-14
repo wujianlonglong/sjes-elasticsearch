@@ -17,10 +17,10 @@ import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilde
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
+import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
-import sjes.elasticsearch.feigns.item.model.ProductTag;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
@@ -56,8 +56,8 @@ public class SearchService {
     @Autowired
     private AttributeService attributeService;
 
-    @Autowired
-    private TagService tagService;
+//    @Autowired
+//    private TagService tagService;
 
     @Autowired
     private ProductIndexService productIndexService;
@@ -71,16 +71,29 @@ public class SearchService {
     public List<CategoryIndex> initService() throws ServiceException {
         LOGGER.debug("开始初始化索引！");
         try {
-            List<Category> categories = categoryService.listByGradeThree();
+            List<Category> thirdCategories = Lists.newArrayList();
             Map<Long, CategoryIndex> categoryIndexMap = Maps.newHashMap();
-            if (CollectionUtils.isNotEmpty(categories)) {
+            List<Category> allCategories = categoryService.all();
+            Map<Long, Category> categoryIdMap = Maps.newHashMap();
+            if (CollectionUtils.isNotEmpty(allCategories)) {
+                allCategories.forEach(category -> {
+                    Integer grade = category.getGrade();
+                    if (null != grade) {
+                        if (Constants.CategoryGradeConstants.GRADE_THREE == grade.intValue()) {
+                            thirdCategories.add(category);
+                        }
+                    }
+                    categoryIdMap.put(category.getId(), category);
+                });
+            }
+            if (CollectionUtils.isNotEmpty(thirdCategories)) {
                 // 分类索引
-                categoryRepository.save(categories);
-                categories.forEach(category -> {
+                categoryRepository.save(thirdCategories);
+                thirdCategories.forEach(thirdCategory -> {
                     CategoryIndex categoryIndex = new CategoryIndex();
                     categoryIndex.setProductIndexes(Lists.newArrayList());
-                    BeanUtils.copyProperties(category, categoryIndex);
-                    categoryIndexMap.put(category.getId(), categoryIndex);
+                    BeanUtils.copyProperties(thirdCategory, categoryIndex);
+                    categoryIndexMap.put(thirdCategory.getId(), categoryIndex);
                 });
                 List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
                 List<ProductIndexModel> productIndexModels = productService.listByCategoryIds(categoryIds);
@@ -99,13 +112,14 @@ public class SearchService {
                         }
                     });
                 }
-                List<Tag> tags = tagService.all();
-                Map<Long, Tag> tagMap = Maps.newHashMapWithExpectedSize(tags.size());
-                if (CollectionUtils.isNotEmpty(tags)) {
-                    tags.forEach(tag -> {
-                        tagMap.put(tag.getId(), tag);
-                    });
-                }
+//                List<Tag> tags = tagService.all();
+//                Map<Long, Tag> tagMap = Maps.newHashMapWithExpectedSize(tags.size());
+//                if (CollectionUtils.isNotEmpty(tags)) {
+//                    tags.forEach(tag -> {
+//                        tagMap.put(tag.getId(), tag);
+//                    });
+//                }
+
                 Map<Long, ProductIndex> productMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(productIndexModels)) {
                     productIndexModels.forEach(productIndexModel -> {
@@ -113,12 +127,29 @@ public class SearchService {
                         productIndex.setTags(Lists.newArrayList());
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
                         BeanUtils.copyProperties(productIndexModel, productIndex);
-                        List<ProductTag> productTags = productIndex.getProductTags();
-                        if (CollectionUtils.isNotEmpty(productTags)) {
-                            productTags.forEach(productTag -> {
-                                productIndex.getTags().add(tagMap.get(productTag.getTagId()));
-                            });
-                        }
+
+//                        List<ProductTag> productTags = productIndex.getProductTags();
+//                        if (CollectionUtils.isNotEmpty(productTags)) {
+//                            productTags.forEach(productTag -> {
+//                                productIndex.getTags().add(tagMap.get(productTag.getTagId()));
+//                            });
+//                        }
+
+                        Long parentId = null;
+                        List<Tag> tags = productIndex.getTags();
+                        int tagOrders = tags.size();
+                        Tag tag = null;
+                        do {
+                            Category category = categoryIdMap.get(productIndex.getCategoryId());
+                            parentId = category.getParentId();
+                            if (Constants.CategoryGradeConstants.GRADE_ONE != category.getGrade() && null != parentId) {
+                                category = categoryIdMap.get(parentId);
+                            }
+                            tag = new Tag();
+                            tag.setName(category.getName());
+                            tag.setOrders(tagOrders++);
+                            tags.add(tag);
+                        } while(null != parentId);
                         categoryIndexMap.get(productIndexModel.getCategoryId()).getProductIndexes().add(productIndex);
                         productMap.put(productIndexModel.getId(), productIndex);
                     });
@@ -126,16 +157,23 @@ public class SearchService {
                 List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productMap.keySet()));
                 if (CollectionUtils.isNotEmpty(productAttributeValues)) {
                     productAttributeValues.forEach(productAttributeValue -> {
+                        ProductIndex productIndex = productMap.get(productAttributeValue.getProductId());
+                        List<Tag> tags = productIndex.getTags();
+                        Tag tag = new Tag();
+                        tag.setName(productAttributeValue.getAttributeName());
+                        tag.setOrders(tags.size());
+                        tags.add(tag);
                         AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                         Attribute attribute = attributeNameMaps.get(productAttributeValue.getAttributeId());
                         AttributeOption attributeOption = attributeOptionValueMaps.get(productAttributeValue.getAttributeOptionId());
                         BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                         attributeOptionValueModel.setAttributeOption(attributeOption);
-                        productMap.get(productAttributeValue.getProductId()).getAttributeOptionValueModels().add(attributeOptionValueModel);
+                        productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
                     });
                 }
                 // productIndex索引
-                productIndexService.saveBat(Lists.newArrayList(productMap.values()));
+                List<ProductIndex> productIndexes = Lists.newArrayList(productMap.values());
+                productIndexService.saveBat(productIndexes);
             }
             List<CategoryIndex> categoryList = Lists.newArrayList(categoryIndexMap.values());
             // 分类查询条件

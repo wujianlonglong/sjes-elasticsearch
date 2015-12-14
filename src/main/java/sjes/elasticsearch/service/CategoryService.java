@@ -2,7 +2,6 @@ package sjes.elasticsearch.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.category.feign.CategoryFeign;
 import sjes.elasticsearch.feigns.category.model.Category;
 
@@ -17,15 +16,12 @@ public class CategoryService {
     @Autowired
     private CategoryFeign categoryFeign;
 
-
-
-
     /**
-     * 得到分类索引文档列表
-     * @return 分类索引文档列表
+     * 查询所有分类列表
+     * @return 分类列表
      */
-    public List<Category> listByGradeThree() {
-        return categoryFeign.findByGrade(Constants.CategoryGradeConstants.GRADE_THREE);
+    public List<Category> all() {
+        return  categoryFeign.list(new Category());
     }
 
 }
