@@ -12,7 +12,7 @@ public class Pageable implements Serializable {
     /**
      * 默认页码
      */
-    private static final int DEFAULT_PAGE_NUMBER = 1;
+    private static final int DEFAULT_PAGE_NUMBER = 0;
 
     /**
      * 默认每页记录数

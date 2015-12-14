@@ -218,7 +218,7 @@ public class SearchService {
      * @return 分页商品信息
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
-        // Pageable pageable = new Pageable(page, size);
+        Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
 
@@ -307,8 +307,8 @@ public class SearchService {
             SortBuilder sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);    //按价格逆序
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build());
-        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), new Pageable(page, size));
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
+        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
 
@@ -323,6 +323,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
+        Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
 
@@ -344,8 +345,8 @@ public class SearchService {
             nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
 
-        FacetedPage<Category> facetedPage = categoryRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(page, size)).build());
-        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), new Pageable(page, size));
+        FacetedPage<Category> facetedPage = categoryRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
+        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
     }
 
     /**
