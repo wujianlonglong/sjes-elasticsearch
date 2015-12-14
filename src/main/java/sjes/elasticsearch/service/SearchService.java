@@ -139,16 +139,19 @@ public class SearchService {
                         List<Tag> tags = productIndex.getTags();
                         int tagOrders = tags.size();
                         Tag tag = null;
+                        Category category = categoryIdMap.get(productIndex.getCategoryId());
                         do {
-                            Category category = categoryIdMap.get(productIndex.getCategoryId());
                             parentId = category.getParentId();
                             if (Constants.CategoryGradeConstants.GRADE_ONE != category.getGrade() && null != parentId) {
                                 category = categoryIdMap.get(parentId);
+                                tag = new Tag();
+                                tag.setName(category.getName());
+                                tag.setOrders(tagOrders++);
+                                tags.add(tag);
                             }
-                            tag = new Tag();
-                            tag.setName(category.getName());
-                            tag.setOrders(tagOrders++);
-                            tags.add(tag);
+                            else if (null != parentId) {
+                                parentId = null;
+                            }
                         } while(null != parentId);
                         categoryIndexMap.get(productIndexModel.getCategoryId()).getProductIndexes().add(productIndex);
                         productMap.put(productIndexModel.getId(), productIndex);
