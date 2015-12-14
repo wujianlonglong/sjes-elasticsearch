@@ -2,9 +2,13 @@ package sjes.elasticsearch.feigns.category.model;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javafx.util.converter.FloatStringConverter;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 
@@ -22,13 +26,14 @@ public class Category implements Serializable {
     @Id
     private Long id; // 主键
 
-
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String name; // 分类名称
 
     private Long parentId; // 父分类ID
 
     private Integer grade; // 级别
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String treePath; // 路径
 
     private Integer orders; // 排序

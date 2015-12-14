@@ -254,7 +254,12 @@ public class SearchService {
         BoolFilterBuilder boolFilterBuilder = boolFilter();
 
         if (null != categoryId) {       //限定商品分类
-            boolFilterBuilder.must(termFilter("categoryId", categoryId));
+            BoolFilterBuilder categoryIdBoolFilterBuilder = boolFilter().should(termFilter("categoryId", categoryId));
+            List<Category> categories = categorySearch(categoryId);
+            if (null != categories) {
+                categories.forEach(category -> categoryIdBoolFilterBuilder.should(termFilter("categoryId", category.getId())));
+            }
+            boolFilterBuilder.must(categoryIdBoolFilterBuilder);
             filterFlag = true;
         }
 
@@ -348,6 +353,26 @@ public class SearchService {
 
         FacetedPage<Category> facetedPage = categoryRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
+    }
+
+    /**
+     * 搜索分类下所有的子分类
+     *
+     * @param categoryId 分类编号
+     * @return 子分类列表
+     * @throws ServiceException
+     */
+    public List<Category> categorySearch(Long categoryId) throws ServiceException {
+        if (null == categoryId) {
+            return null;
+        }
+
+        NativeSearchQueryBuilder nativeSearchQueryBuilder;
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(wildcardQuery("treePath", "*," + categoryId + ",*"));
+        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        List<Category> categories = categoryRepository.search(searchQuery).getContent();
+
+        return categories;
     }
 
     /**
