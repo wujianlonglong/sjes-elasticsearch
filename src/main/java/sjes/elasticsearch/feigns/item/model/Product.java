@@ -42,7 +42,7 @@ public class Product implements Serializable {
 
     private String weight; // 商品重量
 
-  //  @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String place; // 商品产地
 
     private String source; // 商品来源, 枚举(自营/联营)

@@ -206,7 +206,7 @@ public class SearchService {
      * @param keyword    关键字
      * @param categoryId 分类id
      * @param brandIds   品牌id
-     * @param palceNames 地区
+     * @param placeNames 地区
      * @param shopId     门店id
      * @param sortType   排序类型
      * @param attributes 属性
@@ -217,14 +217,15 @@ public class SearchService {
      * @param size       页面大小
      * @return 分页商品信息
      */
-    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String palceNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String placeNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
+        BoolQueryBuilder boolQueryBuilder = boolQuery();
         boolean filterFlag = false; //判断是否需要过滤的标记
 
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
-            BoolQueryBuilder boolQueryBuilder = boolQuery().should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik，分数设置为5
+            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik，分数设置为5
             boolQueryBuilder.should(matchQuery("brandName", keyword));  //根据商品品牌名称搜索
 
             List<Category> categories = categorySearch(keyword);        //根据分类搜索
@@ -233,10 +234,22 @@ public class SearchService {
             }
 
             boolQueryBuilder.minimumNumberShouldMatch(1);
-            nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
         } else {
-            nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
+            boolQueryBuilder.should(matchAllQuery());
         }
+
+        if (StringUtils.isNotBlank(placeNames)) {     //限定产地
+            String[] placeNameArr = StringUtils.split(placeNames, "_");
+            if (placeNameArr.length > 0) {
+                BoolQueryBuilder palceNamesBoolQueryBuilder = boolQuery();
+                for (String placeName : placeNameArr) {
+                    palceNamesBoolQueryBuilder.should(wildcardQuery("place", "*"+placeName+"*"));
+                }
+                boolQueryBuilder.must(palceNamesBoolQueryBuilder);
+            }
+        }
+
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
         BoolFilterBuilder boolFilterBuilder = boolFilter();
 
@@ -253,18 +266,6 @@ public class SearchService {
                     brandIdsBoolFilterBuilder.should(termFilter("brandId", brandId));
                 }
                 boolFilterBuilder.must(brandIdsBoolFilterBuilder);
-                filterFlag = true;
-            }
-        }
-
-        if (StringUtils.isNotBlank(palceNames)) {     //限定产地
-            String[] palceNameArr = StringUtils.split(palceNames, "_");
-            if (palceNameArr.length > 0) {
-                BoolFilterBuilder palceNamesBoolFilterBuilder = boolFilter();
-                for (String palceName : palceNameArr) {
-                    palceNamesBoolFilterBuilder.should(termFilter("place", palceName));
-                }
-                boolFilterBuilder.must(palceNamesBoolFilterBuilder);
                 filterFlag = true;
             }
         }
