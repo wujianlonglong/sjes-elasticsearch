@@ -137,24 +137,23 @@ public class SearchService {
 //                            });
 //                        }
 
-                        Long parentId = null;
+                        Long categoryId = productIndex.getCategoryId();
                         List<Tag> tags = productIndex.getTags();
                         int tagOrders = tags.size();
                         Tag tag = null;
-                        Category category = categoryIdMap.get(productIndex.getCategoryId());
                         do {
-                            parentId = category.getParentId();
-                            if (Constants.CategoryGradeConstants.GRADE_ONE != category.getGrade() && null != parentId) {
-                                category = categoryIdMap.get(parentId);
+                            Category category = categoryIdMap.get(categoryId);
+                            if (null != category) {
                                 tag = new Tag();
                                 tag.setName(category.getName());
-                                tag.setOrders(tagOrders++);
+                                tag.setOrders(tagOrders + category.getGrade() - 1);
                                 tags.add(tag);
+                                categoryId = category.getParentId();
                             }
-                            else if (null != parentId) {
-                                parentId = null;
+                            else {
+                                categoryId = null;
                             }
-                        } while(null != parentId);
+                        } while(null != categoryId);
                         categoryIndexMap.get(productIndexModel.getCategoryId()).getProductIndexes().add(productIndex);
                         productMap.put(productIndexModel.getId(), productIndex);
                     });
