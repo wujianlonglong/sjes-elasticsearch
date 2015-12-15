@@ -218,6 +218,10 @@ public class SearchService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String placeNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
+        if (StringUtils.isBlank(keyword) && null == categoryId) {
+            return new PageModel(Lists.newArrayList(), 0, pageable);
+        }
+
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();
         boolean filterFlag = false; //判断是否需要过滤的标记
@@ -338,6 +342,9 @@ public class SearchService {
      */
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
+        if (StringUtils.isBlank(keyword) && null == categoryId) {
+            return new PageModel(Lists.newArrayList(), 0, pageable);
+        }
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         boolean filterFlag = false; //判断是否需要过滤的标记
 
