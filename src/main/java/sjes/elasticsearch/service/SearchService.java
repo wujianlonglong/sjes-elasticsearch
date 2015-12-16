@@ -279,12 +279,12 @@ public class SearchService {
         }
 
         if (null != startPrice) {    //限定最低价格
-            boolFilterBuilder.must(rangeFilter("salePrice").gt(startPrice));
+            boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
             filterFlag = true;
         }
 
         if (null != endPrice) {      //限定最高价格
-            boolFilterBuilder.must(rangeFilter("salePrice").lt(endPrice));
+            boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
             filterFlag = true;
         }
 
@@ -319,9 +319,9 @@ public class SearchService {
             }else if(sortType.equals("salesUp")) {  //销量升序
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.ASC);
             }else if(sortType.equals("price")) {  //价格降序
-                sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.DESC);
+                sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
             }else if(sortType.equals("priceUp")) {  //销价格升序
-                sortBuilder = SortBuilders.fieldSort("salePrice").order(SortOrder.ASC);
+                sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
