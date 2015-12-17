@@ -23,19 +23,21 @@ public class SearchController {
     @Autowired
     private SearchService searchService;
 
+    /**
+     * 建立索引
+     * @return 索引的数据
+     */
     @RequestMapping(value = "index", method = RequestMethod.GET)
     public List<CategoryIndex> index() throws ServiceException {
          return searchService.initService();
     }
 
-    @RequestMapping(value = "delete",method = RequestMethod.GET)
-    public String deleteIndex() {
-        try {
-            searchService.deleteIndex();
-        } catch (ServiceException e) {
-            e.printStackTrace();
-        }
-        return "delete";
+    /**
+     * 删除索引
+     */
+    @RequestMapping(value = "delete", method = RequestMethod.GET)
+    public void deleteIndex() throws ServiceException  {
+        searchService.deleteIndex();
     }
 
     /**
