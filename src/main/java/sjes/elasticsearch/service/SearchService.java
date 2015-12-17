@@ -229,6 +229,7 @@ public class SearchService {
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik
+            boolQueryBuilder.should(termQuery("name", keyword).boost(2));    //根据商品名称检索
             boolQueryBuilder.should(matchQuery("brandName", keyword).boost(3));  //根据商品品牌名称搜索，分数设为3
             boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));  //根据商品品牌名称搜索
             List<Category> categories = categorySearch(keyword);        //根据分类搜索
