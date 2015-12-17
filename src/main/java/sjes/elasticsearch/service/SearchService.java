@@ -181,7 +181,7 @@ public class SearchService {
             }
             List<CategoryIndex> categoryList = Lists.newArrayList(categoryIndexMap.values());
             // 分类查询条件
-            categoryBasicAttributesService.saveOrUpdate(categoryList);
+//            categoryBasicAttributesService.saveOrUpdate(categoryList);
             return categoryList;
         } catch (Exception e) {
             LOGGER.error("初始化索引出现错误！", e);
