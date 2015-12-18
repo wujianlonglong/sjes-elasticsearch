@@ -5,6 +5,7 @@ import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.feigns.category.model.Tag;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 
 import java.util.List;
 
@@ -13,7 +14,7 @@ import java.util.List;
  */
 @Data
 @Document(indexName = "sjes", type = "products")
-public class ProductIndex extends ProductIndexModel {
+public class ProductIndex extends ProductImageModel {
 
     /**
      * 商品分类属性值

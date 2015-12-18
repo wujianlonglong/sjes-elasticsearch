@@ -18,6 +18,15 @@ import java.util.List;
 public interface CategoryFeign {
 
     /**
+     * 根据分类id查询分类簇对象
+     *
+     * @param categoryId 　分类id
+     * @return　分类簇对象
+     */
+    @RequestMapping(value = "clusters", method = RequestMethod.GET)
+    List<Category> findClusters(Long categoryId);
+
+    /**
      * 查询分类列表
      * @param category 查询条件
      * @return 分类列表

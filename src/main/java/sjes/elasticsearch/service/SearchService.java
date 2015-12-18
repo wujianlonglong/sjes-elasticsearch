@@ -8,11 +8,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -27,11 +24,14 @@ import org.springframework.data.elasticsearch.core.ResultsExtractor;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
@@ -104,31 +104,30 @@ public class SearchService {
                     categoryIndexMap.put(thirdCategory.getId(), categoryIndex);
                 });
                 List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-                List<ProductIndexModel> productIndexModels = productService.listByCategoryIds(categoryIds);
+                List<ProductImageModel> productImageModels = productService.listByCategoryIds(categoryIds);
 
                 List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
-                Map<Long, Attribute> attributeNameMaps = Maps.newHashMap();
-                Map<Long, AttributeOption> attributeOptionValueMaps = Maps.newHashMap();
+                Map<Long, Attribute> attributeMaps = Maps.newHashMap();
+                Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(attributeModels)) {
                     attributeModels.forEach(attributeModel -> {
-                        attributeNameMaps.put(attributeModel.getId(), attributeModel);
+                        attributeMaps.put(attributeModel.getId(), attributeModel);
                         List<AttributeOption> attributeOptions = attributeModel.getAttributeOptions();
                         if (CollectionUtils.isNotEmpty(attributeOptions)) {
                             attributeOptions.forEach(attributeOption -> {
-                                attributeOptionValueMaps.put(attributeOption.getId(), attributeOption);
+                                attributeOptionMaps.put(attributeOption.getId(), attributeOption);
                             });
                         }
                     });
                 }
 
                 Map<Long, ProductIndex> productMap = Maps.newHashMap();
-                if (CollectionUtils.isNotEmpty(productIndexModels)) {
-                    productIndexModels.forEach(productIndexModel -> {
+                if (CollectionUtils.isNotEmpty(productImageModels)) {
+                    productImageModels.forEach(productImageModel -> {
                         ProductIndex productIndex = new ProductIndex();
                         productIndex.setTags(Lists.newArrayList());
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
-                        BeanUtils.copyProperties(productIndexModel, productIndex);
-
+                        BeanUtils.copyProperties(productImageModel, productIndex);
                         Long categoryId = productIndex.getCategoryId();
                         List<Tag> tags = productIndex.getTags();
                         int tagOrders = tags.size();
@@ -146,8 +145,8 @@ public class SearchService {
                                 categoryId = null;
                             }
                         } while(null != categoryId);
-                        categoryIndexMap.get(productIndexModel.getCategoryId()).getProductIndexes().add(productIndex);
-                        productMap.put(productIndexModel.getId(), productIndex);
+                        categoryIndexMap.get(productImageModel.getCategoryId()).getProductIndexes().add(productIndex);
+                        productMap.put(productImageModel.getId(), productIndex);
                     });
                 }
                 List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productMap.keySet()));
@@ -160,8 +159,8 @@ public class SearchService {
                         tag.setOrders(tags.size());
                         tags.add(tag);
                         AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
-                        Attribute attribute = attributeNameMaps.get(productAttributeValue.getAttributeId());
-                        AttributeOption attributeOption = attributeOptionValueMaps.get(productAttributeValue.getAttributeOptionId());
+                        Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
+                        AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
                         BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                         attributeOptionValueModel.setAttributeOption(attributeOption);
                         productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
@@ -185,6 +184,64 @@ public class SearchService {
      */
     public void index(ProductIndex productIndex) throws ServiceException {
         productIndexRepository.save(productIndex);
+    }
+
+    /**
+     * 索引productIndex
+     * @param productId productIndex
+     * @return ProductIndex
+     */
+    @RequestMapping(method = RequestMethod.PUT)
+    public void index(Long productId) throws ServiceException {
+        if (null != productId) {
+            categoryRepository.delete(productId);
+            ProductImageModel productImageModel = productService.getProductImageModel(productId);
+            ProductIndex productIndex = new ProductIndex();
+            productIndex.setAttributeOptionValueModels(Lists.newArrayList());
+            BeanUtils.copyProperties(productImageModel, productIndex);
+            Long categoryId = productIndex.getCategoryId();
+            List<Category> categories = categoryService.findClusters(categoryId);
+            List<Tag> tags = productIndex.getTags();
+            if (CollectionUtils.isNotEmpty(categories)) {
+                categories.forEach(category -> {
+                    Tag tag = new Tag();
+                    tag.setName(category.getName());
+                    tag.setOrders(category.getGrade() - 1);
+                    tags.add(tag);
+                });
+            }
+            List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
+            List<AttributeModel> attributeModels = attributeService.lists(Lists.newArrayList(categoryId));
+            Map<Long, Attribute> attributeMaps = Maps.newHashMap();
+            Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
+            if (CollectionUtils.isNotEmpty(attributeModels)) {
+                attributeModels.forEach(attributeModel -> {
+                    attributeMaps.put(attributeModel.getId(), attributeModel);
+                    List<AttributeOption> attributeOptions = attributeModel.getAttributeOptions();
+                    if (CollectionUtils.isNotEmpty(attributeOptions)) {
+                        attributeOptions.forEach(attributeOption -> {
+                            attributeOptionMaps.put(attributeOption.getId(), attributeOption);
+                        });
+                    }
+                });
+            }
+            if (CollectionUtils.isNotEmpty(productAttributeValues)) {
+                productAttributeValues.forEach(productAttributeValue -> {
+                    Tag tag = new Tag();
+                    tag.setName(productAttributeValue.getAttributeName());
+                    tag.setOrders(tags.size());
+                    tags.add(tag);
+                    AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
+                    Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
+                    AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
+                    BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                    attributeOptionValueModel.setAttributeOption(attributeOption);
+                    productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
+                });
+            }
+            productIndex.setTags(tags);
+            productIndexRepository.save(productIndex);
+        }
     }
 
     /**

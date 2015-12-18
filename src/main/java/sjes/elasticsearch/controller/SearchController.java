@@ -42,6 +42,16 @@ public class SearchController {
     }
 
     /**
+     * 索引productIndex
+     * @param productId productIndex
+     * @return ProductIndex
+     */
+    @RequestMapping(method = RequestMethod.PUT)
+    public void index(Long productId) throws ServiceException {
+        searchService.index(productId);
+    }
+
+    /**
      * 删除索引
      */
     @RequestMapping(method = RequestMethod.DELETE)

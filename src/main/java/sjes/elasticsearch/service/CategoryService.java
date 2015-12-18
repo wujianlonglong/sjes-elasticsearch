@@ -17,6 +17,16 @@ public class CategoryService {
     private CategoryFeign categoryFeign;
 
     /**
+     * 根据分类id查询分类簇对象
+     *
+     * @param categoryId 　分类id
+     * @return　分类簇对象
+     */
+    public List<Category> findClusters(Long categoryId) {
+        return categoryFeign.findClusters(categoryId);
+    }
+
+    /**
      * 查询所有分类列表
      * @return 分类列表
      */

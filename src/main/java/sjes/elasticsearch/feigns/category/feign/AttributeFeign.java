@@ -3,9 +3,11 @@ package sjes.elasticsearch.feigns.category.feign;
 
 import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.constants.Constants;
+import sjes.elasticsearch.feigns.category.model.Attribute;
 import sjes.elasticsearch.feigns.category.model.AttributeModel;
 
 import java.util.List;
@@ -17,6 +19,14 @@ import java.util.List;
 @FeignClient(Constants.SJES_API_CATEGORY)
 @RequestMapping("attributes")
 public interface AttributeFeign {
+
+    /**
+     * 根据主键查询指定的属性信息
+     * @param id 主键id
+     * @return 属性信息
+     */
+    @RequestMapping(value = "{id}", method = RequestMethod.GET)
+    Attribute findById(@PathVariable("id") Long id);
 
     /**
      * 根据分类ids查询AttributeModel列表

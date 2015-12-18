@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.constants.Constants;
-import sjes.elasticsearch.domain.ProductIndexModel;
 import sjes.elasticsearch.feigns.item.feign.ProductFeign;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.utils.ListUtils;
 
 import java.util.List;
@@ -23,19 +23,28 @@ public class ProductService {
     private ProductFeign productFeign;
 
     /**
+     * 根据productId得到指定的ProductImageModel
+     * @param productId 商品id
+     * @return  ProductImageModel
+     */
+    public ProductImageModel getProductImageModel(Long productId) {
+        return productFeign.getProductImageModel(productId);
+    }
+
+    /**
      * 根据分类Ids查询商品列表
      * @param categoryIds 分类Ids
      * @return 商品列表
      */
     @RequestMapping(value = "categoryIds", method = RequestMethod.POST)
-    public List<ProductIndexModel> listByCategoryIds(List<Long> categoryIds) {
-        List<ProductIndexModel> productIndexModels = Lists.newArrayList();
+    public List<ProductImageModel> listByCategoryIds(List<Long> categoryIds) {
+        List<ProductImageModel> productImageModels = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(categoryIds)) {
             List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, Constants.SPLIT_SUB_LIST_SIZE);
             for (List<Long> cateIds : categoryIdsList) {
-                productIndexModels.addAll(productFeign.listByCategoryIds(cateIds));
+                productImageModels.addAll(productFeign.listByCategoryIds(cateIds));
             }
         }
-        return productIndexModels;
+        return productImageModels;
     }
 }
