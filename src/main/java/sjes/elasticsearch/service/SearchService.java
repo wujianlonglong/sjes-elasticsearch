@@ -179,6 +179,15 @@ public class SearchService {
     }
 
     /**
+     * 索引单个商品
+     * @param productIndex 商品
+     * @throws ServiceException
+     */
+    public void index(ProductIndex productIndex) throws ServiceException {
+        productIndexRepository.save(productIndex);
+    }
+
+    /**
      * 删除全部索引
      *
      * @throws ServiceException
@@ -199,8 +208,6 @@ public class SearchService {
         }
         return null;
     }
-
-
 
     /**
      * 查询分类商品列表

@@ -37,8 +37,8 @@ public class SearchController {
      * @return ProductIndex
      */
     @RequestMapping(method = RequestMethod.POST)
-    public void index(@RequestBody ProductIndex productIndex) {
-
+    public void index(@RequestBody ProductIndex productIndex) throws ServiceException {
+        searchService.index(productIndex);
     }
 
     /**
