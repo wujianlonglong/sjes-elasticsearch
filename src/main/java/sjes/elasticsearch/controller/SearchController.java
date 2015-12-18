@@ -1,10 +1,7 @@
 package sjes.elasticsearch.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
@@ -31,6 +28,16 @@ public class SearchController {
     @RequestMapping(value = "index", method = RequestMethod.GET)
     public List<CategoryIndex> index() throws ServiceException {
          return searchService.initService();
+    }
+
+    /**
+     * 索引productIndex
+     * @param productIndex productIndex
+     * @return ProductIndex
+     */
+    @RequestMapping(method = RequestMethod.POST)
+    public void index(@RequestBody ProductIndex productIndex) {
+
     }
 
     /**
