@@ -195,14 +195,7 @@ public class SearchService {
      */
     public ProductIndex getProductIndexByProductId(Long productId) {
         if (null != productId) {
-            NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
-            nativeSearchQueryBuilder.withFilter(termFilter("id",productId));
-            List<ProductIndex> productIndexes = productIndexRepository.search(nativeSearchQueryBuilder.build()).getContent();
-            if(productIndexes != null && productIndexes.size()>0){
-                return productIndexes.get(0);
-            }else{
-                return null;
-            }
+            return productIndexRepository.findOne(productId);
         }
         return null;
     }
