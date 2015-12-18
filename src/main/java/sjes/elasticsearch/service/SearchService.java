@@ -4,8 +4,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -14,7 +21,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.FacetedPage;
+import org.springframework.data.elasticsearch.core.ResultsExtractor;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
@@ -31,6 +40,7 @@ import java.util.Map;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -61,6 +71,8 @@ public class SearchService {
     @Autowired
     private ProductIndexService productIndexService;
 
+    @Autowired
+    private ElasticsearchTemplate elasticsearchTemplate;
     /**
      * 初始化索引
      */
@@ -183,7 +195,14 @@ public class SearchService {
      */
     public ProductIndex getProductIndexByProductId(Long productId) {
         if (null != productId) {
-
+            NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
+            nativeSearchQueryBuilder.withFilter(termFilter("id",productId));
+            List<ProductIndex> productIndexes = productIndexRepository.search(nativeSearchQueryBuilder.build()).getContent();
+            if(productIndexes != null && productIndexes.size()>0){
+                return productIndexes.get(0);
+            }else{
+                return null;
+            }
         }
         return null;
     }
@@ -220,12 +239,15 @@ public class SearchService {
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik
-            boolQueryBuilder.should(termQuery("name", keyword).boost(2));    //根据商品名称检索
+            boolQueryBuilder.should(termQuery("name", keyword));    //根据商品名称检索
             boolQueryBuilder.should(matchQuery("brandName", keyword).boost(3));  //根据商品品牌名称搜索，分数设为3
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));  //根据商品品牌名称搜索
-            List<Category> categories = categorySearch(keyword);        //根据分类搜索
-            if (categories != null) {
-                categories.forEach(category -> boolQueryBuilder.should(termQuery("categoryId", category.getId())));
+            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));  //根据商品名称搜索标签
+
+            if(StringUtils.isBlank(keyword)){
+                Long possibleCategoryId = getPossibleCategoryId(keyword);
+                if (null != possibleCategoryId && possibleCategoryId > -1){
+                    boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(2));    //根据商品名称检索
+                }
             }
 
             boolQueryBuilder.minimumNumberShouldMatch(1);
@@ -317,7 +339,7 @@ public class SearchService {
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.2f).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
@@ -405,5 +427,39 @@ public class SearchService {
         List<Category> categories = categoryRepository.search(searchQuery).getContent();
 
         return categories;
+    }
+
+    /**
+     * 获取最有可能的分类
+     * @param keyword 关键字
+     * @return 分类id
+     * @throws ServiceException
+     */
+    public Long getPossibleCategoryId(String keyword) throws ServiceException {
+        if(StringUtils.isBlank(keyword)){
+            return -1L;
+        }
+
+        SearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("name",keyword))
+                .withMinScore(2)
+                .withSearchType(SearchType.COUNT)
+                .withIndices("sjes").withTypes("products")
+                .addAggregation(terms("categoryIds").field("categoryId"))
+                .build();
+
+        Aggregations aggregations = elasticsearchTemplate.query(searchQuery, new ResultsExtractor<Aggregations>() {
+            @Override
+            public Aggregations extract(SearchResponse response) {
+                return response.getAggregations();
+            }
+        });
+
+        Terms categoryIds = aggregations.get("categoryIds");
+        if(categoryIds.getBuckets().size() > 0) {
+            return Long.valueOf(categoryIds.getBuckets().get(0).getKey());
+        }else{
+            return -1L;
+        }
     }
 }
