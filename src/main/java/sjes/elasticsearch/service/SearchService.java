@@ -239,7 +239,7 @@ public class SearchService {
             if(StringUtils.isBlank(keyword)){
                 Long possibleCategoryId = getPossibleCategoryId(keyword);
                 if (null != possibleCategoryId && possibleCategoryId > -1){
-                    boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(2));    //根据商品名称检索
+                    boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(3));    //根据商品名称检索
                 }
             }
 
