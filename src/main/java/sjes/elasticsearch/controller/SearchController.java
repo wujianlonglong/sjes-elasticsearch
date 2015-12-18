@@ -47,7 +47,7 @@ public class SearchController {
      * @return ProductIndex
      */
     @RequestMapping(method = RequestMethod.PUT)
-    public void index(Long productId) throws ServiceException {
+    public void index(@RequestParam("productId") Long productId) throws ServiceException {
         searchService.index(productId);
     }
 
