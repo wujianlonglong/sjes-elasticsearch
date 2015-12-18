@@ -1,6 +1,7 @@
 package sjes.elasticsearch.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +36,7 @@ public class SearchController {
     /**
      * 删除索引
      */
-    @RequestMapping(value = "delete", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.DELETE)
     public void deleteIndex() throws ServiceException  {
         searchService.deleteIndex();
     }
@@ -73,6 +74,16 @@ public class SearchController {
     @RequestMapping(value = "categorySearch",method = RequestMethod.GET)
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
         return searchService.categorySearch(keyword, categoryId, page, size);
+    }
+
+    /**
+     * 根据分类id得到ProductIndex
+     * @param categoryId 分类id
+     * @return ProductIndex
+     */
+    @RequestMapping(value = "{categoryId}", method = RequestMethod.GET)
+    public ProductIndex getProductIndexByCategoryId(@PathVariable("categoryId") Long categoryId) {
+        return searchService.getProductIndexByCategoryId(categoryId);
     }
 
 }

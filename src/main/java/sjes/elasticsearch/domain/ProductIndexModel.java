@@ -18,10 +18,4 @@ public class ProductIndexModel extends Product {
     @Field(type = FieldType.Nested)
     private ProductImage productImage;
 
-//    /**
-//     * 商品关联的标签 (不存储，不分析)
-//     */
-//    @Field(type = FieldType.Nested)
-//    private List<ProductTag> productTags;
-
 }

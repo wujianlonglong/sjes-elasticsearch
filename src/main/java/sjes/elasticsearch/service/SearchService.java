@@ -58,14 +58,8 @@ public class SearchService {
     @Autowired
     private AttributeService attributeService;
 
-//    @Autowired
-//    private TagService tagService;
-
     @Autowired
     private ProductIndexService productIndexService;
-
-    @Autowired
-    private CategoryBasicAttributesService categoryBasicAttributesService;
 
     /**
      * 初始化索引
@@ -114,13 +108,6 @@ public class SearchService {
                         }
                     });
                 }
-//                List<Tag> tags = tagService.all();
-//                Map<Long, Tag> tagMap = Maps.newHashMapWithExpectedSize(tags.size());
-//                if (CollectionUtils.isNotEmpty(tags)) {
-//                    tags.forEach(tag -> {
-//                        tagMap.put(tag.getId(), tag);
-//                    });
-//                }
 
                 Map<Long, ProductIndex> productMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(productIndexModels)) {
@@ -129,13 +116,6 @@ public class SearchService {
                         productIndex.setTags(Lists.newArrayList());
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
                         BeanUtils.copyProperties(productIndexModel, productIndex);
-
-//                        List<ProductTag> productTags = productIndex.getProductTags();
-//                        if (CollectionUtils.isNotEmpty(productTags)) {
-//                            productTags.forEach(productTag -> {
-//                                productIndex.getTags().add(tagMap.get(productTag.getTagId()));
-//                            });
-//                        }
 
                         Long categoryId = productIndex.getCategoryId();
                         List<Tag> tags = productIndex.getTags();
@@ -179,10 +159,7 @@ public class SearchService {
                 List<ProductIndex> productIndexes = Lists.newArrayList(productMap.values());
                 productIndexService.saveBat(productIndexes);
             }
-            List<CategoryIndex> categoryList = Lists.newArrayList(categoryIndexMap.values());
-            // 分类查询条件
-//            categoryBasicAttributesService.saveOrUpdate(categoryList);
-            return categoryList;
+            return Lists.newArrayList(categoryIndexMap.values());
         } catch (Exception e) {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
@@ -197,6 +174,18 @@ public class SearchService {
     public void deleteIndex() throws ServiceException {
         categoryRepository.deleteAll();
         productIndexRepository.deleteAll();
+    }
+
+    /**
+     * 根据分类id得到ProductIndex
+     * @param categoryId 分类id
+     * @return ProductIndex
+     */
+    public ProductIndex getProductIndexByCategoryId(Long categoryId) {
+        if (null != categoryId) {
+
+        }
+        return null;
     }
 
     /**
