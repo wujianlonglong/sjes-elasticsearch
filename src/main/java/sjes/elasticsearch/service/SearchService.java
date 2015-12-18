@@ -8,7 +8,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -35,6 +37,7 @@ import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -295,19 +298,27 @@ public class SearchService {
 
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
-            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));    //根据商品名称检索，分析器为中文分词 ik
-            boolQueryBuilder.should(termQuery("name", keyword));    //根据商品名称检索
-            boolQueryBuilder.should(matchQuery("brandName", keyword).boost(3));  //根据商品品牌名称搜索，分数设为3
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));  //根据商品名称搜索标签
+            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索，分析器为中文分词 ik
+            boolQueryBuilder.should(termQuery("name", keyword));                                //商品名称不分词检索
+            boolQueryBuilder.should(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索，分析器为中文分词 ik
+            boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));                  //根据商品品牌名称不分词搜索，分数设为3
+            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));     //根据商品标签搜索
 
-            if(StringUtils.isBlank(keyword)){
-                Long possibleCategoryId = getPossibleCategoryId(keyword);
-                if (null != possibleCategoryId && possibleCategoryId > -1){
-                    boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(3));    //根据商品名称检索
-                }
+            List<Category> categories = categorySearch(keyword);                                //根据商品分类搜索
+            if (categories != null) {
+                categories.forEach(category -> boolQueryBuilder.should(termQuery("categoryId", category.getId()).boost(10)));
             }
 
-            boolQueryBuilder.minimumNumberShouldMatch(1);
+            Long possibleCategoryId = getPossibleCategoryId(keyword);
+            if (null != possibleCategoryId && possibleCategoryId > -1){
+                boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(3));  //根据商品分类搜索
+            }
+
+//            getPossibleTags(keyword, 0).forEach(tag->{
+//                boolQueryBuilder.should(nestedQuery("tags", termQuery("tags.name", tag)));      //根据商品标签搜索
+//            });
+
+            boolQueryBuilder.minimumNumberShouldMatch(2);                                       //至少匹配2个条件
         } else {
             boolQueryBuilder.should(matchAllQuery());
         }
@@ -396,7 +407,7 @@ public class SearchService {
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.2f).build());
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.13f).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
@@ -442,26 +453,6 @@ public class SearchService {
     }
 
     /**
-     * 搜索分类下所有的子分类
-     *
-     * @param categoryId 分类编号
-     * @return 子分类列表
-     * @throws ServiceException
-     */
-    public List<Category> categorySearch(Long categoryId) throws ServiceException {
-        if (null == categoryId) {
-            return null;
-        }
-
-        NativeSearchQueryBuilder nativeSearchQueryBuilder;
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(wildcardQuery("treePath", "*," + categoryId + ",*"));
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-        List<Category> categories = categoryRepository.search(searchQuery).getContent();
-
-        return categories;
-    }
-
-    /**
      * 搜索相关分类
      *
      * @param keyword 关键字
@@ -475,11 +466,27 @@ public class SearchService {
             return null;
         }
 
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(wildcardQuery("name", "*"+keyword+"*"));
+        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
+        List<Category> categories = categoryRepository.search(searchQuery).getContent();
 
-        BoolFilterBuilder boolFilterBuilder = boolFilter();
-        boolFilterBuilder.must(termFilter("name", keyword));
-        nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+        return categories;
+    }
+
+    /**
+     * 搜索分类下所有的子分类
+     *
+     * @param categoryId 分类编号
+     * @return 子分类列表
+     * @throws ServiceException
+     */
+    public List<Category> categorySearch(Long categoryId) throws ServiceException {
+        if (null == categoryId) {
+            return null;
+        }
+
+        NativeSearchQueryBuilder nativeSearchQueryBuilder;
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(wildcardQuery("treePath", "*," + categoryId + ",*"));
         SearchQuery searchQuery = nativeSearchQueryBuilder.build();
         List<Category> categories = categoryRepository.search(searchQuery).getContent();
 
@@ -518,5 +525,44 @@ public class SearchService {
         }else{
             return -1L;
         }
+    }
+
+    /**
+     * 获取最有可能的标签（以商品名称搜索获取相关标签最多）
+     * @param keyword 关键字
+     * @param matchCount 定义匹配的标签数
+     * @return 标签
+     * @throws ServiceException
+     */
+    public List<String> getPossibleTags(String keyword, int matchCount) throws ServiceException {
+
+        List<String> list = new ArrayList<>();
+
+        if(StringUtils.isBlank(keyword) || matchCount < 1){
+            return list;
+        }
+
+        SearchQuery searchQuery = new NativeSearchQueryBuilder()
+                .withQuery(matchQuery("name", keyword))
+                .withSearchType(SearchType.COUNT)
+                .withIndices("sjes").withTypes("products")
+                .addAggregation(AggregationBuilders.nested("tags").path("tags").subAggregation(AggregationBuilders.terms("tags").field("tags.name")))
+                .build();
+
+        Aggregations aggregations = elasticsearchTemplate.query(searchQuery, new ResultsExtractor<Aggregations>() {
+            @Override
+            public Aggregations extract(SearchResponse response) {
+                return response.getAggregations();
+            }
+        });
+
+        Nested nested = aggregations.get("tags");
+        Terms terms = nested.getAggregations().get("tags");
+        int size = terms.getBuckets().size();
+        size = size > matchCount ? matchCount : 0;                             //控制标签对于搜索的影响
+        for (int i = 0; i < size; i++) {
+            list.add(terms.getBuckets().get(i).getKey());
+        }
+        return list;
     }
 }

@@ -1,6 +1,9 @@
 package sjes.elasticsearch.feigns.category.model;
 
 import lombok.Data;
+import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
+import org.springframework.data.elasticsearch.annotations.FieldType;
 
 import java.io.Serializable;
 
@@ -14,6 +17,7 @@ public class Tag implements Serializable {
 
     private Integer orders;  // 排序
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String name;  // 标签名称
 
 //    @JsonDeserialize(using = CustomDateDeSerializer.class)
