@@ -84,13 +84,13 @@ public class SearchController {
     }
 
     /**
-     * 根据分类id得到ProductIndex
-     * @param categoryId 分类id
+     * 根据商品id得到ProductIndex
+     * @param productId 分类id
      * @return ProductIndex
      */
-    @RequestMapping(value = "{categoryId}", method = RequestMethod.GET)
-    public ProductIndex getProductIndexByCategoryId(@PathVariable("categoryId") Long categoryId) {
-        return searchService.getProductIndexByCategoryId(categoryId);
+    @RequestMapping(value = "{productId}", method = RequestMethod.GET)
+    public ProductIndex getProductIndexByProductId(@PathVariable("productId") Long productId) {
+        return searchService.getProductIndexByProductId(productId);
     }
 
 }

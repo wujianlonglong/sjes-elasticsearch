@@ -177,12 +177,12 @@ public class SearchService {
     }
 
     /**
-     * 根据分类id得到ProductIndex
-     * @param categoryId 分类id
+     * 根据商品id得到ProductIndex
+     * @param productId 商品id
      * @return ProductIndex
      */
-    public ProductIndex getProductIndexByCategoryId(Long categoryId) {
-        if (null != categoryId) {
+    public ProductIndex getProductIndexByProductId(Long productId) {
+        if (null != productId) {
 
         }
         return null;
