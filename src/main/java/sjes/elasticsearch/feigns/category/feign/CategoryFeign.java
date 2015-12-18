@@ -5,6 +5,7 @@ import org.springframework.cloud.netflix.feign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.category.model.Category;
 
@@ -24,7 +25,7 @@ public interface CategoryFeign {
      * @return　分类簇对象
      */
     @RequestMapping(value = "clusters", method = RequestMethod.GET)
-    List<Category> findClusters(Long categoryId);
+    List<Category> findClusters(@RequestParam("categoryId") Long categoryId);
 
     /**
      * 查询分类列表

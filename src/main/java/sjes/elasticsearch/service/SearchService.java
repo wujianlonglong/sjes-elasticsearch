@@ -201,7 +201,7 @@ public class SearchService {
             BeanUtils.copyProperties(productImageModel, productIndex);
             Long categoryId = productIndex.getCategoryId();
             List<Category> categories = categoryService.findClusters(categoryId);
-            List<Tag> tags = productIndex.getTags();
+            List<Tag> tags = Lists.newArrayList();
             if (CollectionUtils.isNotEmpty(categories)) {
                 categories.forEach(category -> {
                     Tag tag = new Tag();
