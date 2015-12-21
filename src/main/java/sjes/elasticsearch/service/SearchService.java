@@ -164,7 +164,9 @@ public class SearchService {
                         AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                         Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
                         AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
-                        BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                        if (attribute != null) {
+                            BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                        }
                         attributeOptionValueModel.setAttributeOption(attributeOption);
                         productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
                     });
@@ -299,7 +301,7 @@ public class SearchService {
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索，分析器为中文分词 ik
-            boolQueryBuilder.should(termQuery("name", keyword));                                //商品名称不分词检索
+            //boolQueryBuilder.should(termQuery("name", keyword));                                //商品名称不分词检索
             boolQueryBuilder.should(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索，分析器为中文分词 ik
             boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));                  //根据商品品牌名称不分词搜索，分数设为3
             boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));     //根据商品标签搜索
