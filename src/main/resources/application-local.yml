@@ -3,8 +3,8 @@ server:
   cache:
     cache-names: sjes-elasticsearch
 eureka:
-  instance:
-    hostname: srv3.sanjiang.info
+#  instance:
+#    hostname: srv3.sanjiang.info
   client:
     serviceUrl:
       defaultZone: http://srv3.sanjiang.info:8761/eureka/
