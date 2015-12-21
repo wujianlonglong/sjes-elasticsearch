@@ -25,7 +25,25 @@ public class SearchLogModel implements Serializable {
     private Long id; // 主键
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
-    private String keyword; // 商品内码(顺序号)
+    private String keyword;         // 搜索内容
+
+    private Long categoryId;
+
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String shopId;
+
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String sortType;
+
+    private Double startPrice;
+
+    private Double endPrice;
+
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String userAgent;
+
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String ip;
 
     @JsonDeserialize(using = CustomDateDeSerializer.class)
     @JsonSerialize(using = CustomDateSerializer.class)

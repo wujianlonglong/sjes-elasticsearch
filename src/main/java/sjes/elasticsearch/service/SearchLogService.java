@@ -42,25 +42,34 @@ public class SearchLogService {
 
     /**
      * 索引新的搜索记录
+     *
      * @param keyword 搜索关键字
      * @throws ServiceException
      */
     @RequestMapping(method = RequestMethod.PUT)
-    public void index(String keyword) throws ServiceException {
+    public void index(String keyword, Long categoryId, String shopId, String sortType, Double startPrice, Double endPrice, String userAgent, String ip) throws ServiceException {
         SearchLogModel searchLogModel = new SearchLogModel();
         searchLogModel.setKeyword(keyword);
+        searchLogModel.setCategoryId(categoryId);
+        searchLogModel.setShopId(shopId);
+        searchLogModel.setSortType(sortType);
+        searchLogModel.setStartPrice(startPrice);
+        searchLogModel.setEndPrice(endPrice);
+        searchLogModel.setUserAgent(userAgent);
+        searchLogModel.setIp(ip);
         searchLogModel.setCreateDate(LocalDateTime.now());
         searchLogRepository.save(searchLogModel);
     }
 
     /**
      * 获取热门搜索词
+     *
      * @return 热门搜索词
      * @throws ServiceException
      */
     public List<HotWordModel> getHotWords(Integer maxCount) throws ServiceException {
 
-        if(null == maxCount){
+        if (null == maxCount) {
             maxCount = 5;
         }
 
@@ -82,8 +91,8 @@ public class SearchLogService {
         List<HotWordModel> hotWords = new ArrayList<>();
         int size = keywords.getBuckets().size();
         size = size > maxCount ? maxCount : size;                   //限制获取的热门搜索词数量
-        if(size > 0) {
-            for (int i=0;i<size;i++){
+        if (size > 0) {
+            for (int i = 0; i < size; i++) {
                 HotWordModel hotWordModel = new HotWordModel();
                 hotWordModel.setKeyword(keywords.getBuckets().get(i).getKey());
                 hotWordModel.setCount(keywords.getBuckets().get(i).getDocCount());

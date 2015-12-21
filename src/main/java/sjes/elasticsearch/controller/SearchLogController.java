@@ -20,20 +20,22 @@ public class SearchLogController {
 
     /**
      * 建立索引
+     *
      * @return 索引的数据
      */
     @RequestMapping(method = RequestMethod.PUT)
-    public void index(@RequestParam("keyword") String keyword) throws ServiceException {
-        searchLogService.index(keyword);
+    public void index(String keyword, Long categoryId, String shopId, String sortType, Double startPrice, Double endPrice, String userAgent, String ip) throws ServiceException {
+        searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, userAgent, ip);
     }
 
 
     /**
      * 获取热门搜索词
+     *
      * @param maxCount 热门搜索词的最大数量，默认为5
      * @return 热门搜索词
      */
-    @RequestMapping(value = "hotwords",method = RequestMethod.GET)
+    @RequestMapping(value = "hotwords", method = RequestMethod.GET)
     public List<HotWordModel> getHotWords(Integer maxCount) throws ServiceException {
         return searchLogService.getHotWords(maxCount);
     }
