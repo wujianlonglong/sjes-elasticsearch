@@ -114,5 +114,4 @@ public class SearchController {
     public ProductIndex getProductIndexByProductId(@PathVariable("productId") Long productId) {
         return searchService.getProductIndexByProductId(productId);
     }
-
 }

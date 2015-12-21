@@ -21,8 +21,8 @@ import java.time.LocalDateTime;
 @Document(indexName = "logstash-sjes", type = "searchlog")
 public class SearchLogModel implements Serializable {
 
-    //@Id
-    //private Long id; // 主键
+    @Id
+    private Long id; // 主键
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String keyword; // 商品内码(顺序号)
