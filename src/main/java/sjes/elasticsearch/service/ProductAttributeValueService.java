@@ -27,7 +27,7 @@ public class ProductAttributeValueService {
      */
     public List<ProductAttributeValue> listByProductIds(List<Long> productIds) {
         List<ProductAttributeValue> productAttributeValues = Lists.newArrayList();
-        if (CollectionUtils.isNotEmpty(productAttributeValues)) {
+        if (CollectionUtils.isNotEmpty(productIds)) {
             List<List<Long>> productIdsList = ListUtils.splitList(productIds, Constants.SPLIT_SUB_LIST_SIZE);
             for (List<Long> proIds : productIdsList) {
                 productAttributeValues.addAll(productAttributeValueFeign.listByProductIds(proIds));
