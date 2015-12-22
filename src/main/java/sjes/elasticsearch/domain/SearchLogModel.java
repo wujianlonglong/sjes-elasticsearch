@@ -47,5 +47,6 @@ public class SearchLogModel implements Serializable {
 
     @JsonDeserialize(using = CustomDateDeSerializer.class)
     @JsonSerialize(using = CustomDateSerializer.class)
+    @Field(type = FieldType.Date)
     private LocalDateTime createDate; // 创建时间
 }
