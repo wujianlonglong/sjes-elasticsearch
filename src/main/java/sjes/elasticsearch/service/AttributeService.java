@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.category.feign.AttributeFeign;
 import sjes.elasticsearch.feigns.category.model.AttributeModel;
 import sjes.elasticsearch.utils.ListUtils;
@@ -28,7 +27,7 @@ public class AttributeService {
     public List<AttributeModel> lists(List<Long> categoryIds) {
         List<AttributeModel> attributeModels = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(categoryIds)) {
-            List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, Constants.SPLIT_SUB_LIST_SIZE);
+            List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, ListUtils.SPLIT_SUB_LIST_SIZE);
             for (List<Long> cateIds : categoryIdsList) {
                 attributeModels.addAll(attributeFeign.lists(cateIds));
             }

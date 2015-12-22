@@ -1,7 +1,9 @@
 package sjes.elasticsearch.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.HotWordModel;
 import sjes.elasticsearch.service.SearchLogService;
@@ -27,7 +29,6 @@ public class SearchLogController {
     public void index(String keyword, Long categoryId, String shopId, String sortType, Double startPrice, Double endPrice, String userAgent, String ip) throws ServiceException {
         searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, userAgent, ip);
     }
-
 
     /**
      * 获取热门搜索词
