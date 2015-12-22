@@ -64,6 +64,7 @@ public class SearchLogService {
     /**
      * 获取热门搜索词
      *
+     * @param maxCount 获取的热门搜索词的数量
      * @return 热门搜索词
      * @throws ServiceException
      */
