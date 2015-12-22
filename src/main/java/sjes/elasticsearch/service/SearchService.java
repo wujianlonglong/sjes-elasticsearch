@@ -313,7 +313,7 @@ public class SearchService {
 
             Long possibleCategoryId = getPossibleCategoryId(keyword);
             if (null != possibleCategoryId && possibleCategoryId > -1){
-                boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(3));  //根据商品分类搜索
+                boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(5));  //根据商品分类搜索
             }
 
 //            getPossibleTags(keyword, 0).forEach(tag->{
@@ -409,7 +409,7 @@ public class SearchService {
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.13f).build());
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.06f).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
@@ -508,7 +508,7 @@ public class SearchService {
 
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
                 .withQuery(matchQuery("name",keyword))
-                .withMinScore(2)
+                .withMinScore(1)
                 .withSearchType(SearchType.COUNT)
                 .withIndices("sjes").withTypes("products")
                 .addAggregation(terms("categoryIds").field("categoryId"))
