@@ -17,7 +17,7 @@ public class Tag implements Serializable {
 
     private Integer orders;  // 排序
 
-    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String name;  // 标签名称
 
 //    @JsonDeserialize(using = CustomDateDeSerializer.class)

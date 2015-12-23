@@ -8,6 +8,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -300,25 +302,21 @@ public class SearchService {
 
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
-            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索，分析器为中文分词 ik
+            boolQueryBuilder.should(matchQuery("name", keyword));                //根据商品名称分词检索，分析器为中文分词 ik
             //boolQueryBuilder.should(termQuery("name", keyword));                                //商品名称不分词检索
-            boolQueryBuilder.should(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索，分析器为中文分词 ik
-            boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));                  //根据商品品牌名称不分词搜索，分数设为3
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword)));     //根据商品标签搜索
+            boolQueryBuilder.should(matchQuery("brandName", keyword));           //根据商品品牌名称搜索，分析器为中文分词 ik
+            //boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));                  //根据商品品牌名称不分词搜索，分数设为3
+            boolQueryBuilder.must(nestedQuery("tags", matchQuery("tags.name", keyword)));     //根据商品标签搜索
 
-            List<Category> categories = categorySearch(keyword);                                //根据商品分类搜索
-            if (categories != null) {
-                categories.forEach(category -> boolQueryBuilder.should(termQuery("categoryId", category.getId()).boost(10)));
-            }
+//            List<Category> categories = categorySearch(keyword);                                //根据商品分类搜索
+//            if (categories != null) {
+//                categories.forEach(category -> boolQueryBuilder.should(termQuery("categoryId", category.getId()).boost(10)));
+//            }
 
             Long possibleCategoryId = getPossibleCategoryId(keyword);
             if (null != possibleCategoryId && possibleCategoryId > -1){
-                boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(5));  //根据商品分类搜索
+                boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId));  //根据商品分类搜索
             }
-
-//            getPossibleTags(keyword, 0).forEach(tag->{
-//                boolQueryBuilder.should(nestedQuery("tags", termQuery("tags.name", tag)));      //根据商品标签搜索
-//            });
 
             boolQueryBuilder.minimumNumberShouldMatch(2);                                       //至少匹配2个条件
         } else {
@@ -337,6 +335,15 @@ public class SearchService {
         }
 
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
+
+        //调试用，各项结果分数
+//        elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 500)).build(), searchResponse -> {
+//            SearchHit[] searchHits = searchResponse.getHits().getHits();
+//            for(int i=0;i<searchHits.length;i++){
+//                LOGGER.info((i+1) + "、 "+searchHits[i].getSource().get("name") + "------"+searchHits[i].getScore());
+//            }
+//            return null;
+//        });
 
         BoolFilterBuilder boolFilterBuilder = boolFilter();
 
@@ -409,7 +416,8 @@ public class SearchService {
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.06f).build());
+
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
@@ -507,7 +515,7 @@ public class SearchService {
         }
 
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(matchQuery("name",keyword))
+                .withQuery(boolQuery().should(matchQuery("name",keyword)).should(nestedQuery("tags", matchQuery("tags.name", keyword))))
                 .withMinScore(1)
                 .withSearchType(SearchType.COUNT)
                 .withIndices("sjes").withTypes("products")
