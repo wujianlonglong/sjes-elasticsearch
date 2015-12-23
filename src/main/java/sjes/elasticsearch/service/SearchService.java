@@ -302,23 +302,27 @@ public class SearchService {
 
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
-            boolQueryBuilder.should(matchQuery("name", keyword));                //根据商品名称分词检索，分析器为中文分词 ik
-            //boolQueryBuilder.should(termQuery("name", keyword));                                //商品名称不分词检索
-            boolQueryBuilder.should(matchQuery("brandName", keyword));           //根据商品品牌名称搜索，分析器为中文分词 ik
-            //boolQueryBuilder.should(termQuery("brandName", keyword).boost(3));                  //根据商品品牌名称不分词搜索，分数设为3
-            boolQueryBuilder.must(nestedQuery("tags", matchQuery("tags.name", keyword)));     //根据商品标签搜索
+            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索
+            boolQueryBuilder.should(matchQuery("brandName", keyword));           //根据商品品牌名称搜索
 
-//            List<Category> categories = categorySearch(keyword);                                //根据商品分类搜索
-//            if (categories != null) {
-//                categories.forEach(category -> boolQueryBuilder.should(termQuery("categoryId", category.getId()).boost(10)));
-//            }
-
+            //根据姓名和标签匹配数来预估最有可能的分类
             Long possibleCategoryId = getPossibleCategoryId(keyword);
             if (null != possibleCategoryId && possibleCategoryId > -1){
                 boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId));  //根据商品分类搜索
             }
 
-            boolQueryBuilder.minimumNumberShouldMatch(2);                                       //至少匹配2个条件
+            //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
+            elasticsearchTemplate.query(
+                    new NativeSearchQueryBuilder().withQuery(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))).build(),
+                    searchResponse -> {
+                        if (searchResponse.getHits().getTotalHits() > 0){
+                            boolQueryBuilder.must(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik")));     //根据商品标签搜索
+                            boolQueryBuilder.minimumNumberShouldMatch(2);           //至少匹配2个条件
+                        }else{
+                            boolQueryBuilder.minimumNumberShouldMatch(1);           //至少匹配1个条件
+                        }
+                        return null;
+                    });
         } else {
             boolQueryBuilder.should(matchAllQuery());
         }
@@ -340,7 +344,7 @@ public class SearchService {
 //        elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 500)).build(), searchResponse -> {
 //            SearchHit[] searchHits = searchResponse.getHits().getHits();
 //            for(int i=0;i<searchHits.length;i++){
-//                LOGGER.info((i+1) + "、 "+searchHits[i].getSource().get("name") + "------"+searchHits[i].getScore());
+//                LOGGER.info((i+1) + "、 "+searchHits[i].getSource().get("name") + "  →  "+searchHits[i].getScore());
 //            }
 //            return null;
 //        });
