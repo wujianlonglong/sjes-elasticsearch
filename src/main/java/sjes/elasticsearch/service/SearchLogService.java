@@ -32,6 +32,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @Service("searchLogService")
 public class SearchLogService {
 
+    private final static int MAX_HOTWORDS_COUNT = 5;    //能够获取的热门搜索记录的最大数量
+
     private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
 
     @Autowired
@@ -43,7 +45,14 @@ public class SearchLogService {
     /**
      * 索引新的搜索记录
      *
-     * @param keyword 搜索关键字
+     * @param keyword 搜索的关键字
+     * @param categoryId 分类id
+     * @param shopId 商店id
+     * @param sortType 排序类型
+     * @param startPrice 起始价格
+     * @param endPrice 最高价格
+     * @param userAgent 用户代理
+     * @param ip
      * @throws ServiceException
      */
     @RequestMapping(method = RequestMethod.PUT)
@@ -71,7 +80,7 @@ public class SearchLogService {
     public List<HotWordModel> getHotWords(Integer maxCount) throws ServiceException {
 
         if (null == maxCount) {
-            maxCount = 5;
+            maxCount = MAX_HOTWORDS_COUNT;
         }
 
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
