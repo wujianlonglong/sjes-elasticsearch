@@ -317,7 +317,12 @@ public class SearchService {
                     searchResponse -> {
                         if (searchResponse.getHits().getTotalHits() > 0){
                             boolQueryBuilder.must(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik")));     //根据商品标签搜索
-                            boolQueryBuilder.minimumNumberShouldMatch(2);           //至少匹配2个条件
+
+                            if (null != possibleCategoryId && possibleCategoryId > -1){
+                                boolQueryBuilder.minimumNumberShouldMatch(2);           //至少匹配2个条件
+                            }else{
+                                boolQueryBuilder.minimumNumberShouldMatch(1);           //至少匹配1个条件
+                            }
                         }else{
                             boolQueryBuilder.minimumNumberShouldMatch(1);           //至少匹配1个条件
                         }
@@ -519,7 +524,9 @@ public class SearchService {
         }
 
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(boolQuery().should(matchQuery("name",keyword)).should(nestedQuery("tags", matchQuery("tags.name", keyword))))
+                .withQuery(boolQuery().should(matchQuery("name", keyword))
+                        .should(matchQuery("brandName", keyword))
+                        .should(nestedQuery("tags", matchQuery("tags.name", keyword))))
                 .withMinScore(1)
                 .withSearchType(SearchType.COUNT)
                 .withIndices("sjes").withTypes("products")
