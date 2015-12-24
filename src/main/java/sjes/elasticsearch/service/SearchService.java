@@ -313,7 +313,7 @@ public class SearchService {
 
             //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
             elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))).build(),
+                    new NativeSearchQueryBuilder().withQuery(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))).withMinScore(0.5f).build(),
                     searchResponse -> {
                         if (searchResponse.getHits().getTotalHits() > 0){
                             boolQueryBuilder.must(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik")));     //根据商品标签搜索
@@ -426,7 +426,7 @@ public class SearchService {
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
 
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.1f).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
