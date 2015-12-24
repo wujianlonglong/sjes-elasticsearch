@@ -41,7 +41,11 @@ public class Product implements Serializable {
 
     private Double salePrice; // 销售价
 
+    private Double originalSalePrice; // 原销售价
+
     private Double memberPrice; // 会员价
+
+    private Double originalMemberPrice; // 原会员价
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String weight; // 商品重量
@@ -77,6 +81,8 @@ public class Product implements Serializable {
     private String adSlogan; // 广告语
 
     private Boolean isPromotionParticular; // 是否是促销例
+
+    private Integer promotionType; // 促销类型
 
    // @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String introduction; // 介绍
