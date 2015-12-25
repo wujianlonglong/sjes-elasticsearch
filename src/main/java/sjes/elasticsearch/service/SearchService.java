@@ -306,7 +306,7 @@ public class SearchService {
 
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.38f).build(),
+                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.2f).build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0){
