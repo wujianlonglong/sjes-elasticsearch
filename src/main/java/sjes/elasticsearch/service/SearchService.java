@@ -306,11 +306,11 @@ public class SearchService {
 
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(termQuery("brandName", keyword)).withMinScore(2).build(),
+                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.38f).build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0){
-                            boolQueryBuilder.must(matchQuery("brandName", keyword));           //根据商品品牌名称搜索
+                            boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索
                         }else{
 
                             //根据姓名和标签匹配数来预估最有可能的分类
