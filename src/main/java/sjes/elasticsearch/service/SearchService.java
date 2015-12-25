@@ -542,8 +542,7 @@ public class SearchService {
                 .withQuery(boolQuery().should(matchQuery("name", keyword).analyzer("ik"))
                         .should(matchQuery("brandName", keyword).analyzer("ik"))
                         .should(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))))
-                .withMinScore(1)
-                .withSearchType(SearchType.COUNT)
+                .withMinScore(0.35f)
                 .withIndices("sjes").withTypes("products")
                 .addAggregation(terms("categoryIds").field("categoryId"))
                 .build();
