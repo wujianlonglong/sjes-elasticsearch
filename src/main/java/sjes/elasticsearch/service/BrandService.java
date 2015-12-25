@@ -26,4 +26,5 @@ public class BrandService {
     public List<Brand> listAll() {
         return brandFeign.listAll();
     }
+
 }
