@@ -303,14 +303,25 @@ public class SearchService {
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索
-
+            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("50%").boost(3));                //根据商品名称分词检索
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.2f).build(),
+                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f).build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0){
                             boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索
+
+                            //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
+                            elasticsearchTemplate.query(
+                                    new NativeSearchQueryBuilder().withQuery(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%")).build(),
+                                    searchNameResponse -> {
+                                        //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
+                                        if (searchNameResponse.getHits().getTotalHits() > 0){
+                                            boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%"));     //根据商品名称搜索
+                                        }
+                                        return null;
+                                    });
                         }else{
 
                             //根据姓名和标签匹配数来预估最有可能的分类
@@ -441,7 +452,7 @@ public class SearchService {
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
 
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.25f).build());
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.5f).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
 
     }
