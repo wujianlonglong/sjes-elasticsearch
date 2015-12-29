@@ -28,4 +28,9 @@ public class ProductIndex extends ProductImageModel {
     @Field(type = FieldType.Nested)
     private List<Tag> tags;
 
+    /**
+     * 多分类ids
+     */
+    private List<Long> productCategoryIds;
+
 }
