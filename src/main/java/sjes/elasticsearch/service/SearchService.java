@@ -328,7 +328,7 @@ public class SearchService {
             boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("50%").boost(3));                //根据商品名称分词检索
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f).build(),
+                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f).withIndices("sjes").withTypes("products").build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0){
@@ -336,7 +336,7 @@ public class SearchService {
 
                             //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
                             elasticsearchTemplate.query(
-                                    new NativeSearchQueryBuilder().withQuery(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%")).build(),
+                                    new NativeSearchQueryBuilder().withQuery(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%")).withIndices("sjes").withTypes("products").build(),
                                     searchNameResponse -> {
                                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                                         if (searchNameResponse.getHits().getTotalHits() > 0){
@@ -359,7 +359,7 @@ public class SearchService {
 
                             //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
                             elasticsearchTemplate.query(
-                                    new NativeSearchQueryBuilder().withQuery(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))).withMinScore(1f).build(),
+                                    new NativeSearchQueryBuilder().withQuery(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))).withIndices("sjes").withTypes("products").withMinScore(1f).build(),
                                     searchTagsResponse -> {
                                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                                         if (searchTagsResponse.getHits().getTotalHits() > 0){
