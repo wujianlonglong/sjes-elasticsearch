@@ -32,6 +32,7 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
+import sjes.elasticsearch.feigns.item.model.Brand;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.feigns.item.model.ProductCategory;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
@@ -77,6 +78,9 @@ public class SearchService {
 
     @Autowired
     private ProductCategoryService productCategoryService;
+
+    @Autowired
+    private BrandService brandService;
 
     @Autowired
     private ElasticsearchTemplate elasticsearchTemplate;
@@ -126,7 +130,13 @@ public class SearchService {
                         }
                     });
                 }
-
+                List<Brand> brands = brandService.listAll();
+                Map<Long, String> brandNameMap = Maps.newHashMap();
+                if (CollectionUtils.isNotEmpty(brands)) {
+                    brands.forEach(brand->{
+                        brandNameMap.put(brand.getBrandId(), brand.getName());
+                    });
+                }
                 Map<Long, ProductIndex> productMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(productImageModels)) {
                     productImageModels.forEach(productImageModel -> {
@@ -135,6 +145,7 @@ public class SearchService {
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
                         productIndex.setProductCategoryIds(Lists.newArrayList());
                         BeanUtils.copyProperties(productImageModel, productIndex);
+                        productIndex.setBrandName(brandNameMap.get(productIndex.getBrandId()));
                         Long categoryId = productIndex.getCategoryId();
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
                         categoryIndexMap.get(productImageModel.getCategoryId()).getProductIndexes().add(productIndex);
@@ -149,7 +160,6 @@ public class SearchService {
                         productIndex.getProductCategoryIds().add(categoryId);
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
                     });
-
                 }
                 List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productMap.keySet()));
                 if (CollectionUtils.isNotEmpty(productAttributeValues)) {

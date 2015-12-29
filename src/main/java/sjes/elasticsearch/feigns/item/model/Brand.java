@@ -17,6 +17,8 @@ public class Brand implements Serializable {
 
     private Long id; // 主键
 
+    private Long brandId; // 老系统品牌id
+
     private String name; // 品牌名称
 
     private String logo; // logo

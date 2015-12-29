@@ -33,4 +33,9 @@ public class ProductIndex extends ProductImageModel {
      */
     private List<Long> productCategoryIds;
 
+    /**
+     * 品牌
+     */
+    private String brandName;
+
 }
