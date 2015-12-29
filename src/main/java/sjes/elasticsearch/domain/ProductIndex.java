@@ -3,6 +3,7 @@ package sjes.elasticsearch.domain;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
+import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.feigns.category.model.Tag;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
@@ -36,6 +37,7 @@ public class ProductIndex extends ProductImageModel {
     /**
      * 品牌
      */
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String brandName;
 
 }
