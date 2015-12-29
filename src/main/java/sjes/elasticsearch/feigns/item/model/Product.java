@@ -68,8 +68,8 @@ public class Product implements Serializable {
 
     private Long brandId; // 品牌ID
 
-    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
-    private String brandName; // 品牌名称
+//    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+//    private String brandName; // 品牌名称
 
     private Integer status; // 0/1/2; 正常销售/下架停售/未审核
 
