@@ -40,6 +40,7 @@ import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -324,6 +325,7 @@ public class SearchService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String placeNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
+        Long possibleCategoryId = -1L;
         if (StringUtils.isBlank(keyword) && null == categoryId) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
@@ -335,14 +337,14 @@ public class SearchService {
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索
-            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("50%").boost(3));                //根据商品名称分词检索
+            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("50%").boost(3f));                //根据商品名称分词检索
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
                     new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f).withIndices("sjes").withTypes("products").build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0){
-                            boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索
+                            boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik").boost(3f));           //根据商品品牌名称搜索
 
                             //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
                             elasticsearchTemplate.query(
@@ -350,22 +352,11 @@ public class SearchService {
                                     searchNameResponse -> {
                                         //LOGGER.info(searchResponse.getHits().getMaxScore()+"");
                                         if (searchNameResponse.getHits().getTotalHits() > 0){
-                                            boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%"));     //根据商品名称搜索
+                                            boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%").boost(3f));     //根据商品名称搜索
                                         }
                                         return null;
                                     });
                         }else{
-
-                            //根据姓名和标签匹配数来预估最有可能的分类
-                            try {
-                                Long possibleCategoryId = getPossibleCategoryId(keyword);
-                                //LOGGER.info(possibleCategoryId+"");
-                                if (null != possibleCategoryId && possibleCategoryId > -1){
-                                    boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(100));  //根据商品分类搜索
-                                }
-                            } catch (ServiceException e) {
-                                e.printStackTrace();
-                            }
 
                             //根据是否匹配到标签来限制条件，如果匹配到则标签为限制条件
                             elasticsearchTemplate.query(
@@ -386,6 +377,11 @@ public class SearchService {
                         return null;
                     });
 
+            //预估最有可能的分类
+            possibleCategoryId = getPossibleCategoryId(boolQueryBuilder);
+            if (null != possibleCategoryId && possibleCategoryId > -1){
+                boolQueryBuilder.should(termQuery("categoryId", possibleCategoryId).boost(10));  //根据商品分类搜索
+            }
         } else {
             boolQueryBuilder.should(matchAllQuery());
         }
@@ -482,6 +478,8 @@ public class SearchService {
                 sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
+        } else if (null != possibleCategoryId && possibleCategoryId > -1){
+            nativeSearchQueryBuilder.withSort(SortBuilders.scriptSort("_score + (doc['categoryId'].value == myVal ? 1 : 0) * 10", "number").param("myVal", possibleCategoryId).order(SortOrder.DESC));  //使用Groovy脚本自定义排序
         }
 
         FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.5f).build());
@@ -572,23 +570,21 @@ public class SearchService {
 
     /**
      * 获取最有可能的分类
-     * @param keyword 关键字
+     * @param boolQueryBuilder 查询条件
      * @return 分类id
      * @throws ServiceException
      */
-    public Long getPossibleCategoryId(String keyword) throws ServiceException {
-        if(StringUtils.isBlank(keyword)){
+    public Long getPossibleCategoryId(BoolQueryBuilder boolQueryBuilder) throws ServiceException {
+        if(null == boolQueryBuilder){
             return -1L;
         }
 
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(boolQuery().should(matchQuery("name", keyword).analyzer("ik"))
-                        .should(matchQuery("brandName", keyword).analyzer("ik"))
-                        .should(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik"))))
-                .withMinScore(0.35f)
-                .withIndices("sjes").withTypes("products")
-                .addAggregation(terms("categoryIds").field("categoryId"))
-                .build();
+                .withQuery(boolQueryBuilder)
+                        .withMinScore(0.5f)
+                        .withIndices("sjes").withTypes("products")
+                        .addAggregation(terms("categoryIds").field("categoryId"))
+                        .build();
 
         Aggregations aggregations = elasticsearchTemplate.query(searchQuery, new ResultsExtractor<Aggregations>() {
             @Override
