@@ -45,7 +45,7 @@ public class Category implements Serializable {
 
     private Boolean isRedLabel; // 文本标红
 
-    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String tagName; // 分类标签名
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
