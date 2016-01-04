@@ -42,7 +42,6 @@ import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -208,7 +207,7 @@ public class SearchService {
             Category category = categoryIdMap.get(categoryId);
             if (null != category) {
                 tag = new Tag();
-                tag.setName(category.getName());
+                tag.setName(category.getTagName());
                 tag.setOrders(tagOrders + category.getGrade() - 1);
                 tags.add(tag);
                 categoryId = category.getParentId();
