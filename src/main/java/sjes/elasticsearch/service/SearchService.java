@@ -14,6 +14,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.highlight.HighlightBuilder;
+import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -21,10 +23,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.FacetedPage;
-import org.springframework.data.elasticsearch.core.ResultsExtractor;
+import org.springframework.data.domain.*;
+import org.springframework.data.elasticsearch.core.*;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
@@ -33,14 +33,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.feigns.category.model.*;
-import sjes.elasticsearch.feigns.item.model.Brand;
-import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
-import sjes.elasticsearch.feigns.item.model.ProductCategory;
-import sjes.elasticsearch.feigns.item.model.ProductImageModel;
+import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
+import java.awt.print.Book;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +85,7 @@ public class SearchService {
 
     @Autowired
     private ElasticsearchTemplate elasticsearchTemplate;
+
     /**
      * 初始化索引
      */
@@ -469,9 +469,37 @@ public class SearchService {
             });
         }
 
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
-        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
+        final long[] totalHits = {0};   //总记录数
+        FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products").withMinScore(0.35f).withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
+            @Override
+            public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
+                List<ProductIndex> productIndexes = new ArrayList<>();
+
+                totalHits[0] = searchResponse.getHits().getTotalHits();
+                if (searchResponse.getHits().getTotalHits() > 0) {
+
+                    searchResponse.getHits().forEach(searchHit -> {
+                        ProductIndex productIndex = productIndexRepository.findOne(Long.valueOf(searchHit.getSource().get("id").toString()));
+
+                        Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
+                        HighlightField highlightNameField = highlightFields.get("name");
+                        if (highlightNameField != null && highlightNameField.fragments() != null) {
+                            productIndex.setName(highlightNameField.fragments()[0].string());
+                        }
+                        productIndexes.add(productIndex);
+                    });
+                }
+                if (productIndexes.size() > 0) {
+                    return new FacetedPageImpl<>((List<T>)Lists.newArrayList(productIndexes));
+                }
+                return null;
+            }
+        });
+
+//        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
+
+        return new PageModel(queryForPage.getContent(), totalHits[0], pageable);
     }
 
     /**
