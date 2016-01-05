@@ -2,6 +2,7 @@ package sjes.elasticsearch.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -21,9 +22,8 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.*;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
@@ -33,13 +33,15 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
-import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.feigns.category.model.*;
-import sjes.elasticsearch.feigns.item.model.*;
+import sjes.elasticsearch.feigns.item.model.Brand;
+import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
+import sjes.elasticsearch.feigns.item.model.ProductCategory;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
-import java.awt.print.Book;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +115,7 @@ public class SearchService {
                 thirdCategories.forEach(thirdCategory -> {
                     CategoryIndex categoryIndex = new CategoryIndex();
                     categoryIndex.setProductIndexes(Lists.newArrayList());
-                    BeanUtils.copyProperties(thirdCategory, categoryIndex);
+                    org.springframework.beans.BeanUtils.copyProperties(thirdCategory, categoryIndex);
                     categoryIndexMap.put(thirdCategory.getId(), categoryIndex);
                 });
                 List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
@@ -146,7 +148,7 @@ public class SearchService {
                         productIndex.setTags(Lists.newArrayList());
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
                         productIndex.setProductCategoryIds(Lists.newArrayList());
-                        BeanUtils.copyProperties(productImageModel, productIndex);
+                        org.springframework.beans.BeanUtils.copyProperties(productImageModel, productIndex);
                         productIndex.setBrandName(brandNameMap.get(productIndex.getBrandId()));
                         Long categoryId = productIndex.getCategoryId();
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
@@ -176,7 +178,7 @@ public class SearchService {
                         Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
                         AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
                         if (attribute != null) {
-                            BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                            org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                         }
                         attributeOptionValueModel.setAttributeOption(attributeOption);
                         productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
@@ -239,7 +241,7 @@ public class SearchService {
             ProductImageModel productImageModel = productService.getProductImageModel(productId);
             ProductIndex productIndex = new ProductIndex();
             productIndex.setAttributeOptionValueModels(Lists.newArrayList());
-            BeanUtils.copyProperties(productImageModel, productIndex);
+            org.springframework.beans.BeanUtils.copyProperties(productImageModel, productIndex);
             Long categoryId = productIndex.getCategoryId();
             List<Category> categories = categoryService.findClusters(categoryId);
             List<Tag> tags = Lists.newArrayList();
@@ -275,7 +277,7 @@ public class SearchService {
                     AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                     Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
                     AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
-                    BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                    org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                     attributeOptionValueModel.setAttributeOption(attributeOption);
                     productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
                 });
@@ -480,8 +482,15 @@ public class SearchService {
                 if (searchResponse.getHits().getTotalHits() > 0) {
 
                     searchResponse.getHits().forEach(searchHit -> {
-                        ProductIndex productIndex = productIndexRepository.findOne(Long.valueOf(searchHit.getSource().get("id").toString()));
-
+                        Map<String, Object> map = searchHit.getSource();
+                        ProductIndex productIndex = new ProductIndex();
+                        try {
+                            BeanUtils.populate(productIndex, map);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
                         Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
                         HighlightField highlightNameField = highlightFields.get("name");
                         if (highlightNameField != null && highlightNameField.fragments() != null) {
