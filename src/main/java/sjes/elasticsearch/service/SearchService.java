@@ -2,11 +2,11 @@ package sjes.elasticsearch.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.common.joda.time.LocalDateTime;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -34,17 +34,16 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
-import sjes.elasticsearch.feigns.item.model.Brand;
-import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
-import sjes.elasticsearch.feigns.item.model.ProductCategory;
-import sjes.elasticsearch.feigns.item.model.ProductImageModel;
+import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -482,15 +481,22 @@ public class SearchService {
                 if (searchResponse.getHits().getTotalHits() > 0) {
 
                     searchResponse.getHits().forEach(searchHit -> {
-                        Map<String, Object> map = searchHit.getSource();
-                        ProductIndex productIndex = new ProductIndex();
+                        ProductIndex productIndex = null;
                         try {
-                            BeanUtils.populate(productIndex, map);
+                            productIndex = (ProductIndex) mapToObject(aClass, searchHit.getSource());
                         } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InstantiationException e) {
+                            e.printStackTrace();
+                        } catch (IntrospectionException e) {
                             e.printStackTrace();
                         } catch (InvocationTargetException e) {
                             e.printStackTrace();
                         }
+                        //LOGGER.info("|"+searchHit.getSource().);
+
+
+
                         Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
                         HighlightField highlightNameField = highlightFields.get("name");
                         if (highlightNameField != null && highlightNameField.fragments() != null) {
@@ -499,14 +505,13 @@ public class SearchService {
                         productIndexes.add(productIndex);
                     });
                 }
+
                 if (productIndexes.size() > 0) {
-                    return new FacetedPageImpl<>((List<T>)Lists.newArrayList(productIndexes));
+                    return new FacetedPageImpl<>((List<T>)productIndexes);
                 }
                 return null;
             }
         });
-
-//        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
 
         return new PageModel(queryForPage.getContent(), totalHits[0], pageable);
     }
@@ -664,4 +669,37 @@ public class SearchService {
         return list;
     }
 
+    //Map转Object
+    private Object mapToObject(Class classType, Map map) throws IllegalAccessException,
+            InstantiationException, IntrospectionException, InvocationTargetException {
+
+        BeanInfo beanInfo = Introspector.getBeanInfo(classType); // 获取类属性
+        Object obj = classType.newInstance(); // 创建 JavaBean 对象
+
+        PropertyDescriptor[] propertyDescriptors =  beanInfo.getPropertyDescriptors();
+        for (int i = 0; i< propertyDescriptors.length; i++) {
+            PropertyDescriptor descriptor = propertyDescriptors[i];
+            String propertyName = descriptor.getName();
+            String type = descriptor.getPropertyType().getTypeName();
+
+            if (map.containsKey(propertyName)) {
+                // 下面一句可以 try 起来，这样当一个属性赋值失败的时候就不会影响其他属性赋值。
+                Object value = map.get(propertyName);
+                if(value != null){
+                    if(type.endsWith("Long")){
+                        descriptor.getWriteMethod().invoke(obj, Long.valueOf(value.toString()));
+                    }else if(type.endsWith("Double")){
+                        descriptor.getWriteMethod().invoke(obj, Double.valueOf(value.toString()));
+                    }else if(type.endsWith("ProductImage")){
+                        mapToObject(descriptor.getPropertyType(), (HashMap)value);
+                    }else if(type.endsWith("LocalDateTime")){
+                        //descriptor.getWriteMethod().invoke(obj, LocalDateTime.parse(value.toString()));
+                    }else{
+                        descriptor.getWriteMethod().invoke(obj, value);
+                    }
+                }
+            }
+        }
+        return obj;
+    }
 }
