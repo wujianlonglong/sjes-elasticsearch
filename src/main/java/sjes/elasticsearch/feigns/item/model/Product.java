@@ -39,6 +39,9 @@ public class Product implements Serializable {
     @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String name; // 商品名称
 
+    @Field(index = FieldIndex.no,type = FieldType.String)
+    private String displayName; // 展示的商品名称(高亮)
+
     private Double salePrice; // 销售价
 
     private Double originalSalePrice; // 原销售价
