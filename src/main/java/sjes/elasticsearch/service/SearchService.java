@@ -6,7 +6,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
-import org.elasticsearch.common.joda.time.LocalDateTime;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -34,7 +33,10 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
-import sjes.elasticsearch.feigns.item.model.*;
+import sjes.elasticsearch.feigns.item.model.Brand;
+import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
+import sjes.elasticsearch.feigns.item.model.ProductCategory;
+import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
@@ -43,7 +45,10 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -509,11 +514,15 @@ public class SearchService {
                 if (productIndexes.size() > 0) {
                     return new FacetedPageImpl<>((List<T>)productIndexes);
                 }
-                return null;
+                return new FacetedPageImpl<>(Lists.newArrayList());
             }
         });
 
         return new PageModel(queryForPage.getContent(), totalHits[0], pageable);
+
+//        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
+//        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
+
     }
 
     /**
@@ -683,7 +692,6 @@ public class SearchService {
             String type = descriptor.getPropertyType().getTypeName();
 
             if (map.containsKey(propertyName)) {
-                // 下面一句可以 try 起来，这样当一个属性赋值失败的时候就不会影响其他属性赋值。
                 Object value = map.get(propertyName);
                 if(value != null){
                     if(type.endsWith("Long")){
@@ -691,7 +699,7 @@ public class SearchService {
                     }else if(type.endsWith("Double")){
                         descriptor.getWriteMethod().invoke(obj, Double.valueOf(value.toString()));
                     }else if(type.endsWith("ProductImage")){
-                        mapToObject(descriptor.getPropertyType(), (HashMap)value);
+                        descriptor.getWriteMethod().invoke(obj, mapToObject(descriptor.getPropertyType(), (HashMap) value));
                     }else if(type.endsWith("LocalDateTime")){
                         //descriptor.getWriteMethod().invoke(obj, LocalDateTime.parse(value.toString()));
                     }else{
