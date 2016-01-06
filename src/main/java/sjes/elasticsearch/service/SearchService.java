@@ -14,6 +14,7 @@ import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,16 +38,15 @@ import sjes.elasticsearch.feigns.item.model.ProductCategory;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
+import sjes.elasticsearch.utils.DateConvertUtils;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
+import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -463,7 +463,10 @@ public class SearchService {
         }
 
         final long[] totalHits = {0};   //总记录数
-        FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products").withMinScore(0.35f).withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
+        FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
+                nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize()))
+                        .withIndices("sjes").withTypes("products").withMinScore(0.35f)
+                        .withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
             @Override
             public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
@@ -592,7 +595,7 @@ public class SearchService {
                     } else if (type.endsWith("ProductImage")) {
                         descriptor.getWriteMethod().invoke(obj, mapToObject(descriptor.getPropertyType(), (HashMap) value));
                     } else if (type.endsWith("LocalDateTime")) {
-                        //descriptor.getWriteMethod().invoke(obj, LocalDateTime.parse(value.toString()));
+                        descriptor.getWriteMethod().invoke(obj, DateConvertUtils.asLocalDateTime(new Date(Long.parseLong(value.toString()))));
                     } else {
                         descriptor.getWriteMethod().invoke(obj, value);
                     }
