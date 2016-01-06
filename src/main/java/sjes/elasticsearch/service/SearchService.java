@@ -5,15 +5,10 @@ import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
 import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -23,7 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.*;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.FacetedPage;
+import org.springframework.data.elasticsearch.core.FacetedPageImpl;
+import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
@@ -52,7 +50,6 @@ import java.util.Map;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -314,7 +311,7 @@ public class SearchService {
     }
 
     /**
-     * 查询分类商品列表
+     * 商品搜索
      *
      * @param keyword    关键字
      * @param categoryId 分类id
@@ -352,7 +349,7 @@ public class SearchService {
                     new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchBrandNameResponse.getHits().getMaxScore()+"");
-                        if (searchBrandNameResponse.getHits().getTotalHits() > 0){
+                        if (searchBrandNameResponse.getHits().getTotalHits() > 0) {
                             boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索
                         }
                         return null;
@@ -377,22 +374,12 @@ public class SearchService {
             if (placeNameArr.length > 0) {
                 BoolQueryBuilder palceNamesBoolQueryBuilder = boolQuery();
                 for (String placeName : placeNameArr) {
-                    palceNamesBoolQueryBuilder.should(wildcardQuery("place", "*"+placeName+"*"));
+                    palceNamesBoolQueryBuilder.should(wildcardQuery("place", "*" + placeName + "*"));
                 }
                 boolQueryBuilder.must(palceNamesBoolQueryBuilder);
             }
         }
-
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
-
-        //调试用，各项结果分数
-//        elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 500)).build(), searchResponse -> {
-//            SearchHit[] searchHits = searchResponse.getHits().getHits();
-//            for(int i=0;i<searchHits.length;i++){
-//                LOGGER.info((i+1) + "、 "+searchHits[i].getSource().get("name") + "  →  "+searchHits[i].getScore());
-//            }
-//            return null;
-//        });
 
         BoolFilterBuilder boolFilterBuilder = boolFilter();
 
@@ -454,13 +441,13 @@ public class SearchService {
 
         if (null != sortType && !sortType.equals("default")) {       //排序
             SortBuilder sortBuilder = null;
-            if(sortType.equals("sales")) {  //销量降序
+            if (sortType.equals("sales")) {  //销量降序
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.DESC);
-            }else if(sortType.equals("salesUp")) {  //销量升序
+            } else if (sortType.equals("salesUp")) {  //销量升序
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.ASC);
-            }else if(sortType.equals("price")) {  //价格降序
+            } else if (sortType.equals("price")) {  //价格降序
                 sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
-            }else if(sortType.equals("priceUp")) {  //销价格升序
+            } else if (sortType.equals("priceUp")) {  //销价格升序
                 sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
@@ -489,32 +476,20 @@ public class SearchService {
                         ProductIndex productIndex = null;
                         try {
                             productIndex = (ProductIndex) mapToObject(aClass, searchHit.getSource());
-                        } catch (IllegalAccessException e) {
-                            e.printStackTrace();
-                        } catch (InstantiationException e) {
-                            e.printStackTrace();
-                        } catch (IntrospectionException e) {
-                            e.printStackTrace();
-                        } catch (InvocationTargetException e) {
+                        } catch (IllegalAccessException | InstantiationException | IntrospectionException | InvocationTargetException e) {
                             e.printStackTrace();
                         }
-                        //LOGGER.info("|"+searchHit.getSource().);
-
-
 
                         Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
                         HighlightField highlightNameField = highlightFields.get("name");
-                        if (highlightNameField != null && highlightNameField.fragments() != null) {
+                        if (highlightNameField != null && highlightNameField.fragments() != null && productIndex != null) {
                             productIndex.setName(highlightNameField.fragments()[0].string());
                         }
                         productIndexes.add(productIndex);
                     });
                 }
 
-                if (productIndexes.size() > 0) {
-                    return new FacetedPageImpl<>((List<T>)productIndexes);
-                }
-                return new FacetedPageImpl<>(Lists.newArrayList());
+                return new FacetedPageImpl<>((List<T>) productIndexes);
             }
         });
 
@@ -522,7 +497,6 @@ public class SearchService {
 
 //        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
 //        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
-
     }
 
     /**
@@ -566,27 +540,6 @@ public class SearchService {
     }
 
     /**
-     * 搜索相关分类
-     *
-     * @param keyword 关键字
-     * @return 分类列表
-     * @throws ServiceException
-     */
-    public List<Category> categorySearch(String keyword) throws ServiceException {
-        NativeSearchQueryBuilder nativeSearchQueryBuilder;
-
-        if (StringUtils.isEmpty(keyword)) {
-            return null;
-        }
-
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(wildcardQuery("name", "*"+keyword+"*"));
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-        List<Category> categories = categoryRepository.search(searchQuery).getContent();
-
-        return categories;
-    }
-
-    /**
      * 搜索分类下所有的子分类
      *
      * @param categoryId 分类编号
@@ -607,102 +560,40 @@ public class SearchService {
     }
 
     /**
-     * 获取最有可能的分类
-     * @param boolQueryBuilder 查询条件
-     * @return 分类id
-     * @throws ServiceException
+     * Map转Object
+     *
+     * @param classType 类
+     * @param map Map
+     * @return 对象
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     * @throws IntrospectionException
+     * @throws InvocationTargetException
      */
-    public Long getPossibleCategoryId(BoolQueryBuilder boolQueryBuilder) throws ServiceException {
-        if(null == boolQueryBuilder){
-            return -1L;
-        }
-
-        SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(boolQueryBuilder)
-                        .withMinScore(0.5f)
-                        .withIndices("sjes").withTypes("products")
-                        .addAggregation(terms("categoryIds").field("categoryId"))
-                        .build();
-
-        Aggregations aggregations = elasticsearchTemplate.query(searchQuery, new ResultsExtractor<Aggregations>() {
-            @Override
-            public Aggregations extract(SearchResponse response) {
-                return response.getAggregations();
-            }
-        });
-
-        Terms categoryIds = aggregations.get("categoryIds");
-        if(categoryIds.getBuckets().size() > 0) {
-            return Long.valueOf(categoryIds.getBuckets().get(0).getKey());
-        }else{
-            return -1L;
-        }
-    }
-
-    /**
-     * 获取最有可能的标签（以商品名称搜索获取相关标签最多）
-     * @param keyword 关键字
-     * @param matchCount 定义匹配的标签数
-     * @return 标签
-     * @throws ServiceException
-     */
-    public List<String> getPossibleTags(String keyword, int matchCount) throws ServiceException {
-
-        List<String> list = new ArrayList<>();
-
-        if(StringUtils.isBlank(keyword) || matchCount < 1){
-            return list;
-        }
-
-        SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withQuery(matchQuery("name", keyword))
-                .withSearchType(SearchType.COUNT)
-                .withIndices("sjes").withTypes("products")
-                .addAggregation(AggregationBuilders.nested("tags").path("tags").subAggregation(AggregationBuilders.terms("tags").field("tags.name")))
-                .build();
-
-        Aggregations aggregations = elasticsearchTemplate.query(searchQuery, new ResultsExtractor<Aggregations>() {
-            @Override
-            public Aggregations extract(SearchResponse response) {
-                return response.getAggregations();
-            }
-        });
-
-        Nested nested = aggregations.get("tags");
-        Terms terms = nested.getAggregations().get("tags");
-        int size = terms.getBuckets().size();
-        size = size > matchCount ? matchCount : 0;                             //控制标签对于搜索的影响
-        for (int i = 0; i < size; i++) {
-            list.add(terms.getBuckets().get(i).getKey());
-        }
-        return list;
-    }
-
-    //Map转Object
     private Object mapToObject(Class classType, Map map) throws IllegalAccessException,
             InstantiationException, IntrospectionException, InvocationTargetException {
 
         BeanInfo beanInfo = Introspector.getBeanInfo(classType); // 获取类属性
         Object obj = classType.newInstance(); // 创建 JavaBean 对象
 
-        PropertyDescriptor[] propertyDescriptors =  beanInfo.getPropertyDescriptors();
-        for (int i = 0; i< propertyDescriptors.length; i++) {
+        PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
+        for (int i = 0; i < propertyDescriptors.length; i++) {
             PropertyDescriptor descriptor = propertyDescriptors[i];
             String propertyName = descriptor.getName();
             String type = descriptor.getPropertyType().getTypeName();
 
             if (map.containsKey(propertyName)) {
                 Object value = map.get(propertyName);
-                if(value != null){
-                    if(type.endsWith("Long")){
+                if (value != null) {
+                    if (type.endsWith("Long")) {
                         descriptor.getWriteMethod().invoke(obj, Long.valueOf(value.toString()));
-                    }else if(type.endsWith("Double")){
+                    } else if (type.endsWith("Double")) {
                         descriptor.getWriteMethod().invoke(obj, Double.valueOf(value.toString()));
-                    }else if(type.endsWith("ProductImage")){
+                    } else if (type.endsWith("ProductImage")) {
                         descriptor.getWriteMethod().invoke(obj, mapToObject(descriptor.getPropertyType(), (HashMap) value));
-                    }else if(type.endsWith("LocalDateTime")){
+                    } else if (type.endsWith("LocalDateTime")) {
                         //descriptor.getWriteMethod().invoke(obj, LocalDateTime.parse(value.toString()));
-                    }else{
+                    } else {
                         descriptor.getWriteMethod().invoke(obj, value);
                     }
                 }
