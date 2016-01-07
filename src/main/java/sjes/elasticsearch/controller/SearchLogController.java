@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.HotWordModel;
+import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 
 import java.util.List;

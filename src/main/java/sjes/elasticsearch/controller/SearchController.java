@@ -7,9 +7,11 @@ import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
 import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.feigns.category.model.Category;
+import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -25,14 +27,21 @@ public class SearchController {
     @Autowired
     private SearchLogService searchLogService;
 
+    @Autowired
+    private BackupService backupService;
+
     /**
      * 建立索引
      * @return 索引的数据
      */
     @RequestMapping(value = "index", method = RequestMethod.GET)
-    public List<CategoryIndex> index() throws ServiceException {
+    public List<CategoryIndex> index() throws ServiceException, IOException {
+        if(backupService.getProductIndexRepositoryCount() > 3000){
+            backupService.backup();
+        }
         searchService.deleteIndex();
-         return searchService.initService();
+        List<CategoryIndex> list = searchService.initService();
+        return list;
     }
 
     /**

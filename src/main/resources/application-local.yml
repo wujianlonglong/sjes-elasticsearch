@@ -19,3 +19,13 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 10000
+elasticsearch-backup:
+  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+  indices: sjes                               #备份的索引
+  repository:
+    name: es_backup                           #本地备份仓库的名称
+    location: /home/zhangbaiqiang/es_backup   #本地备份仓库的位置
+  snapshot: snapshot_index                    #快照名称
+  retry:
+    backup: 1                                 #备份失败重试次数
+    restore: 1                                #恢复失败重试次数

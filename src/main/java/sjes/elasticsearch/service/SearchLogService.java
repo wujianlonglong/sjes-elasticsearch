@@ -55,7 +55,6 @@ public class SearchLogService {
      * @param ip
      * @throws ServiceException
      */
-    @RequestMapping(method = RequestMethod.PUT)
     public void index(String keyword, Long categoryId, String shopId, String sortType, Double startPrice, Double endPrice, String userAgent, String ip) throws ServiceException {
         SearchLogModel searchLogModel = new SearchLogModel();
         searchLogModel.setKeyword(keyword);

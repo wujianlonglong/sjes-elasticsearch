@@ -44,6 +44,7 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import java.util.*;
@@ -89,10 +90,13 @@ public class SearchService {
     @Autowired
     private ElasticsearchTemplate elasticsearchTemplate;
 
+    @Autowired
+    private BackupService backupService;
+
     /**
      * 初始化索引
      */
-    public List<CategoryIndex> initService() throws ServiceException {
+    public List<CategoryIndex> initService() throws ServiceException, IOException {
         LOGGER.debug("开始初始化索引！");
         try {
             List<Category> thirdCategories = Lists.newArrayList();
@@ -193,6 +197,10 @@ public class SearchService {
         } catch (Exception e) {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
+        } finally {
+            if(backupService.getProductIndexRepositoryCount() < 1000){
+                backupService.restore();
+            }
         }
     }
 
