@@ -19,8 +19,23 @@ public class BackupController {
     @Autowired
     private BackupService backupService;
 
-    @RequestMapping(value = "test", method = RequestMethod.GET)
-    public String test() throws ServiceException, IOException {
-        return backupService.backup()+"";
+    @RequestMapping(value = "info", method = RequestMethod.GET)
+    public String info() throws ServiceException, IOException {
+        return backupService.getSnapshotNameInfo();
     }
+
+    @RequestMapping(value = "backup", method = RequestMethod.GET)
+    public String backup() throws ServiceException, IOException {
+        return backupService.backup() ? "SUCCESS" : "FAIL";
+    }
+
+    @RequestMapping(value = "restore", method = RequestMethod.GET)
+    public String restore() throws ServiceException, IOException {
+        return backupService.restore() ? "SUCCESS" : "FAIL";
+    }
+
+//    @RequestMapping(value = "{snapshot}/backup", method = RequestMethod.GET)
+//    public String backup(@PathVariable("snapshot") String snapshot) {
+//        return ElasticsearchSnapshotUtils.getSnapshotInfo();
+//    }
 }

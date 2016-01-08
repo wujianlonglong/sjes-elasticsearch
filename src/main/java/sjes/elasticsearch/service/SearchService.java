@@ -199,7 +199,11 @@ public class SearchService {
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
             if(!backupService.isIndexVaild()){
-                backupService.restore();
+                if(backupService.restore()){
+                    LOGGER.info("restore success");
+                }else{
+                    LOGGER.error("restore fail");
+                }
             }
         }
     }
@@ -351,7 +355,6 @@ public class SearchService {
         //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索
-            boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%"));                //根据商品名称分词检索
             boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik")));  //根据标签分词检索
 
             //先判断输入的关键字是否为品牌，是则作为必须条件
@@ -364,23 +367,26 @@ public class SearchService {
 
                             //判断搜索词是否全部匹配到，是则作为必须条件
                             elasticsearchTemplate.query(
-                                    new NativeSearchQueryBuilder().withQuery(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%")).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
+                                    new NativeSearchQueryBuilder().withQuery(
+                                            boolQuery().must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%"))
+                                                    .must(matchQuery("brandName", keyword).analyzer("ik"))).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
                                     searchNameResponse -> {
-                                        if (searchBrandNameResponse.getHits().getTotalHits() > 0) {
+                                        if (searchNameResponse.getHits().getTotalHits() > 0) {
                                             boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%"));           //完全匹配商品名称
                                             nameAllMatchFlag[0] = true;
                                         }
                                         return null;
                                     });
-
                             brandMatchFlag[0] = true;
                         }
                         return null;
                     });
 
             if(!nameAllMatchFlag[0]) {
+                boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%"));                //根据商品名称分词检索
+
                 //匹配分类名来获取最有可能的分类
-                elasticsearchTemplate.query(new NativeSearchQueryBuilder().withQuery(QueryBuilders.matchQuery("tagName", keyword).minimumShouldMatch("50%").analyzer("ik")).withPageable(new PageRequest(0, 2)).withMinScore(1f).withIndices("sjes").withTypes("categories").build(), searchResponse -> {
+                elasticsearchTemplate.query(new NativeSearchQueryBuilder().withQuery(matchQuery("tagName", keyword).minimumShouldMatch("50%").analyzer("ik")).withPageable(new PageRequest(0, 2)).withMinScore(1f).withIndices("sjes").withTypes("categories").build(), searchResponse -> {
                     if (searchResponse.getHits().getTotalHits() > 0) {
                         SearchHit[] searchHits = searchResponse.getHits().getHits();
                         for (int i = 0; i < searchHits.length; i++) {
@@ -481,7 +487,7 @@ public class SearchService {
             elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 1)).withMinScore(1f).withIndices("sjes").withTypes("products").build(), searchResponse -> {
                 if (searchResponse.getHits().getTotalHits() > 0) {
                     SearchHit[] searchHits = searchResponse.getHits().getHits();
-                    nativeSearchQueryBuilder.withSort(SortBuilders.scriptSort("_score + (doc['categoryId'].value == myVal ? 1 : 0) * 1", "number").param("myVal", searchHits[0].getSource().get("categoryId")).order(SortOrder.DESC));  //使用Groovy脚本自定义排序
+                    nativeSearchQueryBuilder.withSort(SortBuilders.scriptSort("_score + (doc['categoryId'].value == myVal ? 1 : 0) * 2", "number").param("myVal", searchHits[0].getSource().get("categoryId")).order(SortOrder.DESC));  //使用Groovy脚本自定义排序
                 }
                 return null;
             });
@@ -501,6 +507,7 @@ public class SearchService {
                 if (searchResponse.getHits().getTotalHits() > 0) {
 
                     searchResponse.getHits().forEach(searchHit -> {
+
                         ProductIndex productIndex = null;
                         try {
                             productIndex = (ProductIndex) mapToObject(aClass, searchHit.getSource());

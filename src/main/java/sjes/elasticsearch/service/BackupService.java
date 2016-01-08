@@ -71,7 +71,7 @@ public class BackupService {
      * @throws IOException
      */
     public boolean backup() throws IOException {
-
+        LOGGER.info("start backup");
         if(isIndexVaild()) {
             init();
             if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
@@ -110,7 +110,7 @@ public class BackupService {
      * @throws IOException
      */
     public boolean restore() throws ServiceException, IOException {
-        LOGGER.info("restore");
+        LOGGER.info("start restore");
         if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
             elasticsearchTemplate.deleteIndex(backupIndices);
             return ElasticsearchSnapshotUtils.restoreIndices(elasticsearchUrl, repositoryName, snapshotName, backupIndices) && isIndexVaild();
@@ -118,4 +118,14 @@ public class BackupService {
         return false;
     }
 
+    /**
+     * 获取快照的信息
+     *
+     * @return 快照信息
+     * @throws ServiceException
+     * @throws IOException
+     */
+    public String getSnapshotNameInfo() throws ServiceException, IOException {
+        return ElasticsearchSnapshotUtils.getSnapshotInfo(elasticsearchUrl, repositoryName, snapshotName);
+    }
 }

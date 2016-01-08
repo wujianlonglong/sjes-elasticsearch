@@ -203,7 +203,7 @@ public class ElasticsearchSnapshotUtils {
      * @param repositoryName 仓库名称
      * @param snapshotName 快照名称
      * @param indices 需要恢复的索引
-     * @return 创建结果
+     * @return 恢复结果
      */
     public static boolean restoreIndices(String esUrl, String repositoryName, String snapshotName, String indices) throws IOException {
 
@@ -269,11 +269,33 @@ public class ElasticsearchSnapshotUtils {
                 result = true;
             }
         } finally {
-            if (parser != null) {
+            if (null != parser) {
                 parser.close();
             }
         }
 
         return result;
+    }
+
+    /**
+     * 获取快照相关信息
+     *
+     * POST http://127.0.0.1:9200/_snapshot/my_backup/snapshot_1/_restore
+     * {
+     *      "indices": "index_1"
+     * }
+     *
+     * @param esUrl elasticsearch节点地址（http://127.0.0.1:9200）
+     * @param repositoryName 仓库名称
+     * @param snapshotName 快照名称
+     * @return 快照相关信息
+     * @throws IOException
+     */
+    public static String getSnapshotInfo(String esUrl, String repositoryName, String snapshotName) throws IOException {
+        String url = esUrl + "/_snapshot/" + repositoryName + "/" + snapshotName;
+
+        Request request = new Request.Builder().url(url).get().build();
+        Response response = client.newCall(request).execute();
+        return response.body().string();
     }
 }
