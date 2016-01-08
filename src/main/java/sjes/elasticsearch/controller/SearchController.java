@@ -36,12 +36,9 @@ public class SearchController {
      */
     @RequestMapping(value = "index", method = RequestMethod.GET)
     public List<CategoryIndex> index() throws ServiceException, IOException {
-        if(backupService.getProductIndexRepositoryCount() > 3000){
-            backupService.backup();
-        }
+        backupService.backup();
         searchService.deleteIndex();
-        List<CategoryIndex> list = searchService.initService();
-        return list;
+        return searchService.initService();
     }
 
     /**

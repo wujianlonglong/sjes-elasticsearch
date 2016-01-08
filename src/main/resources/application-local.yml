@@ -25,7 +25,7 @@ elasticsearch-backup:
   repository:
     name: es_backup                           #本地备份仓库的名称
     location: /home/zhangbaiqiang/es_backup   #本地备份仓库的位置
-  snapshot: snapshot_index                    #快照名称
+  snapshot: snapshot_3                        #自动备份快照的名称
   retry:
     backup: 1                                 #备份失败重试次数
     restore: 1                                #恢复失败重试次数

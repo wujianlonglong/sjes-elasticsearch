@@ -3,19 +3,28 @@ package sjes.elasticsearch.utils;
 import okhttp3.*;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sjes.elasticsearch.service.SearchService;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by 白 on 2016/1/7.
  */
 public class ElasticsearchSnapshotUtils {
 
+    private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
+
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private static OkHttpClient client;
 
-    static{
+    static {
         client = new OkHttpClient();
     }
 
@@ -33,11 +42,11 @@ public class ElasticsearchSnapshotUtils {
      * @param esUrl elasticsearch节点地址（http://127.0.0.1:9200）
      * @param repositoryName 仓库名称
      * @param location 存储位置
-     * @return 创建结果
+     * @return 创建成功true,创建失败false
      */
-    public static String createBackupRepository(String esUrl, String repositoryName, String location) throws IOException {
+    public static boolean createBackupRepository(String esUrl, String repositoryName, String location) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/";
+        String url = esUrl + "/_snapshot/" + repositoryName + "/";
 
         XContentBuilder content = XContentFactory.jsonBuilder().startObject()
                 .field("type", "fs")
@@ -49,47 +58,27 @@ public class ElasticsearchSnapshotUtils {
         RequestBody body = RequestBody.create(JSON, content.string());
         Request request = new Request.Builder().url(url).post(body).build();
         Response response = client.newCall(request).execute();
-        return response.body().string();
+        return isResponseAcknowledgedTrue(response);
     }
 
     /**
-     * 创建备份仓库
+     * 删除仓库
      *
      * POST http://127.0.0.1:9200/_snapshot/my_backup/
-     * {
-     *      "type": "fs",
-     *      "settings": {
-     *          "location": "/mount/backups/my_backup",
-     *          "max_snapshot_bytes_per_sec" : "50mb",
-     *          "max_restore_bytes_per_sec" : "50mb"
-     *      }
-     * }
      *
      * @param esUrl elasticsearch节点地址（http://127.0.0.1:9200）
      * @param repositoryName 仓库名称
-     * @param location 存储位置
-     * @param maxSnapshotBytesPerSec 最大创建快照速率(b/s)
-     * @param maxRestoreBytesPerSec 最大恢复速率(b/s)
-     * @return 创建结果
+     * @return 是否成功删除
+     * @throws IOException
      */
-    public static String createBackupRepository(String esUrl, String repositoryName, String location,
-                                              String maxSnapshotBytesPerSec,String maxRestoreBytesPerSec) throws IOException {
+    public static boolean deleteRepository(String esUrl, String repositoryName) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/";
+        String url = esUrl + "/_snapshot/" + repositoryName + "/";
 
-        XContentBuilder content = XContentFactory.jsonBuilder().startObject()
-                .field("type", "fs")
-                .startObject("settings")
-                .field("location", location)
-                .field("max_snapshot_bytes_per_sec", maxSnapshotBytesPerSec)
-                .field("max_restore_bytes_per_sec", maxRestoreBytesPerSec)
-                .endObject()
-                .endObject();
-
-        RequestBody body = RequestBody.create(JSON, content.string());
-        Request request = new Request.Builder().url(url).post(body).build();
+        Request request = new Request.Builder().url(url).delete().build();
         Response response = client.newCall(request).execute();
-        return response.body().string();
+
+        return isResponseAcknowledgedTrue(response) || !isRepositoryExist(esUrl, repositoryName);
     }
 
     /**
@@ -102,7 +91,7 @@ public class ElasticsearchSnapshotUtils {
      */
     public static boolean isRepositoryExist(String esUrl, String repositoryName) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/";
+        String url = esUrl + "/_snapshot/" + repositoryName + "/";
 
         Request request = new Request.Builder().url(url).build();
         Response response = client.newCall(request).execute();
@@ -124,11 +113,11 @@ public class ElasticsearchSnapshotUtils {
      * @param isAsync 是否异步
      * @return 创建结果
      */
-    public static String createSnapshot(String esUrl, String repositoryName, String snapshotName, String indices, boolean isAsync) throws IOException {
+    public static boolean createSnapshot(String esUrl, String repositoryName, String snapshotName, String indices, boolean isAsync) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/" + snapshotName;
+        String url = esUrl + "/_snapshot/" + repositoryName + "/" + snapshotName;
 
-        if(!isAsync){
+        if (!isAsync) {
             url += "?wait_for_completion=true";
         }
 
@@ -139,7 +128,27 @@ public class ElasticsearchSnapshotUtils {
         RequestBody body = RequestBody.create(JSON, content.string());
         Request request = new Request.Builder().url(url).put(body).build();
         Response response = client.newCall(request).execute();
-        return response.body().string();
+
+        XContentParser parser = null;
+        boolean result = false;
+
+        try {
+            parser = XContentFactory.xContent(XContentType.JSON).createParser(response.body().string());
+            Map<String, Object> responseParsed = parser.mapAndClose();
+
+            if(responseParsed.containsKey("snapshot") && responseParsed.get("snapshot") != null){
+                HashMap snapshot = (HashMap)responseParsed.get("snapshot");
+                if(snapshot.containsKey("state") && snapshot.get("state").equals("SUCCESS")){
+                    result = true;
+                }
+            }
+        } finally {
+            if (parser != null) {
+                parser.close();
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -154,7 +163,7 @@ public class ElasticsearchSnapshotUtils {
      */
     public static boolean isSnapshotExist(String esUrl, String repositoryName, String snapshot) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/" + snapshot;
+        String url = esUrl + "/_snapshot/" + repositoryName + "/" + snapshot;
 
         Request request = new Request.Builder().url(url).build();
         Response response = client.newCall(request).execute();
@@ -166,19 +175,20 @@ public class ElasticsearchSnapshotUtils {
      *
      * DELETE http://127.0.0.1:9200/_snapshot/my_backup/snapshot_1
      *
-     * @param esUrl
-     * @param repositoryName
-     * @param snapshot
-     * @return
+     * @param esUrl elasticsearch节点地址（http://127.0.0.1:9200）
+     * @param repositoryName 仓库名称
+     * @param snapshot 快照名称
+     * @return 快照是否存在
      * @throws IOException
      */
-    public static String deleteSnapshot(String esUrl, String repositoryName, String snapshot) throws IOException {
+    public static boolean deleteSnapshot(String esUrl, String repositoryName, String snapshot) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/" + snapshot;
+        String url = esUrl + "/_snapshot/" + repositoryName + "/" + snapshot;
 
         Request request = new Request.Builder().url(url).delete().build();
         Response response = client.newCall(request).execute();
-        return response.body().string();
+
+        return isResponseAcknowledgedTrue(response) || !isSnapshotExist(esUrl, repositoryName, snapshot);
     }
 
     /**
@@ -195,9 +205,9 @@ public class ElasticsearchSnapshotUtils {
      * @param indices 需要恢复的索引
      * @return 创建结果
      */
-    public static String restoreIndices(String esUrl, String repositoryName, String snapshotName, String indices) throws IOException {
+    public static boolean restoreIndices(String esUrl, String repositoryName, String snapshotName, String indices) throws IOException {
 
-        String url = esUrl + "/_snapshot/"+ repositoryName + "/" + snapshotName + "/_restore";
+        String url = esUrl + "/_snapshot/" + repositoryName + "/" + snapshotName + "/_restore";
 
         XContentBuilder content = XContentFactory.jsonBuilder().startObject()
                 .field("indices", indices)
@@ -206,6 +216,64 @@ public class ElasticsearchSnapshotUtils {
         RequestBody body = RequestBody.create(JSON, content.string());
         Request request = new Request.Builder().url(url).post(body).build();
         Response response = client.newCall(request).execute();
-        return response.body().string();
+        return isResponseAcceptedTrue(response);
+    }
+
+    /**
+     * 判断接口调用返回的结果中是否有acknowledged参数且结果为true
+     *
+     * @return acknowledged是否为true
+     */
+    private static boolean isResponseAcknowledgedTrue(Response response) throws IOException {
+
+        if(!response.isSuccessful()){
+            return false;
+        }
+
+        boolean result = false;
+        XContentParser parser = null;
+
+        try {
+            parser = XContentFactory.xContent(XContentType.JSON).createParser(response.body().string());
+            Map<String, Object> responseParsed = parser.mapAndClose();
+            if (responseParsed.containsKey("acknowledged") && (Boolean) responseParsed.get("acknowledged")) {
+                result = true;
+            }
+        } finally {
+            if (parser != null) {
+                parser.close();
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 判断接口调用返回的结果中是否有accepted参数且结果为true
+     *
+     * @return accepted是否为true
+     */
+    private static boolean isResponseAcceptedTrue(Response response) throws IOException {
+
+        if(!response.isSuccessful()){
+            return false;
+        }
+
+        boolean result = false;
+        XContentParser parser = null;
+
+        try {
+            parser = XContentFactory.xContent(XContentType.JSON).createParser(response.body().string());
+            Map<String, Object> responseParsed = parser.mapAndClose();
+            if (responseParsed.containsKey("accepted") && (Boolean) responseParsed.get("accepted")) {
+                result = true;
+            }
+        } finally {
+            if (parser != null) {
+                parser.close();
+            }
+        }
+
+        return result;
     }
 }

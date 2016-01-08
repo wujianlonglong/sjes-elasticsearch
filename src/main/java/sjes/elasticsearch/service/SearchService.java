@@ -198,7 +198,7 @@ public class SearchService {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
-            if(backupService.getProductIndexRepositoryCount() < 1000){
+            if(!backupService.isIndexVaild()){
                 backupService.restore();
             }
         }

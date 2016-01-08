@@ -19,8 +19,8 @@ public class BackupController {
     @Autowired
     private BackupService backupService;
 
-//    @RequestMapping(value = "test", method = RequestMethod.GET)
-//    public String test() throws ServiceException, IOException {
-//        return backupService.test();
-//    }
+    @RequestMapping(value = "test", method = RequestMethod.GET)
+    public String test() throws ServiceException, IOException {
+        return backupService.backup()+"";
+    }
 }
