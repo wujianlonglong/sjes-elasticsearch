@@ -346,16 +346,35 @@ public class SearchService {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
 
+        if (StringUtils.isNotBlank(keyword) && null == categoryId) {
+            List<Category> categoryList = categoryRepository.findByName(keyword);
+            if (categoryList != null && categoryList.size() > 0){
+                if(categoryList.size() > 1){
+                    int max = -1;
+                    for (Category category : categoryList) {
+                        int count = productIndexRepository.findByCategoryId(category.getId()).size();
+                        if (count > max) {
+                            max = count;
+                            categoryId = category.getId();
+                        }
+                    }
+                }else{
+                    categoryId = categoryList.get(0).getId();
+                }
+            }
+        }
+
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();
         boolean filterFlag = false;                 //判断是否需要过滤的标记
         final boolean[] brandMatchFlag = {false};   //判断名牌名称是否匹配到
         final boolean[] nameAllMatchFlag = {false};    //判断名称是否全部匹配到
 
-        //根据关键字查询商品
         if (StringUtils.isNotBlank(keyword)) {
             boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik"));                //根据商品名称分词检索
             boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", keyword).analyzer("ik")));  //根据标签分词检索
+
+            final Long tempCategoryId = categoryId;
 
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
@@ -365,24 +384,26 @@ public class SearchService {
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0) {
                             boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索
 
-                            //判断搜索词是否全部匹配到，是则作为必须条件
-                            elasticsearchTemplate.query(
-                                    new NativeSearchQueryBuilder().withQuery(
-                                            boolQuery().must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%"))
-                                                    .must(matchQuery("brandName", keyword).analyzer("ik"))).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
-                                    searchNameResponse -> {
-                                        if (searchNameResponse.getHits().getTotalHits() > 0) {
-                                            boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%"));           //完全匹配商品名称
-                                            nameAllMatchFlag[0] = true;
-                                        }
-                                        return null;
-                                    });
+                            if(tempCategoryId != null) {
+                                //判断搜索词是否全部匹配到，是则作为必须条件
+                                elasticsearchTemplate.query(
+                                        new NativeSearchQueryBuilder().withQuery(
+                                                boolQuery().must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%"))
+                                                        .must(matchQuery("brandName", keyword).analyzer("ik"))).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
+                                        searchNameResponse -> {
+                                            if (searchNameResponse.getHits().getTotalHits() > 0) {
+                                                boolQueryBuilder.must(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("100%"));           //完全匹配商品名称
+                                                nameAllMatchFlag[0] = true;
+                                            }
+                                            return null;
+                                        });
+                            }
                             brandMatchFlag[0] = true;
                         }
                         return null;
                     });
 
-            if(!nameAllMatchFlag[0]) {
+            if(null == categoryId && !nameAllMatchFlag[0]) {
                 boolQueryBuilder.should(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("80%"));                //根据商品名称分词检索
 
                 //匹配分类名来获取最有可能的分类
@@ -482,7 +503,7 @@ public class SearchService {
                 sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
-        } else if(!brandMatchFlag[0]){
+        } else if(!brandMatchFlag[0] && null == categoryId){
             //获取第一个结果的分类号，并提高该分类商品的排名
             elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 1)).withMinScore(1f).withIndices("sjes").withTypes("products").build(), searchResponse -> {
                 if (searchResponse.getHits().getTotalHits() > 0) {
@@ -493,10 +514,15 @@ public class SearchService {
             });
         }
 
+        if(null == categoryId){
+            nativeSearchQueryBuilder.withMinScore(0.618f);
+        }else{
+            nativeSearchQueryBuilder.withMinScore(0.1f);
+        }
+
         final long[] totalHits = {0};   //总记录数
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
-                nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize()))
-                        .withIndices("sjes").withTypes("products").withMinScore(0.618f)
+                nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
                         .withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
             @Override
