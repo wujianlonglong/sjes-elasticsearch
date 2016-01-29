@@ -31,7 +31,9 @@ public class CategoryService {
      * @return 分类列表
      */
     public List<Category> all() {
-        return  categoryFeign.list(new Category());
+        Category category = new Category();
+        category.setDisplay(true);
+        return  categoryFeign.list(category);
     }
 
 }

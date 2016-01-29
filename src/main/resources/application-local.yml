@@ -4,10 +4,7 @@ server:
     cache-names: sjes-elasticsearch
 eureka:
   instance:
-    hostname: srv3.sanjiang.info
-  client:
-    serviceUrl:
-      defaultZone: http://srv3.sanjiang.info:8761/eureka/
+    hostname: srv5.sanjiang.info
 spring:
   data:
     elasticsearch:
