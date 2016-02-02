@@ -7,14 +7,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.highlight.HighlightBuilder;
 import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +44,6 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.time.Instant;
 import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
@@ -328,7 +325,6 @@ public class SearchService {
      * @param keyword    关键字
      * @param categoryId 分类id
      * @param brandIds   品牌id
-     * @param placeNames 地区
      * @param shopId     门店id
      * @param sortType   排序类型
      * @param attributes 属性
@@ -339,7 +335,7 @@ public class SearchService {
      * @param size       页面大小
      * @return 分页商品信息
      */
-    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String placeNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
@@ -421,16 +417,16 @@ public class SearchService {
             boolQueryBuilder.should(matchAllQuery());
         }
 
-        if (StringUtils.isNotBlank(placeNames)) {     //限定产地
-            String[] placeNameArr = StringUtils.split(placeNames, "_");
-            if (placeNameArr.length > 0) {
-                BoolQueryBuilder palceNamesBoolQueryBuilder = boolQuery();
-                for (String placeName : placeNameArr) {
-                    palceNamesBoolQueryBuilder.should(wildcardQuery("place", "*" + placeName + "*"));
-                }
-                boolQueryBuilder.must(palceNamesBoolQueryBuilder);
-            }
-        }
+//        if (StringUtils.isNotBlank(placeNames)) {     //限定产地
+//            String[] placeNameArr = StringUtils.split(placeNames, "_");
+//            if (placeNameArr.length > 0) {
+//                BoolQueryBuilder palceNamesBoolQueryBuilder = boolQuery();
+//                for (String placeName : placeNameArr) {
+//                    palceNamesBoolQueryBuilder.should(wildcardQuery("place", "*" + placeName + "*"));
+//                }
+//                boolQueryBuilder.must(palceNamesBoolQueryBuilder);
+//            }
+//        }
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
         BoolFilterBuilder boolFilterBuilder = boolFilter();

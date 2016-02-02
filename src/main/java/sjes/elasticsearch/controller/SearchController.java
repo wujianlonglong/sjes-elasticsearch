@@ -86,11 +86,11 @@ public class SearchController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndex> search(String keyword, Long categoryId, String brandIds, String placeNames, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndex> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
 
         searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//测试可删，临时添加搜索记录
 
-        return searchService.productSearch(keyword, categoryId, brandIds, placeNames, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
+        return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
     }
 
     /**
