@@ -342,23 +342,23 @@ public class SearchService {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
 
-        if (StringUtils.isNotBlank(keyword) && null == categoryId) {
-            List<Category> categoryList = categoryRepository.findByName(keyword);
-            if (categoryList != null && categoryList.size() > 0){
-                if(categoryList.size() > 1){
-                    int max = -1;
-                    for (Category category : categoryList) {
-                        int count = productIndexRepository.findByCategoryId(category.getId()).size();
-                        if (count > max) {
-                            max = count;
-                            categoryId = category.getId();
-                        }
-                    }
-                }else{
-                    categoryId = categoryList.get(0).getId();
-                }
-            }
-        }
+//        if (StringUtils.isNotBlank(keyword) && null == categoryId) {
+//            List<Category> categoryList = categoryRepository.findByName(keyword);
+//            if (categoryList != null && categoryList.size() > 0){
+//                if(categoryList.size() > 1){
+//                    int max = -1;
+//                    for (Category category : categoryList) {
+//                        int count = productIndexRepository.findByCategoryId(category.getId()).size();
+//                        if (count > max) {
+//                            max = count;
+//                            categoryId = category.getId();
+//                        }
+//                    }
+//                }else{
+//                    categoryId = categoryList.get(0).getId();
+//                }
+//            }
+//        }
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();
