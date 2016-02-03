@@ -74,7 +74,6 @@ public class SearchController {
      * @param keyword 关键字
      * @param categoryId 分类id
      * @param brandIds 品牌ids
-     * @param placeNames 地区
      * @param shopId 门店id
      * @param sortType 排序类型
      * @param attributes 属性
