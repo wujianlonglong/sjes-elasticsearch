@@ -195,13 +195,13 @@ public class SearchService {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
-            if(!backupService.isIndexVaild()){
-                if(backupService.restore()){
-                    LOGGER.info("restore success");
-                }else{
-                    LOGGER.error("restore fail");
-                }
-            }
+//            if(!backupService.isIndexVaild()){
+//                if(backupService.restore()){
+//                    LOGGER.info("restore success");
+//                }else{
+//                    LOGGER.error("restore fail");
+//                }
+//            }
         }
     }
 
