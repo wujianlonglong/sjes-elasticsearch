@@ -22,7 +22,10 @@ elasticsearch-backup:
   repository:
     name: es_backup                           #本地备份仓库的名称
     location: /home/zhangbaiqiang/es_backup   #本地备份仓库的位置
-  snapshot: snapshot_3                        #自动备份快照的名称
+  snapshot: snapshot_auto                     #自动备份快照的名称
   retry:
     backup: 1                                 #备份失败重试次数
     restore: 1                                #恢复失败重试次数
+  check-index-count:
+      product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定索引成功
+      category: 300

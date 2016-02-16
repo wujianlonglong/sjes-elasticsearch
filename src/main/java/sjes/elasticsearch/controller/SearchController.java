@@ -1,6 +1,7 @@
 package sjes.elasticsearch.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
@@ -30,13 +31,22 @@ public class SearchController {
     @Autowired
     private BackupService backupService;
 
+    @Value("${elasticsearch-backup.retry.backup}")
+    private int backupFailRetryTimes;       //备份失败重试次数
+
     /**
      * 建立索引
      * @return 索引的数据
      */
     @RequestMapping(value = "index", method = RequestMethod.GET)
     public List<CategoryIndex> index() throws ServiceException, IOException {
-        backupService.backup();
+        int retryTimes = backupFailRetryTimes;
+        boolean isBackupSucceed;
+
+        do {
+            isBackupSucceed = backupService.backup();
+        }while (!isBackupSucceed && retryTimes-- > 0);
+
         searchService.deleteIndex();
         return searchService.initService();
     }
@@ -44,7 +54,6 @@ public class SearchController {
     /**
      * 索引productIndex
      * @param productIndex productIndex
-     * @return ProductIndex
      */
     @RequestMapping(method = RequestMethod.POST)
     public void index(@RequestBody ProductIndex productIndex) throws ServiceException {
@@ -54,7 +63,6 @@ public class SearchController {
     /**
      * 索引productIndex
      * @param productId productIndex
-     * @return ProductIndex
      */
     @RequestMapping(method = RequestMethod.PUT)
     public void index(@RequestParam("productId") Long productId) throws ServiceException {
@@ -96,8 +104,8 @@ public class SearchController {
      * 查询分类列表
      * @param keyword 关键字
      * @param categoryId 分类 id
-     * @param page
-     * @param size
+     * @param page 页码
+     * @param size 每页数量
      * @return
      * @throws ServiceException
      */

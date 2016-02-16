@@ -10,6 +10,7 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.ElasticsearchSnapshotUtils;
+import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 
@@ -34,11 +35,11 @@ public class BackupService {
     @Value("${elasticsearch-backup.indices}")
     private String backupIndices;           //备份的索引
 
-    @Value("${elasticsearch-backup.retry.backup}")
-    private int backupFailRetryTimes;       //备份失败重试次数
+    @Value("${elasticsearch-backup.check-index-count.product}")
+    private int checkProductCount;        //检查索引的产品数量
 
-    @Value("${elasticsearch-backup.retry.restore}")
-    private int restoreFailRetryTimes;      //恢复失败重试次数
+    @Value("${elasticsearch-backup.check-index-count.category}")
+    private int checkCategoryCount;        //检查索引的分类数量
 
     private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
 
@@ -58,10 +59,8 @@ public class BackupService {
      * @throws IOException
      */
     public boolean init() throws IOException {
-        if (!ElasticsearchSnapshotUtils.isRepositoryExist(elasticsearchUrl, repositoryName)) {
-            return ElasticsearchSnapshotUtils.createBackupRepository(elasticsearchUrl, repositoryName, repositoryLocation);
-        }
-        return true;
+        return ElasticsearchSnapshotUtils.isRepositoryExist(elasticsearchUrl, repositoryName) ||
+                ElasticsearchSnapshotUtils.createBackupRepository(elasticsearchUrl, repositoryName, repositoryLocation);
     }
 
     /**
@@ -71,16 +70,19 @@ public class BackupService {
      * @throws IOException
      */
     public boolean backup() throws IOException {
+        boolean isSucceed = false;           //备份是否成功
+
         LOGGER.info("start backup");
         if(isIndexVaild()) {
             init();
             if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
                 delelteBackup();
             }
-            return ElasticsearchSnapshotUtils.createSnapshot(elasticsearchUrl, repositoryName, snapshotName, backupIndices, false);
-        }else{
-            return false;
+            isSucceed = ElasticsearchSnapshotUtils.createSnapshot(elasticsearchUrl, repositoryName, snapshotName, backupIndices, false);
         }
+
+        LOGGER.info("backup " + (isSucceed?"success":"fail"));
+        return isSucceed;
     }
 
     /**
@@ -96,10 +98,10 @@ public class BackupService {
     /**
      * 判断当前索引是否有效
      *
-     * @return 有效true，无效
+     * @return 有效true，无效false
      */
     public boolean isIndexVaild(){
-        return productIndexRepository.count() > 3000 && categoryRepository.count() > 500;
+        return productIndexRepository.count() > checkProductCount && categoryRepository.count() > checkCategoryCount;
     }
 
     /**
@@ -111,11 +113,13 @@ public class BackupService {
      */
     public boolean restore() throws ServiceException, IOException {
         LOGGER.info("start restore");
+        boolean isSucceed = false;
         if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
             elasticsearchTemplate.deleteIndex(backupIndices);
-            return ElasticsearchSnapshotUtils.restoreIndices(elasticsearchUrl, repositoryName, snapshotName, backupIndices) && isIndexVaild();
+            isSucceed = ElasticsearchSnapshotUtils.restoreIndices(elasticsearchUrl, repositoryName, snapshotName, backupIndices) && isIndexVaild();
         }
-        return false;
+        LOGGER.info("restore :" + (isSucceed?"success":"fail"));
+        return isSucceed;
     }
 
     /**

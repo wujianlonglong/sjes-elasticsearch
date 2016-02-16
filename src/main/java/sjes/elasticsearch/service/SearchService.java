@@ -16,6 +16,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.FacetedPage;
@@ -89,6 +90,9 @@ public class SearchService {
 
     @Autowired
     private BackupService backupService;
+
+    @Value("${elasticsearch-backup.retry.restore}")
+    private int restoreFailRetryTimes;      //恢复失败重试次数
 
     /**
      * 初始化索引
@@ -195,13 +199,15 @@ public class SearchService {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
-//            if(!backupService.isIndexVaild()){
-//                if(backupService.restore()){
-//                    LOGGER.info("restore success");
-//                }else{
-//                    LOGGER.error("restore fail");
-//                }
-//            }
+            if(!backupService.isIndexVaild()){
+                int retryTimes = restoreFailRetryTimes;
+                boolean isRestoreSucceed;
+
+                do {
+                    isRestoreSucceed = backupService.restore();
+                }while (!isRestoreSucceed && retryTimes-- > 0);
+            }
+            LOGGER.info("index finish");
         }
     }
 
@@ -303,6 +309,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
+        LOGGER.info("index delete");
         categoryRepository.deleteAll();
         productIndexRepository.deleteAll();
     }
