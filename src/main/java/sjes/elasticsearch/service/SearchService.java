@@ -22,7 +22,6 @@ import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
@@ -222,7 +221,7 @@ public class SearchService {
         List<Tag> tags = productIndex.getTags();
         int tagOrders = tags.size();
         Tag tag ;
-        do {
+        while(null != categoryId) {
             Category category = categoryIdMap.get(categoryId);
             if (null != category) {
                 tag = new Tag();
@@ -234,7 +233,7 @@ public class SearchService {
             else {
                 categoryId = null;
             }
-        } while(null != categoryId);
+        }
     }
 
     /**
