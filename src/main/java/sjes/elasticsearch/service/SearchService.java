@@ -221,18 +221,22 @@ public class SearchService {
         List<Tag> tags = productIndex.getTags();
         int tagOrders = tags.size();
         Tag tag ;
+        List<Tag> addTags = Lists.newArrayList();
         while(null != categoryId) {
             Category category = categoryIdMap.get(categoryId);
             if (null != category) {
                 tag = new Tag();
                 tag.setName(category.getTagName());
                 tag.setOrders(tagOrders + category.getGrade() - 1);
-                productIndex.getTags().add(tag);
+                addTags.add(tag);
                 categoryId = category.getParentId();
             }
             else {
                 categoryId = null;
             }
+        }
+        if (addTags.size() > 0) {
+            productIndex.getTags().addAll(addTags);
         }
     }
 
