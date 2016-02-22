@@ -252,6 +252,7 @@ public class SearchService {
      */
     @RequestMapping(method = RequestMethod.PUT)
     public void index(Long productId) throws ServiceException {
+        LOGGER.info("index beginning ......");
         if (null != productId) {
             categoryRepository.delete(productId);
             ProductImageModel productImageModel = productService.getProductImageModel(productId);
@@ -263,10 +264,12 @@ public class SearchService {
             List<Tag> tags = Lists.newArrayList();
             if (CollectionUtils.isNotEmpty(categories)) {
                 categories.forEach(category -> {
-                    Tag tag = new Tag();
-                    tag.setName(category.getName());
-                    tag.setOrders(category.getGrade() - 1);
-                    tags.add(tag);
+                    if (null != category) {
+                        Tag tag = new Tag();
+                        tag.setName(category.getName());
+                        tag.setOrders(category.getGrade() - 1);
+                        tags.add(tag);
+                    }
                 });
             }
             List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
@@ -300,6 +303,7 @@ public class SearchService {
             }
             productIndex.setTags(tags);
             productIndexRepository.save(productIndex);
+            LOGGER.info("index ending ......");
         }
     }
 
@@ -309,9 +313,10 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
-        LOGGER.info("index delete");
+        LOGGER.info("index delete beginning ......");
         categoryRepository.deleteAll();
         productIndexRepository.deleteAll();
+        LOGGER.info("index delete ending ......");
     }
 
     /**
