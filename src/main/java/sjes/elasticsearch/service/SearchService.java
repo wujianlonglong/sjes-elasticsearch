@@ -227,7 +227,7 @@ public class SearchService {
                 tag = new Tag();
                 tag.setName(category.getTagName());
                 tag.setOrders(tagOrders + category.getGrade() - 1);
-                tags.add(tag);
+                productIndex.getTags().add(tag);
                 categoryId = category.getParentId();
             }
             else {
