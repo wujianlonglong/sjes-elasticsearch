@@ -27,5 +27,5 @@ elasticsearch-backup:
     backup: 1                                 #备份失败重试次数
     restore: 1                                #恢复失败重试次数
   check-index-count:
-      product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定索引成功
+      product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定当前索引有效
       category: 300

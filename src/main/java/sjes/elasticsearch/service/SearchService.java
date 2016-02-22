@@ -22,6 +22,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
+import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
@@ -381,11 +382,11 @@ public class SearchService {
 
             //先判断输入的关键字是否为品牌，是则作为必须条件
             elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
+                    new NativeSearchQueryBuilder().withQuery(boolQuery().must(boolQuery().should(matchQuery("brandName", keyword).analyzer("ik")).should(wildcardQuery("brandName","*"+keyword+"*")).minimumNumberShouldMatch(1))).withMinScore(0.01f).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
                     searchBrandNameResponse -> {
                         //LOGGER.info(searchBrandNameResponse.getHits().getMaxScore()+"");
                         if (searchBrandNameResponse.getHits().getTotalHits() > 0) {
-                            boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));           //根据商品品牌名称搜索
+                            boolQueryBuilder.must(boolQuery().should(matchQuery("brandName", keyword).analyzer("ik")).should(wildcardQuery("brandName","*"+keyword+"*")).minimumNumberShouldMatch(1));           //根据商品品牌名称搜索
 
                             if(tempCategoryId != null) {
                                 //判断搜索词是否全部匹配到，是则作为必须条件
