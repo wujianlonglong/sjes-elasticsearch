@@ -314,9 +314,15 @@ public class SearchService {
      */
     public void deleteIndex() throws ServiceException {
         LOGGER.info("index delete beginning ......");
+
+        LOGGER.info("delete category index beginning ......");
         categoryRepository.deleteAll();
+        LOGGER.info("delete category index ending ......");
+        LOGGER.info("delete category product beginning ......");
         productIndexRepository.deleteAll();
-        LOGGER.info("index delete ending ......");
+        LOGGER.info("delete category product ending ......");
+
+        LOGGER.info("index delete successful ......");
     }
 
     /**
