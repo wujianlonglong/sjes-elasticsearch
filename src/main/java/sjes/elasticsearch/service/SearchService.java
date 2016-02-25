@@ -176,13 +176,13 @@ public class SearchService {
                     productAttributeValues.forEach(productAttributeValue -> {
                         ProductIndex productIndex = productMap.get(productAttributeValue.getProductId());
                         List<Tag> tags = productIndex.getTags();
-                        Tag tag = new Tag();
-                        tag.setName(productAttributeValue.getAttributeName());
-                        tag.setOrders(tags.size());
-                        tags.add(tag);
                         AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                         Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
                         AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
+                        Tag tag = new Tag();
+                        tag.setName(attributeOption.getValue());
+                        tag.setOrders(tags.size());
+                        tags.add(tag);
                         if (attribute != null) {
                             org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                         }
@@ -252,7 +252,7 @@ public class SearchService {
      */
     @RequestMapping(method = RequestMethod.PUT)
     public void index(Long productId) throws ServiceException {
-        LOGGER.info("index beginning ......");
+        LOGGER.info(" 商品productId: {}, index beginning ......", new Long[] { productId });
         if (null != productId) {
             categoryRepository.delete(productId);
             ProductImageModel productImageModel = productService.getProductImageModel(productId);
@@ -289,13 +289,13 @@ public class SearchService {
             }
             if (CollectionUtils.isNotEmpty(productAttributeValues)) {
                 productAttributeValues.forEach(productAttributeValue -> {
-                    Tag tag = new Tag();
-                    tag.setName(productAttributeValue.getAttributeName());
-                    tag.setOrders(tags.size());
-                    tags.add(tag);
                     AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                     Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
                     AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
+                    Tag tag = new Tag();
+                    tag.setName(attributeOption.getValue());
+                    tag.setOrders(tags.size());
+                    tags.add(tag);
                     org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                     attributeOptionValueModel.setAttributeOption(attributeOption);
                     productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
@@ -303,7 +303,7 @@ public class SearchService {
             }
             productIndex.setTags(tags);
             productIndexRepository.save(productIndex);
-            LOGGER.info("index ending ......");
+            LOGGER.info(" 商品productId: {}, index ending ......", new Long[] { productId });
         }
     }
 
