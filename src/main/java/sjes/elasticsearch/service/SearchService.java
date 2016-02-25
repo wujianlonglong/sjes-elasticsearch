@@ -267,13 +267,11 @@ public class SearchService {
             List<Long> productCategoryIds = Lists.newArrayList();
             if (CollectionUtils.isNotEmpty(categories)) {
                 categories.forEach(category -> {
-                    if (null != category) {
-                        Tag tag = new Tag();
-                        productCategoryIds.add(category.getId());
-                        tag.setName(category.getName());
-                        tag.setOrders(tags.size());
-                        tags.add(tag);
-                    }
+                    Tag tag = new Tag();
+                    productCategoryIds.add(category.getId());
+                    tag.setName(category.getName());
+                    tag.setOrders(tags.size());
+                    tags.add(tag);
                 });
             }
             Long brandId = productImageModel.getBrandId();
