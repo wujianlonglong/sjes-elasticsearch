@@ -263,6 +263,17 @@ public class SearchService {
             org.springframework.beans.BeanUtils.copyProperties(productImageModel, productIndex);
             Long categoryId = productIndex.getCategoryId();
             List<Tag> tags = Lists.newArrayList();
+            List<Category> categories = categoryService.findClusters(categoryId);
+            if (CollectionUtils.isNotEmpty(categories)) {
+                categories.forEach(category -> {
+                    if (null != category) {
+                        Tag tag = new Tag();
+                        tag.setName(category.getName());
+                        tag.setOrders(tags.size());
+                        tags.add(tag);
+                    }
+                });
+            }
             Long brandId = productImageModel.getBrandId();
             if (null != brandId) {
                 Brand brand = brandService.get(brandId);
