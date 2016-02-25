@@ -380,7 +380,6 @@ public class SearchService {
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();
-        boolean filterFlag = false;                 //判断是否需要过滤的标记
         final boolean[] brandMatchFlag = {false};   //判断名牌名称是否匹配到
         final boolean[] nameAllMatchFlag = {false};    //判断名称是否全部匹配到
 
@@ -448,6 +447,7 @@ public class SearchService {
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
         BoolFilterBuilder boolFilterBuilder = boolFilter();
+        boolFilterBuilder.must(termFilter("status", 0));
 
         if (null != categoryId) {       //限定商品分类
             BoolFilterBuilder categoryIdBoolFilterBuilder = boolFilter().should(termFilter("categoryId", categoryId));
@@ -456,7 +456,6 @@ public class SearchService {
                 categories.forEach(category -> categoryIdBoolFilterBuilder.should(termFilter("categoryId", category.getId())));
             }
             boolFilterBuilder.must(categoryIdBoolFilterBuilder);
-            filterFlag = true;
         }
 
         if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
@@ -467,18 +466,15 @@ public class SearchService {
                     brandIdsBoolFilterBuilder.should(termFilter("brandId", brandId));
                 }
                 boolFilterBuilder.must(brandIdsBoolFilterBuilder);
-                filterFlag = true;
             }
         }
 
         if (null != startPrice) {    //限定最低价格
             boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
-            filterFlag = true;
         }
 
         if (null != endPrice) {      //限定最高价格
             boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
-            filterFlag = true;
         }
 
         if (StringUtils.isNotBlank(attributes)) {  //限定商品参数
@@ -494,16 +490,12 @@ public class SearchService {
                                 nestedFilter("attributeOptionValueModels.attributeOption",
                                         boolFilter().must(termFilter("attributeOptionValueModels.attributeOption.attributeId", Long.valueOf(attributeId)))
                                                 .must(termFilter("attributeOptionValueModels.attributeOption.id", Long.valueOf(attributeOptionId))))));
-
-                        filterFlag = true;
                     }
                 }
             }
         }
 
-        if (filterFlag) {   //判断是否有限定条件
-            nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
-        }
+        nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
 
         if (null != sortType && !sortType.equals("default")) {       //排序
             SortBuilder sortBuilder = null;
