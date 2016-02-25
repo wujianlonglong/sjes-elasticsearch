@@ -264,10 +264,12 @@ public class SearchService {
             Long categoryId = productIndex.getCategoryId();
             List<Tag> tags = Lists.newArrayList();
             List<Category> categories = categoryService.findClusters(categoryId);
+            List<Long> productCategoryIds = Lists.newArrayList();
             if (CollectionUtils.isNotEmpty(categories)) {
                 categories.forEach(category -> {
                     if (null != category) {
                         Tag tag = new Tag();
+                        productCategoryIds.add(category.getId());
                         tag.setName(category.getName());
                         tag.setOrders(tags.size());
                         tags.add(tag);
@@ -283,7 +285,7 @@ public class SearchService {
             }
             List<ProductCategory> productCategories = productCategoryService.findProductCategorysByProductId(productId);
             if (CollectionUtils.isNotEmpty(productCategories)) {
-                List<Long> productCategoryIds = Lists.newArrayListWithCapacity(productCategories.size());
+
                 productCategories.forEach(productCategory -> {
                     Long cateId = productCategory.getCategoryId();
                     List<Category> categoryList = categoryService.findClusters(cateId);
