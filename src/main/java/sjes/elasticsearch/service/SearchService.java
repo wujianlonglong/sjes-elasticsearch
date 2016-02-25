@@ -297,8 +297,8 @@ public class SearchService {
                     }
                     productCategoryIds.add(cateId);
                 });
-                productIndex.setProductCategoryIds(productCategoryIds);
             }
+            productIndex.setProductCategoryIds(productCategoryIds);
             List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
             List<AttributeModel> attributeModels = attributeService.lists(Lists.newArrayList(categoryId));
             Map<Long, Attribute> attributeMaps = Maps.newHashMap();
