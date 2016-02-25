@@ -23,4 +23,13 @@ public class ProductCategoryService {
     public List<ProductCategory> listAll() {
         return productCategoryFeign.listAll();
     }
+
+    /**
+     * 根据商品Id得到分类列表
+     * @param productId 商品Id
+     * @return 分类列表
+     */
+    public List<ProductCategory> findProductCategorysByProductId( Long productId) {
+        return productCategoryFeign.findProductCategorysByProductId(productId);
+    }
 }

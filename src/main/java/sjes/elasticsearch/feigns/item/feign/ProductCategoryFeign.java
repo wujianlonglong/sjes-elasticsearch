@@ -1,6 +1,7 @@
 package sjes.elasticsearch.feigns.item.feign;
 
 import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.constants.Constants;
@@ -21,5 +22,13 @@ public interface ProductCategoryFeign {
      */
     @RequestMapping(method = RequestMethod.GET)
     List<ProductCategory> listAll();
+
+    /**
+     * 根据商品Id得到分类列表
+     * @param productId 商品Id
+     * @return 分类列表
+     */
+    @RequestMapping(value = "productCategorys/{productId}", method = RequestMethod.GET)
+    List<ProductCategory> findProductCategorysByProductId(@PathVariable("productId") Long productId);
 
 }

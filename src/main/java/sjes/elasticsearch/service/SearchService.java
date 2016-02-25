@@ -221,19 +221,21 @@ public class SearchService {
         List<Tag> tags = productIndex.getTags();
         int tagOrders = tags.size();
         Tag tag ;
-        do {
-            Category category = categoryIdMap.get(categoryId);
-            if (null != category) {
-                tag = new Tag();
-                tag.setName(category.getTagName());
-                tag.setOrders(tagOrders + category.getGrade() - 1);
-                tags.add(tag);
-                categoryId = category.getParentId();
-            }
-            else {
-                categoryId = null;
-            }
-        } while(null != categoryId);
+        if (null != categoryId) {
+            do {
+                Category category = categoryIdMap.get(categoryId);
+                if (null != category) {
+                    tag = new Tag();
+                    tag.setName(category.getTagName());
+                    tag.setOrders(tagOrders + category.getGrade() - 1);
+                    tags.add(tag);
+                    categoryId = category.getParentId();
+                }
+                else {
+                    categoryId = null;
+                }
+            } while(null != categoryId);
+        }
     }
 
     /**
@@ -260,17 +262,31 @@ public class SearchService {
             productIndex.setAttributeOptionValueModels(Lists.newArrayList());
             org.springframework.beans.BeanUtils.copyProperties(productImageModel, productIndex);
             Long categoryId = productIndex.getCategoryId();
-            List<Category> categories = categoryService.findClusters(categoryId);
             List<Tag> tags = Lists.newArrayList();
-            if (CollectionUtils.isNotEmpty(categories)) {
-                categories.forEach(category -> {
-                    if (null != category) {
-                        Tag tag = new Tag();
-                        tag.setName(category.getName());
-                        tag.setOrders(category.getGrade() - 1);
-                        tags.add(tag);
+            Long brandId = productImageModel.getBrandId();
+            if (null != brandId) {
+                Brand brand = brandService.get(brandId);
+                if (null != brand) {
+                    productIndex.setBrandName(brand.getName());
+                }
+            }
+            List<ProductCategory> productCategories = productCategoryService.findProductCategorysByProductId(productId);
+            if (CollectionUtils.isNotEmpty(productCategories)) {
+                List<Long> productCategoryIds = Lists.newArrayListWithCapacity(productCategories.size());
+                productCategories.forEach(productCategory -> {
+                    Long cateId = productCategory.getCategoryId();
+                    List<Category> categoryList = categoryService.findClusters(cateId);
+                    if (CollectionUtils.isNotEmpty(categoryList)) {
+                        categoryList.forEach(category -> {
+                            Tag tag = new Tag();
+                            tag.setName(category.getTagName());
+                            tag.setOrders(tags.size());
+                            tags.add(tag);
+                        });
                     }
+                    productCategoryIds.add(cateId);
                 });
+                productIndex.setProductCategoryIds(productCategoryIds);
             }
             List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
             List<AttributeModel> attributeModels = attributeService.lists(Lists.newArrayList(categoryId));
