@@ -224,6 +224,7 @@ public class SearchService {
         if (null != categoryId) {
             do {
                 Category category = categoryIdMap.get(categoryId);
+                productIndex.getProductCategoryIds().add(categoryId);
                 if (null != category) {
                     tag = new Tag();
                     tag.setName(category.getTagName());
