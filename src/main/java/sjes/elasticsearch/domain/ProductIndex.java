@@ -32,7 +32,7 @@ public class ProductIndex extends ProductImageModel {
     /**
      * 多分类ids
      */
-    private List<Long> productCategoryIds;
+    private List<String> productCategoryIds;
 
     /**
      * 品牌

@@ -167,7 +167,7 @@ public class SearchService {
                     productCategories.forEach(productCategory -> {
                         ProductIndex productIndex = productMap.get(productCategory.getProductId());
                         Long categoryId = productCategory.getCategoryId();
-                        productIndex.getProductCategoryIds().add(categoryId);
+                        productIndex.getProductCategoryIds().add(categoryId.toString());
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
                     });
                 }
@@ -224,7 +224,7 @@ public class SearchService {
         if (null != categoryId) {
             do {
                 Category category = categoryIdMap.get(categoryId);
-                productIndex.getProductCategoryIds().add(categoryId);
+                productIndex.getProductCategoryIds().add(categoryId.toString());
                 if (null != category) {
                     tag = new Tag();
                     tag.setName(category.getTagName());
@@ -265,11 +265,11 @@ public class SearchService {
             Long categoryId = productIndex.getCategoryId();
             List<Tag> tags = Lists.newArrayList();
             List<Category> categories = categoryService.findClusters(categoryId);
-            List<Long> productCategoryIds = Lists.newArrayList();
+            List<String> productCategoryIds = Lists.newArrayList();
             if (CollectionUtils.isNotEmpty(categories)) {
                 categories.forEach(category -> {
                     Tag tag = new Tag();
-                    productCategoryIds.add(category.getId());
+                    productCategoryIds.add(category.getId().toString());
                     tag.setName(category.getName());
                     tag.setOrders(tags.size());
                     tags.add(tag);
@@ -296,7 +296,7 @@ public class SearchService {
                             tags.add(tag);
                         });
                     }
-                    productCategoryIds.add(cateId);
+                    productCategoryIds.add(cateId.toString());
                 });
             }
             productIndex.setProductCategoryIds(productCategoryIds);
