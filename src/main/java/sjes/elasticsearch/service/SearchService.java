@@ -179,10 +179,12 @@ public class SearchService {
                         AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                         Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
                         AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
-                        Tag tag = new Tag();
-                        tag.setName(attributeOption.getValue());
-                        tag.setOrders(tags.size());
-                        tags.add(tag);
+                        if (null != attributeOption) {
+                            Tag tag = new Tag();
+                            tag.setName(attributeOption.getValue());
+                            tag.setOrders(tags.size());
+                            tags.add(tag);
+                        }
                         if (attribute != null) {
                             org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                         }
