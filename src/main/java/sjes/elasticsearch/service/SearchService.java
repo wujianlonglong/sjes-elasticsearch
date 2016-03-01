@@ -45,6 +45,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
@@ -686,8 +687,8 @@ public class SearchService {
                 if (value != null) {
                     if (type.endsWith("Long")) {
                         descriptor.getWriteMethod().invoke(obj, Long.valueOf(value.toString()));
-                    } else if (type.endsWith("Double")) {
-                        descriptor.getWriteMethod().invoke(obj, Double.valueOf(value.toString()));
+                    } else if (type.endsWith("BigDecimal")) {
+                        descriptor.getWriteMethod().invoke(obj, new BigDecimal(value.toString()));
                     } else if (type.endsWith("ProductImage")) {
                         descriptor.getWriteMethod().invoke(obj, mapToObject(descriptor.getPropertyType(), (HashMap) value));
                     } else if (type.endsWith("LocalDateTime")) {
