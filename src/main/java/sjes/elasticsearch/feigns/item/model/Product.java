@@ -11,6 +11,7 @@ import sjes.elasticsearch.serializer.CustomDateDeSerializer;
 import sjes.elasticsearch.serializer.CustomDateSerializer;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -42,13 +43,13 @@ public class Product implements Serializable {
     @Field(index = FieldIndex.no,type = FieldType.String)
     private String displayName; // 展示的商品名称(高亮)
 
-    private Double salePrice; // 销售价
+    private BigDecimal salePrice; // 销售价
 
-    private Double originalSalePrice; // 原销售价
+    private BigDecimal originalSalePrice; // 原销售价
 
-    private Double memberPrice; // 会员价
+    private BigDecimal memberPrice; // 会员价
 
-    private Double originalMemberPrice; // 原会员价
+    private BigDecimal originalMemberPrice; // 原会员价
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String weight; // 商品重量
