@@ -15,6 +15,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -105,13 +106,16 @@ public class SearchService {
             Map<Long, CategoryIndex> categoryIndexMap = Maps.newHashMap();
             List<Category> allCategories = categoryService.all();
             Map<Long, Category> categoryIdMap = Maps.newHashMap();
-            if (CollectionUtils.isNotEmpty(allCategories)) {
+            if (CollectionUtils.isNotEmpty(allCategories) && backupService.isIndexExists()) {
                 allCategories.forEach(category -> {
                     Integer grade = category.getGrade();
-                    if (null != grade) {
-                        if (Constants.CategoryGradeConstants.GRADE_THREE == grade.intValue()) {
-                            thirdCategories.add(category);
-                        }
+                    if (null != grade && Constants.CategoryGradeConstants.GRADE_THREE == grade) {
+                        thirdCategories.add(category);
+
+                        CategoryIndex categoryIndex = new CategoryIndex();
+                        categoryIndex.setProductIndexes(Lists.newArrayList());
+                        BeanUtils.copyProperties(category, categoryIndex);
+                        categoryIndexMap.put(category.getId(), categoryIndex);
                     }
                     categoryIdMap.put(category.getId(), category);
                 });
@@ -119,14 +123,9 @@ public class SearchService {
             if (CollectionUtils.isNotEmpty(thirdCategories)) {
                 // 分类索引
                 categoryRepository.save(thirdCategories);
-                thirdCategories.forEach(thirdCategory -> {
-                    CategoryIndex categoryIndex = new CategoryIndex();
-                    categoryIndex.setProductIndexes(Lists.newArrayList());
-                    org.springframework.beans.BeanUtils.copyProperties(thirdCategory, categoryIndex);
-                    categoryIndexMap.put(thirdCategory.getId(), categoryIndex);
-                });
+                LOGGER.debug("分类索引完成......");
                 List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-                List<ProductImageModel> productImageModels = productService.listByCategoryIds(categoryIds);
+                List<ProductImageModel> productImageModels = productService.listByCategoryIds(categoryIds); //耗时操作
                 List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
                 Map<Long, Attribute> attributeMaps = Maps.newHashMap();
                 Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
@@ -135,18 +134,15 @@ public class SearchService {
                         attributeMaps.put(attributeModel.getId(), attributeModel);
                         List<AttributeOption> attributeOptions = attributeModel.getAttributeOptions();
                         if (CollectionUtils.isNotEmpty(attributeOptions)) {
-                            attributeOptions.forEach(attributeOption -> {
-                                attributeOptionMaps.put(attributeOption.getId(), attributeOption);
-                            });
+                            attributeOptions.forEach(attributeOption ->
+                                    attributeOptionMaps.put(attributeOption.getId(), attributeOption));
                         }
                     });
                 }
                 List<Brand> brands = brandService.listAll();
                 Map<Long, String> brandNameMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(brands)) {
-                    brands.forEach(brand->{
-                        brandNameMap.put(brand.getBrandId(), brand.getName());
-                    });
+                    brands.forEach(brand-> brandNameMap.put(brand.getBrandId(), brand.getName()));
                 }
                 Map<Long, ProductIndex> productMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(productImageModels)) {
@@ -155,7 +151,7 @@ public class SearchService {
                         productIndex.setTags(Lists.newArrayList());
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
                         productIndex.setProductCategoryIds(Lists.newArrayList());
-                        org.springframework.beans.BeanUtils.copyProperties(productImageModel, productIndex);
+                        BeanUtils.copyProperties(productImageModel, productIndex);
                         productIndex.setBrandName(brandNameMap.get(productIndex.getBrandId()));
                         Long categoryId = productIndex.getCategoryId();
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
@@ -187,7 +183,7 @@ public class SearchService {
                             tags.add(tag);
                         }
                         if (attribute != null) {
-                            org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                            BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                         }
                         attributeOptionValueModel.setAttributeOption(attributeOption);
                         productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
@@ -195,7 +191,8 @@ public class SearchService {
                 }
                 // productIndex索引
                 List<ProductIndex> productIndexes = Lists.newArrayList(productMap.values());
-                productIndexService.saveBat(productIndexes);
+                productIndexService.saveBat(productIndexes);        //耗时操作
+                LOGGER.debug("商品索引完成......");
             }
             return Lists.newArrayList(categoryIndexMap.values());
         } catch (Exception e) {
@@ -344,14 +341,19 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
+
+        if (!backupService.isIndexExists()) {
+            LOGGER.error("index missing ......");
+            return;
+        }
         LOGGER.info("index delete beginning ......");
 
         LOGGER.info("delete category index beginning ......");
         categoryRepository.deleteAll();
         LOGGER.info("delete category index ending ......");
-        LOGGER.info("delete category product beginning ......");
+        LOGGER.info("delete product index beginning ......");
         productIndexRepository.deleteAll();
-        LOGGER.info("delete category product ending ......");
+        LOGGER.info("delete product index ending ......");
 
         LOGGER.info("index delete successful ......");
     }
