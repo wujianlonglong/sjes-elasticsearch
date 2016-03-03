@@ -562,7 +562,7 @@ public class SearchService {
         }
 
         if (null == categoryId) {
-            nativeSearchQueryBuilder.withMinScore(1.4f);
+            nativeSearchQueryBuilder.withMinScore(1.0f);
         } else {
             nativeSearchQueryBuilder.withMinScore(0.1f);
         }
