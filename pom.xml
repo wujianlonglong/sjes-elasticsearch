@@ -103,7 +103,11 @@
             <artifactId>okhttp</artifactId>
             <version>3.0.0-RC1</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.belerweb</groupId>
+            <artifactId>pinyin4j</artifactId>
+            <version>2.5.0</version>
+        </dependency>
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

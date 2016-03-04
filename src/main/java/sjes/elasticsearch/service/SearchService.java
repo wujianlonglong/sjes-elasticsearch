@@ -2,6 +2,7 @@ package sjes.elasticsearch.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -40,6 +41,7 @@ import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
+import sjes.elasticsearch.utils.PinYinUtils;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -53,6 +55,7 @@ import java.util.*;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static sjes.elasticsearch.common.SpecificWordHandle.*;
+import static sjes.elasticsearch.utils.PinYinUtils.*;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -158,6 +161,14 @@ public class SearchService {
                         Long categoryId = productIndex.getCategoryId();
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
                         categoryIndexMap.get(productImageModel.getCategoryId()).getProductIndexes().add(productIndex);
+
+                        if (StringUtils.isNotBlank(productIndex.getName())) {
+                            try {
+                                productIndex.setNamePinYin(formatToPinYin(productIndex.getName()).toUpperCase());         //商品名称转拼音
+                                productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
+                            } catch (Exception ignored) {}
+                        }
+
                         productMap.put(productImageModel.getId(), productIndex);
                     });
                 }
@@ -400,7 +411,14 @@ public class SearchService {
         final boolean[] brandMatchFlag = {false};   //判断名牌名称是否匹配到
         final boolean[] nameAllMatchFlag = {false};    //判断名称是否全部匹配到
 
-        if (StringUtils.isNotBlank(keyword)) {
+        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
+
+            final String searchKeyword = "*" + keyword.toUpperCase() + "*";
+            boolQueryBuilder.should(wildcardQuery("namePinYin", searchKeyword))
+                            .should(wildcardQuery("namePinYinAddr", searchKeyword))
+                            .minimumNumberShouldMatch(1);
+
+        } else if (StringUtils.isNotBlank(keyword)) {
 
             final String searchKeyword;                 //搜索的关键词
             if (specificWords.containsKey(keyword)) {   //对特殊的搜索词进行转换
@@ -562,7 +580,11 @@ public class SearchService {
         }
 
         if (null == categoryId) {
-            nativeSearchQueryBuilder.withMinScore(1.0f);
+            if (StringUtils.isNotBlank(keyword) && StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
+                nativeSearchQueryBuilder.withMinScore(0.1f);
+            }else {
+                nativeSearchQueryBuilder.withMinScore(1.0f);
+            }
         } else {
             nativeSearchQueryBuilder.withMinScore(0.1f);
         }

@@ -41,6 +41,12 @@ public class Product implements Serializable {
     @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String name; // 商品名称
 
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String namePinYin;  // 商品名称（拼音）
+
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String namePinYinAddr; // 商品名称（拼音首字母）
+
     @Field(index = FieldIndex.no,type = FieldType.String)
     private String displayName; // 展示的商品名称(高亮)
 
