@@ -51,15 +51,19 @@ public class Product implements Serializable {
     private String displayName; // 展示的商品名称(高亮)
 
     @JsonSerialize(using = MoneySerializer.class)
+    @Field(type = FieldType.Double)
     private BigDecimal salePrice; // 销售价
 
     @JsonSerialize(using = MoneySerializer.class)
+    @Field(type = FieldType.Double)
     private BigDecimal originalSalePrice; // 原销售价
 
     @JsonSerialize(using = MoneySerializer.class)
+    @Field(type = FieldType.Double)
     private BigDecimal memberPrice; // 会员价
 
     @JsonSerialize(using = MoneySerializer.class)
+    @Field(type = FieldType.Double)
     private BigDecimal originalMemberPrice; // 原会员价
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
