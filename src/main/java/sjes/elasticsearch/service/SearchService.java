@@ -36,10 +36,10 @@ import sjes.elasticsearch.feigns.item.model.Brand;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.feigns.item.model.ProductCategory;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
-import sjes.elasticsearch.log.LogWriter;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
+import sjes.elasticsearch.utils.LogWriter;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -597,36 +597,36 @@ public class SearchService {
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
                         .withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
-            @Override
-            public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
-                List<ProductIndex> productIndexes = new ArrayList<>();
+                    @Override
+                    public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
+                        List<ProductIndex> productIndexes = new ArrayList<>();
 
-                totalHits[0] = searchResponse.getHits().getTotalHits();
-                if (searchResponse.getHits().getTotalHits() > 0) {
+                        totalHits[0] = searchResponse.getHits().getTotalHits();
+                        if (searchResponse.getHits().getTotalHits() > 0) {
 
-                    searchResponse.getHits().forEach(searchHit -> {
+                            searchResponse.getHits().forEach(searchHit -> {
 
-                        ProductIndex productIndex = null;
-                        try {
-                            productIndex = (ProductIndex) mapToObject(aClass, searchHit.getSource());
-                        } catch (IllegalAccessException | InstantiationException | IntrospectionException | InvocationTargetException e) {
-                            e.printStackTrace();
+                                ProductIndex productIndex = null;
+                                try {
+                                    productIndex = (ProductIndex) mapToObject(aClass, searchHit.getSource());
+                                } catch (IllegalAccessException | InstantiationException | IntrospectionException | InvocationTargetException e) {
+                                    e.printStackTrace();
+                                }
+
+                                Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
+                                HighlightField highlightNameField = highlightFields.get("name");
+                                if (highlightNameField != null && highlightNameField.fragments() != null && productIndex != null) {
+                                    productIndex.setDisplayName(highlightNameField.fragments()[0].string());
+                                } else {
+                                    productIndex.setDisplayName(productIndex.getName());
+                                }
+                                productIndexes.add(productIndex);
+                            });
                         }
 
-                        Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
-                        HighlightField highlightNameField = highlightFields.get("name");
-                        if (highlightNameField != null && highlightNameField.fragments() != null && productIndex != null) {
-                            productIndex.setDisplayName(highlightNameField.fragments()[0].string());
-                        }else{
-                            productIndex.setDisplayName(productIndex.getName());
-                        }
-                        productIndexes.add(productIndex);
-                    });
-                }
-
-                return new FacetedPageImpl<>((List<T>) productIndexes);
-            }
-        });
+                        return new FacetedPageImpl<>((List<T>) productIndexes);
+                    }
+                });
 
         return new PageModel(queryForPage.getContent(), totalHits[0], pageable);
 

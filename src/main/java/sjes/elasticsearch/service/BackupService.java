@@ -7,11 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
-import sjes.elasticsearch.log.LogWriter;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.ElasticsearchSnapshotUtils;
-import sun.rmi.runtime.Log;
+import sjes.elasticsearch.utils.LogWriter;
 
 import java.io.IOException;
 
