@@ -2,7 +2,6 @@ package sjes.elasticsearch.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.common.ServiceException;
-import sjes.elasticsearch.common.SpecificWordHandle;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
@@ -38,10 +36,10 @@ import sjes.elasticsearch.feigns.item.model.Brand;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.feigns.item.model.ProductCategory;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
+import sjes.elasticsearch.log.LogWriter;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
-import sjes.elasticsearch.utils.PinYinUtils;
 
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
@@ -54,8 +52,9 @@ import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static sjes.elasticsearch.common.SpecificWordHandle.*;
-import static sjes.elasticsearch.utils.PinYinUtils.*;
+import static sjes.elasticsearch.common.SpecificWordHandle.specificWords;
+import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
+import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -105,6 +104,7 @@ public class SearchService {
      * 初始化索引
      */
     public List<CategoryIndex> initService() throws ServiceException, IOException {
+        LogWriter.append("index", "start");
         LOGGER.debug("开始初始化索引！");
         try {
             List<Category> thirdCategories = Lists.newArrayList();
@@ -206,9 +206,11 @@ public class SearchService {
                 List<ProductIndex> productIndexes = Lists.newArrayList(productMap.values());
                 productIndexService.saveBat(productIndexes);        //耗时操作
                 LOGGER.debug("商品索引完成......");
+                LogWriter.append("index", "success");
             }
             return Lists.newArrayList(categoryIndexMap.values());
         } catch (Exception e) {
+            LogWriter.append("index", "fail");
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
@@ -220,7 +222,6 @@ public class SearchService {
                     isRestoreSucceed = backupService.restore();
                 }while (!isRestoreSucceed && retryTimes-- > 0);
             }
-            LOGGER.info("index finish");
         }
     }
 
@@ -354,6 +355,7 @@ public class SearchService {
      * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
+        LogWriter.append("delete", "start");
 
         if (!backupService.isIndexExists()) {
             LOGGER.error("index missing ......");
@@ -369,6 +371,7 @@ public class SearchService {
         LOGGER.info("delete product index ending ......");
 
         LOGGER.info("index delete successful ......");
+        LogWriter.append("delete", "end");
     }
 
     /**

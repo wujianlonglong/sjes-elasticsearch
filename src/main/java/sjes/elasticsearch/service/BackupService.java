@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
+import sjes.elasticsearch.log.LogWriter;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.ElasticsearchSnapshotUtils;
@@ -70,9 +71,10 @@ public class BackupService {
      * @throws IOException
      */
     public boolean backup() throws IOException {
+        LogWriter.append("backup", "start");
+
         boolean isSucceed = false;           //备份是否成功
 
-        LOGGER.info("start backup");
         if(isIndexVaild()) {
             init();
             if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
@@ -81,7 +83,7 @@ public class BackupService {
             isSucceed = ElasticsearchSnapshotUtils.createSnapshot(elasticsearchUrl, repositoryName, snapshotName, backupIndices, false);
         }
 
-        LOGGER.info("backup " + (isSucceed?"success":"fail"));
+        LogWriter.append("backup", isSucceed?"success":"fail");
         return isSucceed;
     }
 
@@ -123,14 +125,16 @@ public class BackupService {
      * @throws IOException
      */
     public boolean restore() throws ServiceException, IOException {
-        LOGGER.info("start restore");
+        LogWriter.append("restore", "start");
+
         boolean isSucceed = false;
         if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
             elasticsearchTemplate.deleteIndex(backupIndices);
             isSucceed = ElasticsearchSnapshotUtils.restoreIndices(elasticsearchUrl, repositoryName, snapshotName, backupIndices)
                             && elasticsearchTemplate.indexExists(backupIndices);
         }
-        LOGGER.info("restore :" + (isSucceed?"success":"fail"));
+
+        LogWriter.append("restore", isSucceed?"success":"fail");
         return isSucceed;
     }
 
