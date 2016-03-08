@@ -1,16 +1,12 @@
 package sjes.elasticsearch.utils;
 
-import org.elasticsearch.common.joda.time.DateTimeUtils;
-import org.elasticsearch.common.rounding.DateTimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 /**
  * Created by 白 on 2016/3/4.
