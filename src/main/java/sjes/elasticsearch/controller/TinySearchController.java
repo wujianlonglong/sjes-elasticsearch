@@ -41,4 +41,12 @@ public class TinySearchController {
     public PageModel getProductsWithoutPromotion(Integer page, Integer size) throws ServiceException {
         return tinySearchService.getProducts(SaleConstant.secondKill, page, size);
     }
+
+    /**
+     * 获取所有正常销售的商品
+     */
+    @RequestMapping(value = "searchs", method = RequestMethod.GET)
+    public PageModel getProductsById(Long id, Integer page, Integer size) throws ServiceException {
+        return tinySearchService.getProductsById(id, page, size);
+    }
 }
