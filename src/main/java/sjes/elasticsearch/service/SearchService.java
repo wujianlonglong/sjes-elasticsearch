@@ -555,13 +555,12 @@ public class SearchService {
         boolFilterBuilder.must(termFilter("status", 0));
 
         if (null != categoryId) {       //限定商品分类
-            BoolFilterBuilder categoryIdBoolFilterBuilder = boolFilter().must(termFilter("productCategoryIds", categoryId));
 //            BoolFilterBuilder categoryIdBoolFilterBuilder = boolFilter().should(termFilter("categoryId", categoryId));
 //            List<Category> categories = categorySearch(categoryId);
 //            if (null != categories) {
 //                categories.forEach(category -> categoryIdBoolFilterBuilder.should(termFilter("categoryId", category.getId())));
 //            }
-            boolFilterBuilder.must(categoryIdBoolFilterBuilder);
+            boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
         }
 
         if (StringUtils.isNotBlank(brandIds)) {     //限定品牌

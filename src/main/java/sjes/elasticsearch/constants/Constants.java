@@ -58,4 +58,8 @@ public class Constants {
 
     }
 
+    /**
+     * 应用名称
+     */
+    public static final String SJES_API_SALE = "sjes-api-sale";
 }
