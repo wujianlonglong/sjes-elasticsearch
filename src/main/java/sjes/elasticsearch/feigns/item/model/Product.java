@@ -30,6 +30,9 @@ public class Product implements Serializable {
     private Long erpGoodsId; // 对应ERP GoodsID
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    private String goodsIdStr;  //用于查询，"goodsId/erpGoodsId"
+
+    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String goodsCode; // 商品内码(顺序号)
 
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)

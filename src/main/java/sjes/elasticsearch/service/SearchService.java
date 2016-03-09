@@ -168,6 +168,7 @@ public class SearchService {
                                 productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
                             } catch (Exception ignored) {}
                         }
+                        productIndex.setGoodsIdStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId());
 
                         productMap.put(productImageModel.getId(), productIndex);
                     });
@@ -386,7 +387,7 @@ public class SearchService {
             productIndex.setTags(tags);
         }
         else {
-            LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[] { productId });
+            LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId });
         }
         return productIndex;
     }

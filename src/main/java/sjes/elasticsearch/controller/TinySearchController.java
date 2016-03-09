@@ -43,10 +43,10 @@ public class TinySearchController {
     }
 
     /**
-     * 获取所有正常销售的商品
+     * 根据Id或名称获取商品
      */
     @RequestMapping(value = "searchs", method = RequestMethod.GET)
-    public PageModel getProductsById(Long id, Integer page, Integer size) throws ServiceException {
-        return tinySearchService.getProductsById(id, page, size);
+    public PageModel getProductsByIdOrName(Long id, String keyword, Integer page, Integer size) throws ServiceException {
+        return tinySearchService.getProductsByIdOrName(id,keyword, page, size);
     }
 }

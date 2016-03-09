@@ -1,7 +1,9 @@
 package sjes.elasticsearch.service;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.index.query.BoolFilterBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,24 +68,41 @@ public class TinySearchService {
     }
 
     /**
-     * 根据id获取商品列表
+     * 根据id或名称获取商品列表
      *
      * @param id 编号
+     * @param keyword 名称
      * @param page 页面
      * @param size 页面大小
      * @return 符合条件的商品（分页）
      */
-    public PageModel getProductsById(Long id, Integer page, Integer size) {
+    public PageModel getProductsByIdOrName(Long id, String keyword, Integer page, Integer size) {
         Pageable pageable = new Pageable(page, size);
 
-        if (null == id) {
+        if (null == id && StringUtils.isBlank(keyword)) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
 
-        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
-        nativeSearchQueryBuilder.withFilter(boolFilter().must(termFilter("status", 0))
-                                                        .should(termFilter("goodsId", id))
-                                                        .should(termFilter("erpGoodsId", id)));
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+        BoolQueryBuilder boolQueryBuilder = boolQuery();
+
+        if (StringUtils.isNotBlank(keyword)) {
+
+            if (keyword.matches("[A-Za-z0-9]+")) {
+                final String searchKeyword = "*" + keyword.toUpperCase() + "*";
+                boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
+                        .should(wildcardQuery("namePinYinAddr", searchKeyword)).minimumNumberShouldMatch(1));
+            }else{
+                boolQueryBuilder.must(boolQuery().should(matchQuery("name", keyword).analyzer("ik")).should(wildcardQuery("name", "*" + keyword + "*")).minimumNumberShouldMatch(1));
+            }
+        }
+
+        if (null != id) {
+            boolQueryBuilder.must(wildcardQuery("goodsIdStr", "*" + id + "*"));
+        }
+        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
+
+        nativeSearchQueryBuilder.withFilter(termFilter("status", 0));
 
         FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
