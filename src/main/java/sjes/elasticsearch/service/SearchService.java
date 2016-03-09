@@ -271,88 +271,126 @@ public class SearchService {
     public void index(Long productId) throws ServiceException {
         LOGGER.info(" 商品productId: {}, index beginning ......", new Long[] { productId });
         if (null != productId) {
-            categoryRepository.delete(productId);
-            ProductImageModel productImageModel = productService.getProductImageModel(productId);
-            ProductIndex productIndex = new ProductIndex();
-            productIndex.setAttributeOptionValueModels(Lists.newArrayList());
-            org.springframework.beans.BeanUtils.copyProperties(productImageModel, productIndex);
-            Long categoryId = productIndex.getCategoryId();
-            if (null != categoryId) {
-                List<Tag> tags = Lists.newArrayList();
-                List<Category> categories = categoryService.findClusters(categoryId);
-                List<String> productCategoryIds = Lists.newArrayList();
-                if (CollectionUtils.isNotEmpty(categories)) {
-                    categories.forEach(category -> {
-                        Tag tag = new Tag();
-                        productCategoryIds.add(category.getId().toString());
-                        tag.setName(category.getName());
-                        tag.setOrders(tags.size());
-                        tags.add(tag);
-                    });
-                }
-                Long brandId = productImageModel.getBrandId();
-                if (null != brandId) {
-                    Brand brand = brandService.get(brandId);
-                    if (null != brand) {
-                        productIndex.setBrandName(brand.getName());
-                    }
-                }
-                List<ProductCategory> productCategories = productCategoryService.findProductCategorysByProductId(productId);
-                if (CollectionUtils.isNotEmpty(productCategories)) {
-
-                    productCategories.forEach(productCategory -> {
-                        Long cateId = productCategory.getCategoryId();
-                        List<Category> categoryList = categoryService.findClusters(cateId);
-                        if (CollectionUtils.isNotEmpty(categoryList)) {
-                            categoryList.forEach(category -> {
-                                Tag tag = new Tag();
-                                tag.setName(category.getTagName());
-                                tag.setOrders(tags.size());
-                                tags.add(tag);
-                            });
-                        }
-                        productCategoryIds.add(cateId.toString());
-                    });
-                }
-                productIndex.setProductCategoryIds(productCategoryIds);
-                List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
-                List<AttributeModel> attributeModels = attributeService.lists(Lists.newArrayList(categoryId));
-                Map<Long, Attribute> attributeMaps = Maps.newHashMap();
-                Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
-                if (CollectionUtils.isNotEmpty(attributeModels)) {
-                    attributeModels.forEach(attributeModel -> {
-                        attributeMaps.put(attributeModel.getId(), attributeModel);
-                        List<AttributeOption> attributeOptions = attributeModel.getAttributeOptions();
-                        if (CollectionUtils.isNotEmpty(attributeOptions)) {
-                            attributeOptions.forEach(attributeOption -> {
-                                attributeOptionMaps.put(attributeOption.getId(), attributeOption);
-                            });
-                        }
-                    });
-                }
-                if (CollectionUtils.isNotEmpty(productAttributeValues)) {
-                    productAttributeValues.forEach(productAttributeValue -> {
-                        AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
-                        Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
-                        AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
-                        Tag tag = new Tag();
-                        tag.setName(attributeOption.getValue());
-                        tag.setOrders(tags.size());
-                        tags.add(tag);
-                        org.springframework.beans.BeanUtils.copyProperties(attribute, attributeOptionValueModel);
-                        attributeOptionValueModel.setAttributeOption(attributeOption);
-                        productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
-                    });
-                }
-                productIndex.setTags(tags);
+            ProductIndex productIndex = buildProductIndex(productService.getProductImageModel(productId));
+            if (null != productIndex) {
                 productIndexRepository.save(productIndex);
                 LOGGER.info(" 商品productId: {}, index ending ......", new Long[] { productId });
             }
-            else {
-                LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[] { productId });
-            }
         }
     }
+
+
+    /**
+     * 索引productIndex
+     * @param productIds productIndex
+     * @return ProductIndex
+     */
+    @RequestMapping(method = RequestMethod.PUT)
+    public void index(List<Long> productIds) throws ServiceException {
+        String prodIds = StringUtils.join(productIds, ",");
+        LOGGER.info(" 商品productIds: {}, index beginning ......", new String[] {prodIds});
+        if (CollectionUtils.isNotEmpty(productIds)) {
+            List<ProductImageModel> productImageModels = productService.listProductsImageModel(productIds);
+            List<ProductIndex> productIndexes = Lists.newArrayList();
+            for (ProductImageModel productImageModel : productImageModels) {
+                ProductIndex productIndex = buildProductIndex(productImageModel);
+                if (null != productIndex) {
+                    productIndexes.add(productIndex);
+                }
+            }
+            if (CollectionUtils.isNotEmpty(productIndexes)) {
+                productIndexRepository.save(productIndexes);
+            }
+            LOGGER.info(" 商品productId: {}, index ending ......", new String[] { prodIds });
+        }
+    }
+
+    private ProductIndex buildProductIndex(ProductImageModel productImageModel) {
+        Long categoryId = productImageModel.getCategoryId();
+        Long productId = productImageModel.getId();
+        ProductIndex productIndex = null;
+        if (null != categoryId) {
+            categoryRepository.delete(productId);
+            productIndex = new ProductIndex();
+            productIndex.setAttributeOptionValueModels(Lists.newArrayList());
+            BeanUtils.copyProperties(productImageModel, productIndex);
+            List<Tag> tags = Lists.newArrayList();
+            List<Category> categories = categoryService.findClusters(categoryId);
+            List<String> productCategoryIds = Lists.newArrayList();
+            if (CollectionUtils.isNotEmpty(categories)) {
+                categories.forEach(category -> {
+                    Tag tag = new Tag();
+                    productCategoryIds.add(category.getId().toString());
+                    tag.setName(category.getName());
+                    tag.setOrders(tags.size());
+                    tags.add(tag);
+                    Integer grade = category.getGrade();
+                    if (null != grade && Constants.CategoryGradeConstants.GRADE_THREE == grade) {
+                        categoryRepository.save(category);
+                    }
+                });
+            }
+            Long brandId = productImageModel.getBrandId();
+            if (null != brandId) {
+                Brand brand = brandService.get(brandId);
+                if (null != brand) {
+                    productIndex.setBrandName(brand.getName());
+                }
+            }
+            List<ProductCategory> productCategories = productCategoryService.findProductCategorysByProductId(productId);
+            if (CollectionUtils.isNotEmpty(productCategories)) {
+                productCategories.forEach(productCategory -> {
+                    Long cateId = productCategory.getCategoryId();
+                    List<Category> categoryList = categoryService.findClusters(cateId);
+                    if (CollectionUtils.isNotEmpty(categoryList)) {
+                        categoryList.forEach(category -> {
+                            Tag tag = new Tag();
+                            tag.setName(category.getTagName());
+                            tag.setOrders(tags.size());
+                            tags.add(tag);
+                        });
+                    }
+                    productCategoryIds.add(cateId.toString());
+                });
+            }
+            productIndex.setProductCategoryIds(productCategoryIds);
+            List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
+            List<AttributeModel> attributeModels = attributeService.lists(Lists.newArrayList(categoryId));
+            Map<Long, Attribute> attributeMaps = Maps.newHashMap();
+            Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
+            if (CollectionUtils.isNotEmpty(attributeModels)) {
+                attributeModels.forEach(attributeModel -> {
+                    attributeMaps.put(attributeModel.getId(), attributeModel);
+                    List<AttributeOption> attributeOptions = attributeModel.getAttributeOptions();
+                    if (CollectionUtils.isNotEmpty(attributeOptions)) {
+                        attributeOptions.forEach(attributeOption -> {
+                            attributeOptionMaps.put(attributeOption.getId(), attributeOption);
+                        });
+                    }
+                });
+            }
+            if (CollectionUtils.isNotEmpty(productAttributeValues)) {
+                for (ProductAttributeValue productAttributeValue : productAttributeValues) {
+                    AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
+                    Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
+                    AttributeOption attributeOption = attributeOptionMaps.get(productAttributeValue.getAttributeOptionId());
+                    Tag tag = new Tag();
+                    tag.setName(attributeOption.getValue());
+                    tag.setOrders(tags.size());
+                    tags.add(tag);
+                    BeanUtils.copyProperties(attribute, attributeOptionValueModel);
+                    attributeOptionValueModel.setAttributeOption(attributeOption);
+                    productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
+                }
+            }
+            productIndex.setTags(tags);
+        }
+        else {
+            LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[] { productId });
+        }
+        return productIndex;
+    }
+
 
     /**
      * 删除全部索引

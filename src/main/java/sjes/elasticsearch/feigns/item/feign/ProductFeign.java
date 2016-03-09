@@ -26,6 +26,15 @@ public interface ProductFeign {
     ProductImageModel getProductImageModel(@PathVariable("productId") Long productId);
 
     /**
+     * 根据商品id列表查询 ProductsImageModel列表
+     *
+     * @param productIds 商品id列表
+     * @return ProductsImageModel列表
+     */
+    @RequestMapping(value = "list/images", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+    List<ProductImageModel> listProductsImageModel(List<Long> productIds);
+
+    /**
      * 根据分类Ids查询商品列表
      * @param categoryIds 分类Ids
      * @return 商品列表
