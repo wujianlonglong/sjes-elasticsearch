@@ -42,17 +42,41 @@ public class TinySearchService {
     private PromotionFeign promotionFeign;
 
     /**
-     * 获取商品列表
+     * 根据相关条件获取商品列表
      *
+     * @param id 编号
+     * @param keyword 名称
      * @param saleType 促销类型，无则为null
      * @param page 页面
      * @param size 页面大小
      * @return 符合条件的商品（分页）
      */
-    public PageModel getProducts(Integer saleType, Integer page, Integer size) {
+    public PageModel getProducts(Long id, String keyword, Integer saleType, Integer page, Integer size) {
         Pageable pageable = new Pageable(page, size);
 
-        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+        BoolQueryBuilder boolQueryBuilder = boolQuery();
+
+        if (null == id && StringUtils.isBlank(keyword)) {
+            boolQueryBuilder.must(matchAllQuery());
+        }
+
+        if (StringUtils.isNotBlank(keyword)) {
+
+            if (keyword.matches("[A-Za-z0-9]+")) {
+                final String searchKeyword = "*" + keyword.toUpperCase() + "*";
+                boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
+                        .should(wildcardQuery("namePinYinAddr", searchKeyword)).minimumNumberShouldMatch(1));
+            }else{
+                boolQueryBuilder.must(wildcardQuery("searchStr", "*" + keyword + "*"));
+            }
+        }
+
+        if (null != id) {
+            boolQueryBuilder.must(wildcardQuery("searchStr", "*" + id + "*"));
+        }
+        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
+
         BoolFilterBuilder boolFilterBuilder = boolFilter().must(termFilter("status", 0));
 
         //过滤掉秒杀商品
@@ -62,47 +86,6 @@ public class TinySearchService {
         }
 
         nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
-
-        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
-        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
-    }
-
-    /**
-     * 根据id或名称获取商品列表
-     *
-     * @param id 编号
-     * @param keyword 名称
-     * @param page 页面
-     * @param size 页面大小
-     * @return 符合条件的商品（分页）
-     */
-    public PageModel getProductsByIdOrName(Long id, String keyword, Integer page, Integer size) {
-        Pageable pageable = new Pageable(page, size);
-
-        if (null == id && StringUtils.isBlank(keyword)) {
-            return new PageModel(Lists.newArrayList(), 0, pageable);
-        }
-
-        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
-        BoolQueryBuilder boolQueryBuilder = boolQuery();
-
-        if (StringUtils.isNotBlank(keyword)) {
-
-            if (keyword.matches("[A-Za-z0-9]+")) {
-                final String searchKeyword = "*" + keyword.toUpperCase() + "*";
-                boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
-                        .should(wildcardQuery("namePinYinAddr", searchKeyword)).minimumNumberShouldMatch(1));
-            }else{
-                boolQueryBuilder.must(boolQuery().should(matchQuery("name", keyword).analyzer("ik")).should(wildcardQuery("name", "*" + keyword + "*")).minimumNumberShouldMatch(1));
-            }
-        }
-
-        if (null != id) {
-            boolQueryBuilder.must(wildcardQuery("goodsIdStr", "*" + id + "*"));
-        }
-        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
-
-        nativeSearchQueryBuilder.withFilter(termFilter("status", 0));
 
         FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);

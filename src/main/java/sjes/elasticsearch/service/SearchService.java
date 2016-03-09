@@ -168,7 +168,8 @@ public class SearchService {
                                 productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
                             } catch (Exception ignored) {}
                         }
-                        productIndex.setGoodsIdStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId());
+                        productIndex.setSearchStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId()
+                                + "/" + productIndex.getSn() + "/" + productIndex.getName());
 
                         productMap.put(productImageModel.getId(), productIndex);
                     });
@@ -391,7 +392,8 @@ public class SearchService {
                     productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
                 } catch (Exception ignored) {}
             }
-            productIndex.setGoodsIdStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId());
+            productIndex.setSearchStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId()
+                                                         + "/" + productIndex.getSn() + "/" + productIndex.getName());
 
             productIndex.setTags(tags);
         }

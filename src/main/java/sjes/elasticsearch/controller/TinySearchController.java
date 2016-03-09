@@ -31,7 +31,7 @@ public class TinySearchController {
      */
     @RequestMapping(value = "all", method = RequestMethod.GET)
     public PageModel getAllProducts(Integer page, Integer size) throws ServiceException {
-        return tinySearchService.getProducts(null, page, size);
+        return tinySearchService.getProducts(null,null,null, page, size);
     }
 
     /**
@@ -39,14 +39,22 @@ public class TinySearchController {
      */
     @RequestMapping(value = "nopromotion", method = RequestMethod.GET)
     public PageModel getProductsWithoutPromotion(Integer page, Integer size) throws ServiceException {
-        return tinySearchService.getProducts(SaleConstant.secondKill, page, size);
+        return tinySearchService.getProducts(null, null, SaleConstant.secondKill, page, size);
     }
 
     /**
-     * 根据Id或名称获取商品
+     * 根据相关条件获取商品
+     *
+     * @param id 编号
+     * @param keyword 关键字
+     * @param saleType 促销类型
+     * @param page 页面
+     * @param size 页面大小
+     * @return
+     * @throws ServiceException
      */
     @RequestMapping(value = "searchs", method = RequestMethod.GET)
-    public PageModel getProductsByIdOrName(Long id, String keyword, Integer page, Integer size) throws ServiceException {
-        return tinySearchService.getProductsByIdOrName(id,keyword, page, size);
+    public PageModel getProductsByIdOrName(Long id, String keyword, Integer saleType, Integer page, Integer size) throws ServiceException {
+        return tinySearchService.getProducts(id, keyword, saleType, page, size);
     }
 }
