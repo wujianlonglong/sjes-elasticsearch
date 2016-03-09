@@ -384,6 +384,15 @@ public class SearchService {
                     productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
                 }
             }
+
+            if (StringUtils.isNotBlank(productIndex.getName())) {
+                try {
+                    productIndex.setNamePinYin(formatToPinYin(productIndex.getName()).toUpperCase());         //商品名称转拼音
+                    productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
+                } catch (Exception ignored) {}
+            }
+            productIndex.setGoodsIdStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId());
+
             productIndex.setTags(tags);
         }
         else {
