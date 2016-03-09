@@ -73,8 +73,8 @@ public class SearchController {
      * 索引productIndex
      * @param productIds
      */
-    @RequestMapping(method = RequestMethod.PUT)
-    public void index(List<Long> productIds) throws ServiceException {
+    @RequestMapping(value="index/productIds", method = RequestMethod.PUT)
+    public void index(@RequestBody List<Long> productIds) throws ServiceException {
         searchService.index(productIds);
     }
 
