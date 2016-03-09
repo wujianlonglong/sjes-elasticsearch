@@ -3,6 +3,7 @@ package sjes.elasticsearch.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.HotWordModel;
@@ -54,7 +55,7 @@ public class TinySearchController {
      * @throws ServiceException
      */
     @RequestMapping(value = "searchs", method = RequestMethod.GET)
-    public PageModel getProductsByIdOrName(Long id, String keyword, Integer saleType, Integer page, Integer size) throws ServiceException {
+    public PageModel getProductsByIdOrName(@RequestParam(name = "id",required = false) Long id, @RequestParam(name = "keyword",required = false)String keyword, @RequestParam(name = "saleType",required = false)Integer saleType, @RequestParam("page")Integer page,@RequestParam("size") Integer size) throws ServiceException {
         return tinySearchService.getProducts(id, keyword, saleType, page, size);
     }
 }
