@@ -84,6 +84,12 @@ public class Product implements Serializable {
 
     private Boolean isBargains; // 是否是惠商品
 
+    private Boolean isSeckill; // 是否是秒杀
+
+    private Boolean isFullGift; // 是否满赠
+
+    private String remarker; // 备注
+
     private Integer transportType; // 商品运输类型 常温:0 冷藏/冷冻:1 保热:2
 
     private Long categoryId; // 商品分类Id
