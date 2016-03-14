@@ -79,6 +79,16 @@ public class SearchController {
     }
 
     /**
+     * 索引productIndex
+     * @param sns sns
+     * @return ProductIndex
+     */
+    @RequestMapping(value="index/sns", method = RequestMethod.PUT)
+    public void indexSns(@RequestBody List<String> sns) throws ServiceException {
+        searchService.indexSns(sns);
+    }
+
+    /**
      * 删除索引
      */
     @RequestMapping(method = RequestMethod.DELETE)

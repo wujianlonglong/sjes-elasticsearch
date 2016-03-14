@@ -26,8 +26,6 @@ import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
@@ -269,7 +267,6 @@ public class SearchService {
      * @param productId productIndex
      * @return ProductIndex
      */
-    @RequestMapping(method = RequestMethod.PUT)
     public void index(Long productId) throws ServiceException {
         LOGGER.info(" 商品productId: {}, index beginning ......", new Long[] { productId });
         if (null != productId) {
@@ -287,7 +284,6 @@ public class SearchService {
      * @param productIds productIndex
      * @return ProductIndex
      */
-    @RequestMapping(method = RequestMethod.PUT)
     public void index(List<Long> productIds) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
         LOGGER.info(" 商品productIds: {}, index beginning ......", new String[] {prodIds});
@@ -304,6 +300,30 @@ public class SearchService {
                 productIndexRepository.save(productIndexes);
             }
             LOGGER.info(" 商品productId: {}, index ending ......", new String[] { prodIds });
+        }
+    }
+
+    /**
+     * 索引productIndex
+     * @param sns sns
+     * @return ProductIndex
+     */
+    public void indexSns(List<String> sns) throws ServiceException {
+        String snsStr = StringUtils.join(sns, ",");
+        LOGGER.info(" sns: {}, index beginning ......", new String[] {snsStr});
+        if (CollectionUtils.isNotEmpty(sns)) {
+            List<ProductImageModel> productImageModels = productService.listBySns(sns);
+            List<ProductIndex> productIndexes = Lists.newArrayList();
+            for (ProductImageModel productImageModel : productImageModels) {
+                ProductIndex productIndex = buildProductIndex(productImageModel);
+                if (null != productIndex) {
+                    productIndexes.add(productIndex);
+                }
+            }
+            if (CollectionUtils.isNotEmpty(productIndexes)) {
+                productIndexRepository.save(productIndexes);
+            }
+            LOGGER.info(" 商品sns: {}, index ending ......", new String[] { snsStr });
         }
     }
 
