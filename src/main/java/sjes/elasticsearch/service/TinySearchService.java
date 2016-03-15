@@ -33,7 +33,7 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 @Service("tinySearchService")
 public class TinySearchService {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(TinySearchService.class);
 
     @Autowired
     private ProductIndexRepository productIndexRepository;

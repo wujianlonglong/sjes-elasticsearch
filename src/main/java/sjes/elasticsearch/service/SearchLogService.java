@@ -34,7 +34,7 @@ public class SearchLogService {
 
     private final static int MAX_HOTWORDS_COUNT = 5;    //能够获取的热门搜索记录的最大数量
 
-    private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(SearchLogService.class);
 
     @Autowired
     private SearchLogRepository searchLogRepository;

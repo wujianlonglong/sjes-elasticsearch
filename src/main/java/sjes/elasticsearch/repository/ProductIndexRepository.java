@@ -11,4 +11,7 @@ import java.util.List;
 public interface ProductIndexRepository extends ElasticsearchRepository<ProductIndex, Long> {
 
     List<ProductIndex> findByCategoryId(Long categoryId);
+    List<ProductIndex> findByBrandName(String keyword);
+
+    int countByBrandName(String keyword);
 }
