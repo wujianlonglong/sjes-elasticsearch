@@ -49,8 +49,9 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
+import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificWords;
+import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
 import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
 
@@ -278,7 +279,6 @@ public class SearchService {
         }
     }
 
-
     /**
      * 索引productIndex
      * @param productIds productIndex
@@ -423,7 +423,6 @@ public class SearchService {
         return productIndex;
     }
 
-
     /**
      * 删除全部索引
      *
@@ -485,9 +484,8 @@ public class SearchService {
         }
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
-        BoolQueryBuilder boolQueryBuilder = boolQuery();
-        final boolean[] brandMatchFlag = {false};   //判断名牌名称是否匹配到
-        final boolean[] nameAllMatchFlag = {false};    //判断名称是否全部匹配到
+        BoolQueryBuilder boolQueryBuilder = boolQuery();        //查询条件
+        BoolFilterBuilder boolFilterBuilder = boolFilter();     //过滤条件
 
         if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
 
@@ -505,67 +503,42 @@ public class SearchService {
                 searchKeyword = keyword;
             }
 
-            List<Category> categoryList = categoryRepository.findByName(searchKeyword);
-            if (categoryList != null && categoryList.size() > 0){
-                if(categoryList.size() > 1){
-                    int max = -1;
-                    for (Category category : categoryList) {
-                        int count = productIndexRepository.findByCategoryId(category.getId()).size();
-                        if (count > max) {
-                            max = count;
-                            categoryId = category.getId();
-                        }
-                    }
-                }else{
-                    categoryId = categoryList.get(0).getId();
+            if (isMatchMostName(searchKeyword)) {       //根据商品名称分词检索
+                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));
+            }else{
+                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));
+            }
+
+            //判断搜索词是否包含品牌
+            if (isBandName(searchKeyword)) {
+                if (specificBrandName.containsKey(searchKeyword)) {     //判断品牌是否是其他品牌的子产品（如小浣熊）
+                    BoolQueryBuilder brandNameQueryBuilder = boolQuery();
+                    brandNameQueryBuilder.should(termQuery("brandName", searchKeyword));
+                    specificBrandName.get(searchKeyword).forEach(brandName ->
+                            brandNameQueryBuilder.should(termQuery("brandName", brandName)));
+                    brandNameQueryBuilder.minimumNumberShouldMatch(1);
+                    boolQueryBuilder.must(brandNameQueryBuilder);
+                } else {
+                    boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));       //查询品牌
                 }
             }
 
-            boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));                //根据商品名称分词检索
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));  //根据标签分词检索
+            if (specificCategories.containsKey(searchKeyword)) {      //特殊搜索词指定分类指定搜索分类
+                BoolQueryBuilder categoryQueryBuilder = boolQuery();
+                specificCategories.get(searchKeyword).forEach(specificCategoryId ->
+                        categoryQueryBuilder.should(termQuery("productCategoryIds", specificCategoryId)));
+                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
+            } else if (isCategoryName(searchKeyword)) {      //判断搜索词是否是分类
+                BoolQueryBuilder categoryQueryBuilder = boolQuery();
+                categoryRepository.findByNameLike(searchKeyword).forEach(category ->
+                        categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
+                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
+            }
 
-            final Long tempCategoryId = categoryId;
-
-            //先判断输入的关键字是否为品牌，是则作为必须条件
-            elasticsearchTemplate.query(
-                    new NativeSearchQueryBuilder().withQuery(boolQuery().must(boolQuery().should(matchQuery("brandName", searchKeyword).analyzer("ik")).should(wildcardQuery("brandName","*"+searchKeyword+"*")).minimumNumberShouldMatch(1))).withMinScore(0.01f).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
-                    searchBrandNameResponse -> {
-                        //LOGGER.info(searchBrandNameResponse.getHits().getMaxScore()+"");
-                        if (searchBrandNameResponse.getHits().getTotalHits() > 0) {
-                            boolQueryBuilder.must(boolQuery().should(matchQuery("brandName", searchKeyword).analyzer("ik")).should(wildcardQuery("brandName","*"+searchKeyword+"*")).minimumNumberShouldMatch(1));           //根据商品品牌名称搜索
-
-                            if(tempCategoryId != null) {
-                                //判断搜索词是否全部匹配到，是则作为必须条件
-                                elasticsearchTemplate.query(
-                                        new NativeSearchQueryBuilder().withQuery(
-                                                boolQuery().must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("100%"))
-                                                        .must(matchQuery("brandName", searchKeyword).analyzer("ik"))).withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
-                                        searchNameResponse -> {
-                                            if (searchNameResponse.getHits().getTotalHits() > 0) {
-                                                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("100%"));           //完全匹配商品名称
-                                                nameAllMatchFlag[0] = true;
-                                            }
-                                            return null;
-                                        });
-                            }
-                            brandMatchFlag[0] = true;
-                        }
-                        return null;
-                    });
-
-            if(null == categoryId && !nameAllMatchFlag[0]) {
-                boolQueryBuilder.should(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("80%"));                //根据商品名称分词检索
-
-                //匹配分类名来获取最有可能的分类
-                elasticsearchTemplate.query(new NativeSearchQueryBuilder().withQuery(matchQuery("tagName", searchKeyword).minimumShouldMatch("50%").analyzer("ik")).withPageable(new PageRequest(0, 2)).withMinScore(1f).withIndices("sjes").withTypes("categories").build(), searchResponse -> {
-                    if (searchResponse.getHits().getTotalHits() > 0) {
-                        SearchHit[] searchHits = searchResponse.getHits().getHits();
-                        for (int i = 0; i < searchHits.length; i++) {
-                            boolQueryBuilder.should(termQuery("categoryId", searchHits[i].getSource().get("id")));  //根据分类查询
-                        }
-                    }
-                    return null;
-                });
+            //TODO 判断搜索词是否是标签
+            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));    //根据标签分词检索
+            if (similarWords.containsKey(searchKeyword)) {          //将搜索词的同义词进行标签检索
+                boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", similarWords.get(searchKeyword)).analyzer("ik")));
             }
         } else {
             boolQueryBuilder.should(matchAllQuery());
@@ -583,16 +556,16 @@ public class SearchService {
 //        }
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
-        BoolFilterBuilder boolFilterBuilder = boolFilter();
         boolFilterBuilder.must(termFilter("status", 0));
 
         if (null != categoryId) {       //限定商品分类
-//            BoolFilterBuilder categoryIdBoolFilterBuilder = boolFilter().should(termFilter("categoryId", categoryId));
-//            List<Category> categories = categorySearch(categoryId);
-//            if (null != categories) {
-//                categories.forEach(category -> categoryIdBoolFilterBuilder.should(termFilter("categoryId", category.getId())));
-//            }
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
+        }
+
+        //排除结果中的指定分类
+        if (StringUtils.isNotBlank(keyword) && exceptCategories.containsKey(keyword)) {
+            exceptCategories.get(keyword).forEach(exceptCategoryId ->
+                    boolFilterBuilder.mustNot(termFilter("productCategoryIds", exceptCategoryId)));
         }
 
         if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
@@ -646,31 +619,29 @@ public class SearchService {
                 sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
-        } else if(!brandMatchFlag[0] && null == categoryId){
-            //获取第一个结果的分类号，并提高该分类商品的排名
-            elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 1)).withMinScore(1f).withIndices("sjes").withTypes("products").build(), searchResponse -> {
-                if (searchResponse.getHits().getTotalHits() > 0) {
-                    SearchHit[] searchHits = searchResponse.getHits().getHits();
-                    nativeSearchQueryBuilder.withSort(SortBuilders.scriptSort("_score + (doc['categoryId'].value == myVal ? 1 : 0) * 2", "number").param("myVal", searchHits[0].getSource().get("categoryId")).order(SortOrder.DESC));  //使用Groovy脚本自定义排序
-                }
-                return null;
-            });
         }
 
+        //获取第一个结果的分类号，并提高该分类商品的排名
+//        elasticsearchTemplate.query(nativeSearchQueryBuilder.withPageable(new PageRequest(0, 1)).withMinScore(1f).withIndices("sjes").withTypes("products").build(), searchResponse -> {
+//            if (searchResponse.getHits().getTotalHits() > 0) {
+//                SearchHit[] searchHits = searchResponse.getHits().getHits();
+//                nativeSearchQueryBuilder.withSort(SortBuilders.scriptSort("_score + (doc['categoryId'].value == myVal ? 1 : 0) * 2", "number").param("myVal", searchHits[0].getSource().get("categoryId")).order(SortOrder.DESC));  //使用Groovy脚本自定义排序
+//            }
+//            return null;
+//        });
+
         if (null == categoryId) {
-            if (StringUtils.isNotBlank(keyword) && StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
+            if (StringUtils.isNotBlank(keyword)  && keyword.matches("[A-Za-z0-9]+")) {
                 nativeSearchQueryBuilder.withMinScore(0.1f);
             }else {
-                nativeSearchQueryBuilder.withMinScore(1.0f);
+                nativeSearchQueryBuilder.withMinScore(0.9f);
             }
-        } else {
-            nativeSearchQueryBuilder.withMinScore(0.1f);
         }
 
         final long[] totalHits = {0};   //总记录数
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
-                        .withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
+                        .withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
                     @Override
                     public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
@@ -678,8 +649,10 @@ public class SearchService {
 
                         totalHits[0] = searchResponse.getHits().getTotalHits();
                         if (searchResponse.getHits().getTotalHits() > 0) {
-
+                            final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
+
+                                LOGGER.error((i[0]++) +"."+ searchHit.getSource().get("name") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore());
 
                                 ProductIndex productIndex = null;
                                 try {
@@ -750,26 +723,6 @@ public class SearchService {
     }
 
     /**
-     * 搜索分类下所有的子分类
-     *
-     * @param categoryId 分类编号
-     * @return 子分类列表
-     * @throws ServiceException
-     */
-    public List<Category> categorySearch(Long categoryId) throws ServiceException {
-        if (null == categoryId) {
-            return null;
-        }
-
-        NativeSearchQueryBuilder nativeSearchQueryBuilder;
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(wildcardQuery("treePath", "*," + categoryId + ",*"));
-        SearchQuery searchQuery = nativeSearchQueryBuilder.build();
-        List<Category> categories = categoryRepository.search(searchQuery).getContent();
-
-        return categories;
-    }
-
-    /**
      * Map转Object
      *
      * @param classType 类
@@ -810,5 +763,32 @@ public class SearchService {
             }
         }
         return obj;
+    }
+
+    /**
+     * 判断关键词是否为品牌
+     */
+    private boolean isBandName(String keyword) {
+        return elasticsearchTemplate.query(
+                new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f)
+                        .withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
+                searchBrandNameResponse -> searchBrandNameResponse.getHits().getTotalHits() > 0);
+    }
+
+    /**
+     * 判断关键词是否是分类
+     */
+    private boolean isCategoryName(String keyword) {
+        return categoryRepository.countByNameLike(keyword) > 0;
+    }
+
+    /**
+     * 判断是否匹配大部分商品名
+     */
+    private boolean isMatchMostName(String keyword) {
+        return keyword.length() > 3 && elasticsearchTemplate.query(
+                new NativeSearchQueryBuilder().withQuery(matchQuery("name", keyword).analyzer("ik").minimumShouldMatch("85%"))
+                        .withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
+                searchNameResponse -> searchNameResponse.getHits().getTotalHits() > 0);
     }
 }

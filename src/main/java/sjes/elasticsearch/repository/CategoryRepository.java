@@ -9,5 +9,6 @@ import java.util.List;
  * Created by qinhailong on 15-12-3.
  */
 public interface CategoryRepository extends ElasticsearchRepository<Category, Long> {
-    List<Category> findByName(String name);
+    List<Category> findByNameLike(String name);
+    int countByNameLike(String name);
 }

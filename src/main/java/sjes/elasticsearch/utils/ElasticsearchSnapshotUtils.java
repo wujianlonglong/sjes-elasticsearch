@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class ElasticsearchSnapshotUtils {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSnapshotUtils.class);
 
     public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
