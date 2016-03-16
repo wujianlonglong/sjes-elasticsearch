@@ -51,7 +51,7 @@ import java.util.*;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificWords;
+import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
 import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
 
@@ -509,13 +509,26 @@ public class SearchService {
                 boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));
             }
 
-            //判断搜索词是否是品牌
+            //判断搜索词是否包含品牌
             if (isBandName(searchKeyword)) {
-                boolFilter().must(termFilter("brandName", searchKeyword));       //过滤品牌
+                if (specificBrandName.containsKey(searchKeyword)) {     //判断品牌是否是其他品牌的子产品（如小浣熊）
+                    BoolQueryBuilder brandNameQueryBuilder = boolQuery();
+                    brandNameQueryBuilder.should(termQuery("brandName", searchKeyword));
+                    specificBrandName.get(searchKeyword).forEach(brandName ->
+                            brandNameQueryBuilder.should(termQuery("brandName", brandName)));
+                    brandNameQueryBuilder.minimumNumberShouldMatch(1);
+                    boolQueryBuilder.must(brandNameQueryBuilder);
+                } else {
+                    boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));       //查询品牌
+                }
             }
 
-            //判断搜索词是否是分类
-            if (null != categoryId && isCategoryName(searchKeyword)) {
+            if (specificCategories.containsKey(searchKeyword)) {      //特殊搜索词指定分类指定搜索分类
+                BoolQueryBuilder categoryQueryBuilder = boolQuery();
+                specificCategories.get(searchKeyword).forEach(specificCategoryId ->
+                        categoryQueryBuilder.should(termQuery("productCategoryIds", specificCategoryId)));
+                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
+            } else if (isCategoryName(searchKeyword)) {      //判断搜索词是否是分类
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
                 categoryRepository.findByNameLike(searchKeyword).forEach(category ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
@@ -523,7 +536,10 @@ public class SearchService {
             }
 
             //TODO 判断搜索词是否是标签
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));  //根据标签分词检索
+            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));    //根据标签分词检索
+            if (similarWords.containsKey(searchKeyword)) {          //将搜索词的同义词进行标签检索
+                boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", similarWords.get(searchKeyword)).analyzer("ik")));
+            }
         } else {
             boolQueryBuilder.should(matchAllQuery());
         }
@@ -544,6 +560,12 @@ public class SearchService {
 
         if (null != categoryId) {       //限定商品分类
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
+        }
+
+        //排除结果中的指定分类
+        if (StringUtils.isNotBlank(keyword) && exceptCategories.containsKey(keyword)) {
+            exceptCategories.get(keyword).forEach(exceptCategoryId ->
+                    boolFilterBuilder.mustNot(termFilter("productCategoryIds", exceptCategoryId)));
         }
 
         if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
@@ -612,14 +634,14 @@ public class SearchService {
             if (StringUtils.isNotBlank(keyword)  && keyword.matches("[A-Za-z0-9]+")) {
                 nativeSearchQueryBuilder.withMinScore(0.1f);
             }else {
-                nativeSearchQueryBuilder.withMinScore(1.1f);
+                nativeSearchQueryBuilder.withMinScore(0.9f);
             }
         }
 
         final long[] totalHits = {0};   //总记录数
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
-                        .withHighlightFields(new HighlightBuilder.Field("name").preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
+                        .withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
                     @Override
                     public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
@@ -627,10 +649,10 @@ public class SearchService {
 
                         totalHits[0] = searchResponse.getHits().getTotalHits();
                         if (searchResponse.getHits().getTotalHits() > 0) {
-
+                            final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
 
-                                LOGGER.error(searchHit.getSource().get("name") + "|" + searchHit.getScore());
+                                LOGGER.error((i[0]++) +"."+ searchHit.getSource().get("name") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore());
 
                                 ProductIndex productIndex = null;
                                 try {
@@ -747,7 +769,10 @@ public class SearchService {
      * 判断关键词是否为品牌
      */
     private boolean isBandName(String keyword) {
-        return productIndexRepository.countByBrandName(keyword) > 0;
+        return elasticsearchTemplate.query(
+                new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f)
+                        .withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
+                searchBrandNameResponse -> searchBrandNameResponse.getHits().getTotalHits() > 0);
     }
 
     /**
