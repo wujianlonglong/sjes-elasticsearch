@@ -487,7 +487,7 @@ public class SearchService {
         BoolQueryBuilder boolQueryBuilder = boolQuery();        //查询条件
         BoolFilterBuilder boolFilterBuilder = boolFilter();     //过滤条件
 
-        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
+        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+") && !specificWords.containsKey(keyword.toUpperCase())) {
 
             final String searchKeyword = "*" + keyword.toUpperCase() + "*";
             boolQueryBuilder.should(wildcardQuery("namePinYin", searchKeyword))
@@ -497,7 +497,9 @@ public class SearchService {
         } else if (StringUtils.isNotBlank(keyword)) {
 
             final String searchKeyword;                 //搜索的关键词
-            if (specificWords.containsKey(keyword)) {   //对特殊的搜索词进行转换
+            if (keyword.matches("[A-Za-z0-9]+") && specificWords.containsKey(keyword.toUpperCase())) {  //对特殊的搜索词进行转换
+                searchKeyword = specificWords.get(keyword.toUpperCase());
+            } else if (specificWords.containsKey(keyword)) {
                 searchKeyword = specificWords.get(keyword);
             } else {
                 searchKeyword = keyword;
@@ -506,7 +508,13 @@ public class SearchService {
             if (isMatchMostName(searchKeyword)) {       //根据商品名称分词检索
                 boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));
             }else{
-                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));
+                if (similarNames.containsKey(searchKeyword)) {
+                    boolQueryBuilder.must(boolQuery().should(matchQuery("name", searchKeyword).analyzer("ik"))
+                            .should(matchQuery("name", similarNames.get(searchKeyword)).minimumShouldMatch("100%"))
+                            .minimumNumberShouldMatch(1));
+                } else {
+                    boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));
+                }
             }
 
             //判断搜索词是否包含品牌
@@ -519,7 +527,7 @@ public class SearchService {
                     brandNameQueryBuilder.minimumNumberShouldMatch(1);
                     boolQueryBuilder.must(brandNameQueryBuilder);
                 } else {
-                    boolQueryBuilder.must(matchQuery("brandName", keyword).analyzer("ik"));       //查询品牌
+                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));       //查询品牌
                 }
             }
 
@@ -537,8 +545,8 @@ public class SearchService {
 
             //TODO 判断搜索词是否是标签
             boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));    //根据标签分词检索
-            if (similarWords.containsKey(searchKeyword)) {          //将搜索词的同义词进行标签检索
-                boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", similarWords.get(searchKeyword)).analyzer("ik")));
+            if (similarTags.containsKey(searchKeyword)) {          //将搜索词的同义词进行标签检索
+                boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", similarTags.get(searchKeyword)).analyzer("ik")));
             }
         } else {
             boolQueryBuilder.should(matchAllQuery());

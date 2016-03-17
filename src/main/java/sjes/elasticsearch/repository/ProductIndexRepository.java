@@ -9,9 +9,4 @@ import java.util.List;
  * Created by qinhailong on 15-12-8.
  */
 public interface ProductIndexRepository extends ElasticsearchRepository<ProductIndex, Long> {
-
-    List<ProductIndex> findByCategoryId(Long categoryId);
-    List<ProductIndex> findByBrandName(String keyword);
-
-    int countByBrandName(String keyword);
 }
