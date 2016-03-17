@@ -34,6 +34,7 @@ public class SpecificWordHandle {
         specificWords.put("吃的", "休闲食品");
         specificWords.put("RIO", "锐澳");
         specificWords.put("POCKY", "格力高百奇");
+        specificWords.put("糖", "糖果");
 
 
         similarNames.put("酸奶", "酸牛奶");
@@ -61,7 +62,7 @@ public class SpecificWordHandle {
         addSpecificBrandName("小浣熊", Arrays.asList("统一"));
 
 
-        addExceptCategories("牛奶", Arrays.asList(170L));
+        addExceptCategories("牛奶", Arrays.asList(170L, 653L));
         addExceptCategories("奶", Arrays.asList(170L));
         addExceptCategories("奶粉", Arrays.asList(134L, 127L, 335L, 113L, 186L, 286L, 206L, 185L));
         addExceptCategories("薯片", Arrays.asList(189L));

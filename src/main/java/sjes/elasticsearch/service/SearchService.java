@@ -642,7 +642,7 @@ public class SearchService {
             if (StringUtils.isNotBlank(keyword)  && keyword.matches("[A-Za-z0-9]+")) {
                 nativeSearchQueryBuilder.withMinScore(0.1f);
             }else {
-                nativeSearchQueryBuilder.withMinScore(0.9f);
+                nativeSearchQueryBuilder.withMinScore(0.2f);
             }
         }
 
