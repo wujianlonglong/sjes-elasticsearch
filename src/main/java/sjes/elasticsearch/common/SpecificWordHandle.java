@@ -62,6 +62,9 @@ public class SpecificWordHandle {
         addSpecificCategories("酸奶", Arrays.asList(174L, 164L));
         addSpecificCategories("酸牛奶", Arrays.asList(174L, 164L));
         addSpecificCategories("水", Arrays.asList(165L));
+        addSpecificCategories("矿泉水", Arrays.asList(165L));
+        addSpecificCategories("纯净水", Arrays.asList(165L));
+        addSpecificCategories("蒸馏水", Arrays.asList(165L));
         addSpecificCategories("水果", Arrays.asList(640L, 641L));
         addSpecificCategories("蔬菜", Arrays.asList(638L));
         addSpecificCategories("生鲜", Arrays.asList(637L));
