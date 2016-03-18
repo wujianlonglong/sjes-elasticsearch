@@ -11,6 +11,7 @@ import java.util.HashSet;
  * 对特定搜索词进行处理
  */
 public class SpecificWordHandle {
+    public static HashSet<String> shouldMatchNames;             //名字中不带搜索词的商品
     public static HashMap<String, String> specificWords;        //将特殊的搜索词进行转换
     public static HashMap<String, HashSet<String>> specificBrandName;   //搜索词增加品牌，比如小浣熊牌和统一牌小浣熊
     public static HashMap<String, String> similarNames;         //同义词名称搜索(如 酸奶->酸牛奶)
@@ -19,12 +20,16 @@ public class SpecificWordHandle {
     public static HashMap<String, HashSet<Long>> exceptCategories;     //排除分类
 
     static {
+        shouldMatchNames = new HashSet<>();
         specificWords = new HashMap<>();
         specificCategories = new HashMap<>();
         specificBrandName = new HashMap<>();
         similarNames = new HashMap<>();
         similarTags = new HashMap<>();
         exceptCategories = new HashMap<>();
+
+
+        shouldMatchNames.addAll(Arrays.asList("水果", "蔬菜", "生鲜"));
 
 
         specificWords.put("奶", "牛奶");
@@ -57,6 +62,9 @@ public class SpecificWordHandle {
         addSpecificCategories("酸奶", Arrays.asList(174L, 164L));
         addSpecificCategories("酸牛奶", Arrays.asList(174L, 164L));
         addSpecificCategories("水", Arrays.asList(165L));
+        addSpecificCategories("水果", Arrays.asList(640L, 641L));
+        addSpecificCategories("蔬菜", Arrays.asList(638L));
+        addSpecificCategories("生鲜", Arrays.asList(637L));
 
 
         addSpecificBrandName("小浣熊", Arrays.asList("统一"));
