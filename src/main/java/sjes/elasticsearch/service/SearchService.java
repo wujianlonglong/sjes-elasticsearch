@@ -660,7 +660,7 @@ public class SearchService {
                             final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
 
-                                LOGGER.error((i[0]++) +"."+ searchHit.getSource().get("name") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore());
+                                //LOGGER.error((i[0]++) +"."+ searchHit.getSource().get("name") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore());
 
                                 ProductIndex productIndex = null;
                                 try {
