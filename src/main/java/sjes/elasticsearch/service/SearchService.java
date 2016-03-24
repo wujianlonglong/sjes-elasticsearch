@@ -521,13 +521,8 @@ public class SearchService {
 
             //判断搜索词是否包含品牌
             if (isBandName(searchKeyword)) {
-                if (specificBrandName.containsKey(searchKeyword)) {     //判断品牌是否是其他品牌的子产品（如小浣熊）
-                    BoolQueryBuilder brandNameQueryBuilder = boolQuery();
-                    brandNameQueryBuilder.should(termQuery("brandName", searchKeyword));
-                    specificBrandName.get(searchKeyword).forEach(brandName ->
-                            brandNameQueryBuilder.should(termQuery("brandName", brandName)));
-                    brandNameQueryBuilder.minimumNumberShouldMatch(1);
-                    boolQueryBuilder.must(brandNameQueryBuilder);
+                if (isspecificBandName(searchKeyword)) {     //判断品牌是否是其他品牌的子产品（如小浣熊）
+                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));
                 } else {
                     boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));       //查询品牌
                 }
@@ -783,6 +778,20 @@ public class SearchService {
                 new NativeSearchQueryBuilder().withQuery(matchQuery("brandName", keyword).analyzer("ik")).withMinScore(0.01f)
                         .withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
                 searchBrandNameResponse -> searchBrandNameResponse.getHits().getTotalHits() > 0);
+    }
+
+    /**
+     * 判断是否是特殊品牌名
+     */
+    private boolean isspecificBandName(String keyword) {
+        final boolean[] flag = {false};
+        specificBrandNames.forEach(specificBrandName -> {
+            if (specificBrandName.contains(keyword) || keyword.contains(specificBrandName)) {
+                flag[0] = true;
+                return;
+            }
+        });
+        return flag[0];
     }
 
     /**

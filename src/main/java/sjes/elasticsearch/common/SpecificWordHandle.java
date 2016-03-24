@@ -13,7 +13,7 @@ import java.util.HashSet;
 public class SpecificWordHandle {
     public static HashSet<String> shouldMatchNames;             //名字中不带搜索词的商品
     public static HashMap<String, String> specificWords;        //将特殊的搜索词进行转换
-    public static HashMap<String, HashSet<String>> specificBrandName;   //搜索词增加品牌，比如小浣熊牌和统一牌小浣熊
+    public static HashSet<String> specificBrandNames;            //可能为品牌的关键词，如小浣熊
     public static HashMap<String, String> similarNames;         //同义词名称搜索(如 酸奶->酸牛奶)
     public static HashMap<String, String> similarTags;         //同义词标签搜索(如 牛奶->搜含乳饮料标签)
     public static HashMap<String, HashSet<Long>> specificCategories;     //指定分类
@@ -23,7 +23,7 @@ public class SpecificWordHandle {
         shouldMatchNames = new HashSet<>();
         specificWords = new HashMap<>();
         specificCategories = new HashMap<>();
-        specificBrandName = new HashMap<>();
+        specificBrandNames = new HashSet<>();
         similarNames = new HashMap<>();
         similarTags = new HashMap<>();
         exceptCategories = new HashMap<>();
@@ -70,7 +70,8 @@ public class SpecificWordHandle {
         addSpecificCategories("生鲜", Arrays.asList(637L));
 
 
-        addSpecificBrandName("小浣熊", Arrays.asList("统一"));
+        specificBrandNames.add("小浣熊");
+        specificBrandNames.add("海洋");
 
 
         addExceptCategories("牛奶", Arrays.asList(170L, 653L));
@@ -78,15 +79,6 @@ public class SpecificWordHandle {
         addExceptCategories("奶粉", Arrays.asList(134L, 127L, 335L, 113L, 186L, 286L, 206L, 185L));
         addExceptCategories("薯片", Arrays.asList(189L));
         addExceptCategories("薯条", Arrays.asList(113L));
-    }
-
-    /**
-     * 添加指定品牌
-     */
-    private static void addSpecificBrandName(String keyword, Collection<String> brandNames) {
-        HashSet<String> tempBrandName = new HashSet<>();
-        tempBrandName.addAll(brandNames);
-        specificBrandName.put(keyword, tempBrandName);
     }
 
     /**
