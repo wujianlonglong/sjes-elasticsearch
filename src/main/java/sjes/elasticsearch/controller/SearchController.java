@@ -1,5 +1,6 @@
 package sjes.elasticsearch.controller;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -113,7 +114,9 @@ public class SearchController {
      */
     @RequestMapping(method = RequestMethod.GET)
     public PageModel<ProductIndex> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
-
+        if (StringUtils.isNotBlank(keyword)) {
+            keyword = keyword.trim();
+        }
         searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//测试可删，临时添加搜索记录
 
         return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
@@ -130,6 +133,9 @@ public class SearchController {
      */
     @RequestMapping(value = "categorySearch",method = RequestMethod.GET)
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
+        if (StringUtils.isNotBlank(keyword)) {
+            keyword = keyword.trim();
+        }
         return searchService.categorySearch(keyword, categoryId, page, size);
     }
 
