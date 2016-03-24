@@ -61,7 +61,7 @@ public class TinySearchService {
         }
 
         if (StringUtils.isNotBlank(keyword)) {
-
+            keyword = keyword.trim().replaceAll(" ","");
             if (keyword.matches("[A-Za-z0-9]+")) {
                 final String searchKeyword = "*" + keyword.toUpperCase() + "*";
                 boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
