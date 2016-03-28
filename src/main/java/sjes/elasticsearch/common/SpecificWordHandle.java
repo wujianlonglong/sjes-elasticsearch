@@ -68,6 +68,7 @@ public class SpecificWordHandle {
         addSpecificCategories("水果", Arrays.asList(640L, 641L));
         addSpecificCategories("蔬菜", Arrays.asList(638L));
         addSpecificCategories("生鲜", Arrays.asList(637L));
+        addSpecificCategories("面", Arrays.asList(57L, 113L, 126L));
 
 
         specificBrandNames.add("小浣熊");
