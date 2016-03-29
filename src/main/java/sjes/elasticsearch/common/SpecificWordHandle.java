@@ -76,6 +76,7 @@ public class SpecificWordHandle {
         specificBrandNames.add("小助手");
         specificBrandNames.add("阳光");
         specificBrandNames.add("理想");
+        specificBrandNames.add("无");
 
 
         addExceptCategories("牛奶", Arrays.asList(170L, 653L));
