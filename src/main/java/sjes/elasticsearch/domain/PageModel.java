@@ -30,7 +30,7 @@ public class PageModel<T> implements Serializable {
     /**
      * 附带参数
      */
-    private Set<Long> categoryIds;
+    private Set<Long> categoryIdSet;
 
     /**
      * 初始化一个新创建的Page对象
@@ -54,13 +54,13 @@ public class PageModel<T> implements Serializable {
     /**
      * @param content  内容
      * @param total    总记录数
-     * @param categoryIds   分类列表
+     * @param categoryIdSet   分类列表
      * @param pageable 分页信息
      */
-    public PageModel(List<T> content, long total,Set<Long> categoryIds, Pageable pageable) {
+    public PageModel(List<T> content, long total,Set<Long> categoryIdSet, Pageable pageable) {
         this.content.addAll(content);
         this.total = total;
-        this.categoryIds = categoryIds;
+        this.categoryIdSet = categoryIdSet;
         this.pageable = pageable;
     }
 
@@ -119,11 +119,11 @@ public class PageModel<T> implements Serializable {
         return pageable;
     }
 
-    public Set<Long> getCategoryIds() {
-        return categoryIds;
+    public Set<Long> getCategoryIdSet() {
+        return categoryIdSet;
     }
 
-    public void setCategoryIds(Set<Long> categoryIds) {
-        this.categoryIds = categoryIds;
+    public void setCategoryIdSet(Set<Long> categoryIdSet) {
+        this.categoryIdSet = categoryIdSet;
     }
 }
