@@ -1,5 +1,6 @@
 package sjes.elasticsearch.service;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,19 +70,23 @@ public class BackupService {
      * @return 备份结果
      * @throws IOException
      */
-    public boolean backup() throws IOException {
+    public boolean backup() throws ServiceException {
         LogWriter.append("backup", "start");
 
         boolean isSucceed = false;           //备份是否成功
 
         if(isIndexVaild()) {
-            init();
-            if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
-                delelteBackup();
-            }
-            isSucceed = ElasticsearchSnapshotUtils.createSnapshot(elasticsearchUrl, repositoryName, snapshotName, backupIndices, false);
-        }
 
+            try {
+                init();
+                if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
+                    delelteBackup();
+                }
+                isSucceed = ElasticsearchSnapshotUtils.createSnapshot(elasticsearchUrl, repositoryName, snapshotName, backupIndices, false);
+            } catch (IOException e) {
+                throw new ServiceException(ExceptionUtils.getMessage(e), ExceptionUtils.getRootCause(e));
+            }
+        }
         LogWriter.append("backup", isSucceed?"success":"fail");
         return isSucceed;
     }
@@ -123,14 +128,18 @@ public class BackupService {
      * @throws ServiceException
      * @throws IOException
      */
-    public boolean restore() throws ServiceException, IOException {
+    public boolean restore() throws ServiceException {
         LogWriter.append("restore", "start");
 
         boolean isSucceed = false;
-        if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
-            elasticsearchTemplate.deleteIndex(backupIndices);
-            isSucceed = ElasticsearchSnapshotUtils.restoreIndices(elasticsearchUrl, repositoryName, snapshotName, backupIndices)
-                            && elasticsearchTemplate.indexExists(backupIndices);
+        try {
+            if (ElasticsearchSnapshotUtils.isSnapshotExist(elasticsearchUrl, repositoryName, snapshotName)) {
+                elasticsearchTemplate.deleteIndex(backupIndices);
+                isSucceed = ElasticsearchSnapshotUtils.restoreIndices(elasticsearchUrl, repositoryName, snapshotName, backupIndices)
+                                && elasticsearchTemplate.indexExists(backupIndices);
+            }
+        } catch (IOException e) {
+            throw new ServiceException(ExceptionUtils.getMessage(e), ExceptionUtils.getRootCause(e));
         }
 
         LogWriter.append("restore", isSucceed?"success":"fail");

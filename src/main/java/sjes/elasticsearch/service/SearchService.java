@@ -10,7 +10,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -56,8 +55,6 @@ import java.util.*;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.global;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
@@ -620,6 +617,7 @@ public class SearchService {
         }
 
         nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+
         if (null != sortType && !sortType.equals("default")) {       //排序
             SortBuilder sortBuilder = null;
             if (sortType.equals("sales")) {  //销量降序
@@ -651,19 +649,11 @@ public class SearchService {
             }
         }
 
-        if (StringUtils.isNotBlank(keyword)) {
-            nativeSearchQueryBuilder.withHighlightFields(new HighlightBuilder.Field("name")
-                                                                    .highlightQuery(matchQuery("name", keyword))
-                                                                    .preTags("<b class=\"highlight\">")
-                                                                    .postTags("</b>"));
-        }
-
         final long[] totalHits = {0};   //总记录数
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
-                nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize()))
-                        .withIndices("sjes").withTypes("products")
-                        .addAggregation(filter("aggs").filter(boolFilterBuilder).subAggregation(terms("categoryIdSet").field("categoryId").size(100)))
-                        .build(), ProductIndex.class, new SearchResultMapper() {
+                nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
+                        .addAggregation(terms("categoryIdSet").field("categoryId"))
+                        .withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
                     @Override
                     public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
@@ -673,9 +663,7 @@ public class SearchService {
 
                         //聚合结果中所有的分类Id
                         HashSet<Long> categoryIdSet = new HashSet<>();
-
-                        Filter aggs = searchResponse.getAggregations().get("aggs");
-                        Terms categoryIdAggr = aggs.getAggregations().get("categoryIdSet");
+                        Terms categoryIdAggr  = searchResponse.getAggregations().get("categoryIdSet");
                         categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
 
                         if (searchResponse.getHits().getTotalHits() > 0) {
@@ -816,6 +804,7 @@ public class SearchService {
         specificBrandNames.forEach(specificBrandName -> {
             if (specificBrandName.contains(keyword) || keyword.contains(specificBrandName)) {
                 flag[0] = true;
+                return;
             }
         });
         return flag[0];
