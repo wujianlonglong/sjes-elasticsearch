@@ -655,7 +655,7 @@ public class SearchService {
                         totalHits[0] = searchResponse.getHits().getTotalHits();
 
                         //聚合结果中所有的分类Id
-                        HashSet<Long> categoryIdSet = new HashSet<>();
+                        Set<Long> categoryIdSet = new HashSet<>();
                         Terms categoryIdAggr  = searchResponse.getAggregations().get("categoryIdSet");
                         categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
 
