@@ -13,6 +13,7 @@ import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -39,7 +40,7 @@ public class SearchController {
      * @return 索引的数据
      */
     @RequestMapping(value = "index", method = RequestMethod.GET)
-    public List<CategoryIndex> index() throws ServiceException {
+    public List<CategoryIndex> index() throws ServiceException, IOException {
         int retryTimes = backupFailRetryTimes;
         boolean isBackupSucceed;
 

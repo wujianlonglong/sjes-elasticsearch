@@ -5,11 +5,13 @@ import com.google.common.collect.Maps;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.collect.Sets;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -55,6 +57,7 @@ import java.util.*;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
@@ -483,7 +486,6 @@ public class SearchService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
-        Map<String, Object> attachData = new HashMap<>();
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
@@ -649,11 +651,16 @@ public class SearchService {
             }
         }
 
+        if (StringUtils.isNotBlank(keyword)) {
+            nativeSearchQueryBuilder.withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>"));
+        }
+
         final long[] totalHits = {0};   //总记录数
+        Set<Long> categoryIdSet = Sets.newHashSet();
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
-                        .addAggregation(terms("categoryIdSet").field("categoryId"))
-                        .withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
+                        .addAggregation(filter("aggs").filter(boolFilterBuilder).subAggregation(terms("categoryIdSet").field("categoryId").size(100)))
+                        .build(), ProductIndex.class, new SearchResultMapper() {
 
                     @Override
                     public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
@@ -662,8 +669,8 @@ public class SearchService {
                         totalHits[0] = searchResponse.getHits().getTotalHits();
 
                         //聚合结果中所有的分类Id
-                        HashSet<Long> categoryIdSet = new HashSet<>();
-                        Terms categoryIdAggr  = searchResponse.getAggregations().get("categoryIdSet");
+                        Filter aggs = searchResponse.getAggregations().get("aggs");
+                        Terms categoryIdAggr  = aggs.getAggregations().get("categoryIdSet");
                         categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
 
                         if (searchResponse.getHits().getTotalHits() > 0) {
@@ -690,14 +697,13 @@ public class SearchService {
                                     productIndexes.add(productIndex);
                                 }
                             });
-                            attachData.put("categoryIdSet", categoryIdSet);
                         }
 
                         return new FacetedPageImpl<>((List<T>) productIndexes);
                     }
                 });
 
-        return new PageModel(queryForPage.getContent(), totalHits[0], attachData, pageable);
+        return new PageModel(queryForPage.getContent(), totalHits[0], categoryIdSet, pageable);
 
 //        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
 //        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
