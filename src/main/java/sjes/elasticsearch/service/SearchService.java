@@ -477,7 +477,7 @@ public class SearchService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
-        Map<String, Object> attachData = new HashMap<>();
+        // Map<String, Object> attachData = new HashMap<>();
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
@@ -642,7 +642,7 @@ public class SearchService {
                 nativeSearchQueryBuilder.withMinScore(0.2f);
             }
         }
-
+        Set<Long> categoryIdSet = Sets.newHashSet();
         final long[] totalHits = {0};   //总记录数
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
@@ -656,7 +656,7 @@ public class SearchService {
                         totalHits[0] = searchResponse.getHits().getTotalHits();
 
                         //聚合结果中所有的分类Id
-                        Set<Long> categoryIdSet = Sets.newHashSet();
+
                         Terms categoryIdAggr  = searchResponse.getAggregations().get("categoryIdSet");
                         categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
 
@@ -684,14 +684,14 @@ public class SearchService {
                                     productIndexes.add(productIndex);
                                 }
                             });
-                            attachData.put("categoryIdSet", categoryIdSet);
+                            //attachData.put("categoryIdSet", categoryIdSet);
                         }
 
                         return new FacetedPageImpl<>((List<T>) productIndexes);
                     }
                 });
 
-        return new PageModel(queryForPage.getContent(), totalHits[0], attachData, pageable);
+        return new PageModel(queryForPage.getContent(), totalHits[0], categoryIdSet, pageable);
 
 //        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
 //        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);

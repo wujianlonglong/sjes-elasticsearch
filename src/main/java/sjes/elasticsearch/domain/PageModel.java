@@ -3,7 +3,7 @@ package sjes.elasticsearch.domain;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 /**
  * 分页
@@ -30,7 +30,7 @@ public class PageModel<T> implements Serializable {
     /**
      * 附带参数
      */
-    private Map<String, Object> attachData;
+    private Set<Long> categoryIds;
 
     /**
      * 初始化一个新创建的Page对象
@@ -54,13 +54,13 @@ public class PageModel<T> implements Serializable {
     /**
      * @param content  内容
      * @param total    总记录数
-     * @param attachData    附带参数
+     * @param categoryIds   分类列表
      * @param pageable 分页信息
      */
-    public PageModel(List<T> content, long total,Map<String, Object> attachData, Pageable pageable) {
+    public PageModel(List<T> content, long total,Set<Long> categoryIds, Pageable pageable) {
         this.content.addAll(content);
         this.total = total;
-        this.attachData = attachData;
+        this.categoryIds = categoryIds;
         this.pageable = pageable;
     }
 
@@ -119,11 +119,11 @@ public class PageModel<T> implements Serializable {
         return pageable;
     }
 
-    /**
-     * 获取附带参数
-     * @return 附带参数
-     */
-    public Map<String, Object> getAttachData() {
-        return attachData;
+    public Set<Long> getCategoryIds() {
+        return categoryIds;
+    }
+
+    public void setCategoryIds(Set<Long> categoryIds) {
+        this.categoryIds = categoryIds;
     }
 }
