@@ -3,6 +3,7 @@ package sjes.elasticsearch.domain;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 分页
@@ -25,6 +26,11 @@ public class PageModel<T> implements Serializable {
      * 分页信息
      */
     private final Pageable pageable;
+
+    /**
+     * 附带参数
+     */
+    private Map<String, Object> attachData;
 
     /**
      * 初始化一个新创建的Page对象
