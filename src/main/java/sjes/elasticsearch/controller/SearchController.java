@@ -117,7 +117,7 @@ public class SearchController {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
-        searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//测试可删，临时添加搜索记录
+        searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
 
         return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
     }

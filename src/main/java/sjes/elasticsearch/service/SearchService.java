@@ -8,6 +8,10 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
 import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
@@ -51,6 +55,7 @@ import java.util.*;
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
 import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
@@ -478,6 +483,7 @@ public class SearchService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
+        Map<String, Object> attachData = new HashMap<>();
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
@@ -646,6 +652,7 @@ public class SearchService {
         final long[] totalHits = {0};   //总记录数
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
+                        .addAggregation(terms("categoryIdSet").field("categoryId"))
                         .withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>")).build(), ProductIndex.class, new SearchResultMapper() {
 
                     @Override
@@ -653,8 +660,14 @@ public class SearchService {
                         List<ProductIndex> productIndexes = new ArrayList<>();
 
                         totalHits[0] = searchResponse.getHits().getTotalHits();
+
+                        //聚合结果中所有的分类Id
+                        HashSet<Long> categoryIdSet = new HashSet<>();
+                        Terms categoryIdAggr  = searchResponse.getAggregations().get("categoryIdSet");
+                        categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
+
                         if (searchResponse.getHits().getTotalHits() > 0) {
-                            final int[] i = {1};
+                            //final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
 
                                 //LOGGER.error((i[0]++) +"."+ searchHit.getSource().get("name") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore());
@@ -668,20 +681,23 @@ public class SearchService {
 
                                 Map<String, HighlightField> highlightFields = searchHit.getHighlightFields();
                                 HighlightField highlightNameField = highlightFields.get("name");
-                                if (highlightNameField != null && highlightNameField.fragments() != null && productIndex != null) {
-                                    productIndex.setDisplayName(highlightNameField.fragments()[0].string());
-                                } else {
-                                    productIndex.setDisplayName(productIndex.getName());
+                                if (productIndex != null) {
+                                    if (highlightNameField != null && highlightNameField.fragments() != null) {
+                                        productIndex.setDisplayName(highlightNameField.fragments()[0].string());
+                                    } else {
+                                        productIndex.setDisplayName(productIndex.getName());
+                                    }
+                                    productIndexes.add(productIndex);
                                 }
-                                productIndexes.add(productIndex);
                             });
+                            attachData.put("categoryIdSet", categoryIdSet);
                         }
 
                         return new FacetedPageImpl<>((List<T>) productIndexes);
                     }
                 });
 
-        return new PageModel(queryForPage.getContent(), totalHits[0], pageable);
+        return new PageModel(queryForPage.getContent(), totalHits[0], attachData, pageable);
 
 //        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
 //        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);

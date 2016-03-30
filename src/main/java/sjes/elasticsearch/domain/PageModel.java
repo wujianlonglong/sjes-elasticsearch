@@ -52,6 +52,19 @@ public class PageModel<T> implements Serializable {
     }
 
     /**
+     * @param content  内容
+     * @param total    总记录数
+     * @param attachData    附带参数
+     * @param pageable 分页信息
+     */
+    public PageModel(List<T> content, long total,Map<String, Object> attachData, Pageable pageable) {
+        this.content.addAll(content);
+        this.total = total;
+        this.attachData = attachData;
+        this.pageable = pageable;
+    }
+
+    /**
      * 获取页码
      *
      * @return 页码
@@ -106,4 +119,11 @@ public class PageModel<T> implements Serializable {
         return pageable;
     }
 
+    /**
+     * 获取附带参数
+     * @return 附带参数
+     */
+    public Map<String, Object> getAttachData() {
+        return attachData;
+    }
 }
