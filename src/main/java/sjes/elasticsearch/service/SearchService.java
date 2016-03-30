@@ -2,6 +2,7 @@ package sjes.elasticsearch.service;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -655,7 +656,7 @@ public class SearchService {
                         totalHits[0] = searchResponse.getHits().getTotalHits();
 
                         //聚合结果中所有的分类Id
-                        Set<Long> categoryIdSet = new HashSet<>();
+                        Set<Long> categoryIdSet = Sets.newHashSet();
                         Terms categoryIdAggr  = searchResponse.getAggregations().get("categoryIdSet");
                         categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
 
