@@ -6,10 +6,12 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.feigns.category.model.Category;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by qinhailong on 15/8/26.
@@ -34,5 +36,13 @@ public interface CategoryFeign {
      */
     @RequestMapping(value = "list", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     List<Category> list(Category category);
+
+    /**
+     * 更新分类下的商品数目
+     * @param categoryProductNumMap 商品分类Id和商品数目
+     * @return
+     */
+    @RequestMapping(value = "updateProductNum", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseMessage updateProductNum(Map<Long, Integer> categoryProductNumMap);
 
 }

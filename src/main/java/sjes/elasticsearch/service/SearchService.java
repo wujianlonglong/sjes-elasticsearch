@@ -8,11 +8,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.collect.Sets;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
 import org.elasticsearch.search.highlight.HighlightField;
@@ -30,7 +26,6 @@ import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
@@ -55,7 +50,6 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
-import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -217,7 +211,15 @@ public class SearchService {
                 LOGGER.debug("商品索引完成......");
                 LogWriter.append("index", "success");
             }
-            return Lists.newArrayList(categoryIndexMap.values());
+            List<CategoryIndex> categoryIndexList = Lists.newArrayList(categoryIndexMap.values());
+            Map<Long, Integer> categoryProductNumMap = Maps.newHashMap();
+            if (CollectionUtils.isNotEmpty(categoryIndexList)) {
+                categoryIndexList.forEach(categoryIndex -> {
+                    categoryProductNumMap.put(categoryIndex.getId(), categoryIndex.getProductIndexes().size());
+                });
+                categoryService.updateProductNum(categoryProductNumMap);
+            }
+            return categoryIndexList;
         } catch (Exception e) {
             LogWriter.append("index", "fail");
             LOGGER.error("初始化索引出现错误！", e);

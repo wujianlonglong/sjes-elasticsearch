@@ -2,10 +2,12 @@ package sjes.elasticsearch.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.feigns.category.feign.CategoryFeign;
 import sjes.elasticsearch.feigns.category.model.Category;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by qinhailong on 15-12-4.
@@ -34,6 +36,15 @@ public class CategoryService {
         Category category = new Category();
         category.setDisplay(true);
         return  categoryFeign.list(category);
+    }
+
+    /**
+     * 更新分类下的商品数目
+     * @param categoryProductNumMap 商品分类Id和商品数目
+     * @return
+     */
+    public ResponseMessage updateProductNum(Map<Long, Integer> categoryProductNumMap) {
+        return categoryFeign.updateProductNum(categoryProductNumMap);
     }
 
 }
