@@ -27,6 +27,7 @@ import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
@@ -217,7 +218,10 @@ public class SearchService {
                 categoryIndexList.forEach(categoryIndex -> {
                     categoryProductNumMap.put(categoryIndex.getId(), categoryIndex.getProductIndexes().size());
                 });
-                categoryService.updateProductNum(categoryProductNumMap);
+                ResponseMessage responseMessage = categoryService.updateProductNum(categoryProductNumMap);
+                if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
+                    LOGGER.debug("分类绑定的商品数目统计成功！");
+                }
             }
             return categoryIndexList;
         } catch (Exception e) {
