@@ -34,36 +34,3 @@ server:
 eureka:
   instance:
     hostname: srv5.sanjiang.info
-
----
-
-spring:
-  profiles: production
-  data:
-    elasticsearch:
-      cluster-nodes: srv4.sanjiang.info:9300
-hystrix:
-  command:
-    default:
-      execution:
-        isolation:
-          thread:
-            timeoutInMilliseconds: 10000
-elasticsearch-backup:
-  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
-  indices: sjes                               #备份的索引
-  repository:
-    name: es_backup                           #本地备份仓库的名称
-    location: /home/zhangbaiqiang/es_backup   #本地备份仓库的位置
-  snapshot: snapshot_auto                     #自动备份快照的名称
-  retry:
-    backup: 1                                 #备份失败重试次数
-    restore: 1                                #恢复失败重试次数
-  check-index-count:
-      product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定当前索引有效
-      category: 300
-server:
-  port: 10100
-eureka:
-  instance:
-    hostname: srv5.sanjiang.info
