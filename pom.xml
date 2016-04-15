@@ -145,10 +145,10 @@
     </build>
 
     <repositories>
-	<repository>
-		<id>nexus</id>
-        <url>http://nexus.sj.com/content/groups/public/</url>
-	</repository>
+        <repository>
+            <id>nexus</id>
+            <url>http://nexus.sanjiang.info/content/groups/public/</url>
+        </repository>
         <repository>
             <id>spring-snapshot</id>
             <url>http://repo.spring.io/snapshot</url>
