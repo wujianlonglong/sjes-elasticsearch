@@ -274,6 +274,10 @@ public class SearchService {
      * @throws ServiceException
      */
     public void index(ProductIndex productIndex) throws ServiceException {
+        ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
+        if (null != dbProductIndex) {
+            productIndex.setId(dbProductIndex.getId());
+        }
         productIndexRepository.save(productIndex);
     }
 
@@ -287,6 +291,10 @@ public class SearchService {
         if (null != productId) {
             ProductIndex productIndex = buildProductIndex(productService.getProductImageModel(productId));
             if (null != productIndex) {
+                ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
+                if (null != dbProductIndex) {
+                    productIndex.setId(dbProductIndex.getId());
+                }
                 productIndexRepository.save(productIndex);
                 LOGGER.info(" 商品productId: {}, index ending ......", new Long[] { productId });
             }
@@ -303,13 +311,7 @@ public class SearchService {
         LOGGER.info(" 商品productIds: {}, index beginning ......", new String[] {prodIds});
         if (CollectionUtils.isNotEmpty(productIds)) {
             List<ProductImageModel> productImageModels = productService.listProductsImageModel(productIds);
-            List<ProductIndex> productIndexes = Lists.newArrayList();
-            for (ProductImageModel productImageModel : productImageModels) {
-                ProductIndex productIndex = buildProductIndex(productImageModel);
-                if (null != productIndex) {
-                    productIndexes.add(productIndex);
-                }
-            }
+            List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexRepository.save(productIndexes);
             }
@@ -327,18 +329,27 @@ public class SearchService {
         LOGGER.info(" sns: {}, index beginning ......", new String[] {snsStr});
         if (CollectionUtils.isNotEmpty(sns)) {
             List<ProductImageModel> productImageModels = productService.listBySns(sns);
-            List<ProductIndex> productIndexes = Lists.newArrayList();
-            for (ProductImageModel productImageModel : productImageModels) {
-                ProductIndex productIndex = buildProductIndex(productImageModel);
-                if (null != productIndex) {
-                    productIndexes.add(productIndex);
-                }
-            }
+            List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexRepository.save(productIndexes);
             }
             LOGGER.info(" 商品sns: {}, index ending ......", new String[] { snsStr });
         }
+    }
+
+    private List<ProductIndex> getProductIndexes(List<ProductImageModel> productImageModels) {
+        List<ProductIndex> productIndexes = Lists.newArrayList();
+        for (ProductImageModel productImageModel : productImageModels) {
+            ProductIndex productIndex = buildProductIndex(productImageModel);
+            if (null != productIndex) {
+                ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
+                if (null != dbProductIndex) {
+                    productIndex.setId(dbProductIndex.getId());
+                }
+                productIndexes.add(productIndex);
+            }
+        }
+        return productIndexes;
     }
 
     private ProductIndex buildProductIndex(ProductImageModel productImageModel) {
