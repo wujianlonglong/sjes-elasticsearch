@@ -119,7 +119,7 @@ public class SearchController {
         }
         searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
 
-        return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, page, size);
+        return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size);
     }
 
     /**

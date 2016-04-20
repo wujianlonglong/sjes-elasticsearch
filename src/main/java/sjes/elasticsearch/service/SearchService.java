@@ -587,6 +587,11 @@ public class SearchService {
 //        }
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
+        //判断是否过滤惠商品
+        if (isBargains != null && isBargains) {
+            boolFilterBuilder.must(termFilter("isBargains", isBargains));
+        }
+
         boolFilterBuilder.must(termFilter("status", 0));
 
         if (null != categoryId) {       //限定商品分类
