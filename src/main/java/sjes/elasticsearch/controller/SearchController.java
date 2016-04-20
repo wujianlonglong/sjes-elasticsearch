@@ -113,7 +113,7 @@ public class SearchController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndex> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndex> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size) throws ServiceException {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }

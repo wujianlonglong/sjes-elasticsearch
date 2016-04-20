@@ -3,7 +3,8 @@ spring:
     cache-names: sjes-elasticsearch
 
 ---
-
+server:
+  port: 10100
 spring:
   profiles: development
   data:
@@ -29,8 +30,6 @@ elasticsearch-backup:
   check-index-count:
       product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定当前索引有效
       category: 300
-server:
-  port: 10100
 eureka:
   instance:
     hostname: srv5.sanjiang.info

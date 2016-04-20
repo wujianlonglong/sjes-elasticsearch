@@ -497,11 +497,12 @@ public class SearchService {
      * @param stock      库存
      * @param startPrice 价格satrt
      * @param endPrice   价格 end
+     * @pram isBargains 是否是惠商品
      * @param page       页面
      * @param size       页面大小
      * @return 分页商品信息
      */
-    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Integer page, Integer size) throws ServiceException {
+    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
