@@ -59,6 +59,7 @@ public class SpecificWordHandle {
         addSpecificCategories("米", Arrays.asList(124L, 128L));
         addSpecificCategories("油", Arrays.asList(125L));
         addSpecificCategories("纸巾", Arrays.asList(324L, 327L));
+        addSpecificCategories("牛奶", Arrays.asList(2L, 82L, 103L, 155L, 174L, 164L, 195L));
         addSpecificCategories("酸奶", Arrays.asList(174L, 164L));
         addSpecificCategories("酸牛奶", Arrays.asList(174L, 164L));
         addSpecificCategories("水", Arrays.asList(165L));
@@ -69,6 +70,7 @@ public class SpecificWordHandle {
         addSpecificCategories("蔬菜", Arrays.asList(638L));
         addSpecificCategories("生鲜", Arrays.asList(637L));
         addSpecificCategories("面", Arrays.asList(57L, 113L, 126L));
+        addSpecificCategories("洗面奶", Arrays.asList(249L));
 
 
         specificBrandNames.add("小浣熊");
