@@ -79,7 +79,7 @@ public class SpecificWordHandle {
         specificBrandNames.add("无");
 
 
-        addExceptCategories("牛奶", Arrays.asList(170L, 653L));
+        addExceptCategories("牛奶", Arrays.asList(170L, 653L, 129L, 416L, 83L, 305L));
         addExceptCategories("奶", Arrays.asList(170L));
         addExceptCategories("奶粉", Arrays.asList(134L, 127L, 335L, 113L, 186L, 286L, 206L, 185L));
         addExceptCategories("薯片", Arrays.asList(189L));

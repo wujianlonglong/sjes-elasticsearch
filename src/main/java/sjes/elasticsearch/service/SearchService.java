@@ -561,7 +561,7 @@ public class SearchService {
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
             } else if (isCategoryName(searchKeyword)) {      //判断搜索词是否是分类
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
-                categoryRepository.findByNameLike(searchKeyword.replaceAll(" ", "")).forEach(category ->
+                categoryRepository.findByNameLike("*" + searchKeyword.replaceAll(" ", "") + "*").forEach(category ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
             }
@@ -843,7 +843,7 @@ public class SearchService {
      * 判断关键词是否是分类
      */
     private boolean isCategoryName(String keyword) {
-        return categoryRepository.countByNameLike(keyword.replaceAll(" ", "")) > 0;
+        return categoryRepository.countByNameLike("*" + keyword.replaceAll(" ", "") + "*") > 0;
     }
 
     /**
