@@ -50,7 +50,7 @@ public class Product implements Serializable {
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String namePinYinAddr; // 商品名称（拼音首字母）
 
-    @Field(index = FieldIndex.no,type = FieldType.String)
+    @Field(index = FieldIndex.not_analyzed,type = FieldType.String)
     private String displayName; // 展示的商品名称(高亮)
 
     @JsonSerialize(using = MoneySerializer.class)

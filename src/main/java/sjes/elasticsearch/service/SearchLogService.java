@@ -103,7 +103,7 @@ public class SearchLogService {
         if (size > 0) {
             for (int i = 0; i < size; i++) {
                 HotWordModel hotWordModel = new HotWordModel();
-                hotWordModel.setKeyword(keywords.getBuckets().get(i).getKey());
+                hotWordModel.setKeyword(keywords.getBuckets().get(i).getKey().toString());
                 hotWordModel.setCount(keywords.getBuckets().get(i).getDocCount());
                 hotWords.add(hotWordModel);
             }

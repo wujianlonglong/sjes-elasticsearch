@@ -7,6 +7,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -509,7 +510,7 @@ public class SearchService {
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();        //查询条件
-        BoolFilterBuilder boolFilterBuilder = boolFilter();     //过滤条件
+        BoolQueryBuilder boolFilterBuilder = boolQuery();     //过滤条件
 
         if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+") && !specificWords.containsKey(keyword.toUpperCase())) {
 
@@ -583,42 +584,41 @@ public class SearchService {
 //                boolQueryBuilder.must(palceNamesBoolQueryBuilder);
 //            }
 //        }
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
         //判断是否过滤惠商品
         if (isBargains != null && isBargains) {
-            boolFilterBuilder.must(termFilter("isBargains", isBargains));
+            boolFilterBuilder.must(termQuery("isBargains", isBargains));
         }
 
-        boolFilterBuilder.must(termFilter("status", 0));
+        boolFilterBuilder.must(termQuery("status", 0));
 
         if (null != categoryId) {       //限定商品分类
-            boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
+            boolFilterBuilder.must(termQuery("productCategoryIds", categoryId));
         }
 
         //排除结果中的指定分类
         if (StringUtils.isNotBlank(keyword) && exceptCategories.containsKey(keyword)) {
             exceptCategories.get(keyword).forEach(exceptCategoryId ->
-                    boolFilterBuilder.mustNot(termFilter("productCategoryIds", exceptCategoryId)));
+                    boolFilterBuilder.mustNot(termQuery("productCategoryIds", exceptCategoryId)));
         }
 
         if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
             String[] brandIdArr = StringUtils.split(brandIds, "_");
             if (brandIdArr.length > 0) {
-                BoolFilterBuilder brandIdsBoolFilterBuilder = boolFilter();
+                BoolQueryBuilder brandIdsBoolFilterBuilder = boolQuery();
                 for (String brandId : brandIdArr) {
-                    brandIdsBoolFilterBuilder.should(termFilter("brandId", brandId));
+                    brandIdsBoolFilterBuilder.should(termQuery("brandId", brandId));
                 }
                 boolFilterBuilder.must(brandIdsBoolFilterBuilder);
             }
         }
 
         if (null != startPrice) {    //限定最低价格
-            boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
+            boolFilterBuilder.must(rangeQuery("memberPrice").gt(startPrice));
         }
 
         if (null != endPrice) {      //限定最高价格
-            boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
+            boolFilterBuilder.must(rangeQuery("memberPrice").lt(endPrice));
         }
 
         if (StringUtils.isNotBlank(attributes)) {  //限定商品参数
@@ -630,16 +630,16 @@ public class SearchService {
                         String attributeId = attrValues[0];
                         String attributeOptionId = attrValues[1];
 
-                        boolFilterBuilder.must(nestedFilter("attributeOptionValueModels",
-                                nestedFilter("attributeOptionValueModels.attributeOption",
-                                        boolFilter().must(termFilter("attributeOptionValueModels.attributeOption.attributeId", Long.valueOf(attributeId)))
-                                                .must(termFilter("attributeOptionValueModels.attributeOption.id", Long.valueOf(attributeOptionId))))));
+                        boolFilterBuilder.must(nestedQuery("attributeOptionValueModels",
+                                nestedQuery("attributeOptionValueModels.attributeOption",
+                                        boolQuery().must(termQuery("attributeOptionValueModels.attributeOption.attributeId", Long.valueOf(attributeId)))
+                                                .must(termQuery("attributeOptionValueModels.attributeOption.id", Long.valueOf(attributeOptionId))))));
                     }
                 }
             }
         }
 
-        nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder.filter(boolFilterBuilder));
 
         if (null != sortType && !sortType.equals("default")) {       //排序
             SortBuilder sortBuilder = null;
@@ -746,25 +746,26 @@ public class SearchService {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
+        BoolQueryBuilder queryBuilder = boolQuery().must(matchAllQuery());
         boolean filterFlag = false; //判断是否需要过滤的标记
 
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
-
-        BoolFilterBuilder boolFilterBuilder = boolFilter();
+        BoolQueryBuilder boolFilterBuilder = boolQuery();
 
         if (StringUtils.isNotBlank(keyword)) {
-            boolFilterBuilder.must(termFilter("name", keyword));
+            boolFilterBuilder.must(termQuery("name", keyword));
             filterFlag = true;
         }
 
         if (null != categoryId) {
-            boolFilterBuilder.must(termFilter("id", categoryId));
+            boolFilterBuilder.must(termQuery("id", categoryId));
             filterFlag = true;
         }
 
         if (filterFlag) {
-            nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
+            queryBuilder.filter(boolFilterBuilder);
         }
+
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(queryBuilder);
 
         FacetedPage<Category> facetedPage = categoryRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
