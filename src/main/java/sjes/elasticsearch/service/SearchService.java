@@ -6,8 +6,8 @@ import com.google.common.collect.Sets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -50,6 +50,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -437,7 +438,7 @@ public class SearchService {
                 } catch (Exception ignored) {}
             }
             productIndex.setSearchStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId()
-                                                         + "/" + productIndex.getSn() + "/" + productIndex.getName());
+                    + "/" + productIndex.getSn() + "/" + productIndex.getName());
 
             productIndex.setTags(tags);
         }
@@ -510,14 +511,14 @@ public class SearchService {
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();        //查询条件
-        BoolQueryBuilder boolFilterBuilder = boolQuery();     //过滤条件
+        BoolFilterBuilder boolFilterBuilder = boolFilter();     //过滤条件
 
         if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+") && !specificWords.containsKey(keyword.toUpperCase())) {
 
             final String searchKeyword = "*" + keyword.toUpperCase() + "*";
             boolQueryBuilder.should(wildcardQuery("namePinYin", searchKeyword))
-                            .should(wildcardQuery("namePinYinAddr", searchKeyword))
-                            .minimumNumberShouldMatch(1);
+                    .should(wildcardQuery("namePinYinAddr", searchKeyword))
+                    .minimumNumberShouldMatch(1);
 
         } else if (StringUtils.isNotBlank(keyword)) {
 
@@ -584,41 +585,42 @@ public class SearchService {
 //                boolQueryBuilder.must(palceNamesBoolQueryBuilder);
 //            }
 //        }
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
         //判断是否过滤惠商品
         if (isBargains != null && isBargains) {
-            boolFilterBuilder.must(termQuery("isBargains", isBargains));
+            boolFilterBuilder.must(termFilter("isBargains", isBargains));
         }
 
-        boolFilterBuilder.must(termQuery("status", 0));
+        boolFilterBuilder.must(termFilter("status", 0));
 
         if (null != categoryId) {       //限定商品分类
-            boolFilterBuilder.must(termQuery("productCategoryIds", categoryId));
+            boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
         }
 
         //排除结果中的指定分类
         if (StringUtils.isNotBlank(keyword) && exceptCategories.containsKey(keyword)) {
             exceptCategories.get(keyword).forEach(exceptCategoryId ->
-                    boolFilterBuilder.mustNot(termQuery("productCategoryIds", exceptCategoryId)));
+                    boolFilterBuilder.mustNot(termFilter("productCategoryIds", exceptCategoryId)));
         }
 
         if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
             String[] brandIdArr = StringUtils.split(brandIds, "_");
             if (brandIdArr.length > 0) {
-                BoolQueryBuilder brandIdsBoolFilterBuilder = boolQuery();
+                BoolFilterBuilder brandIdsBoolFilterBuilder = boolFilter();
                 for (String brandId : brandIdArr) {
-                    brandIdsBoolFilterBuilder.should(termQuery("brandId", brandId));
+                    brandIdsBoolFilterBuilder.should(termFilter("brandId", brandId));
                 }
                 boolFilterBuilder.must(brandIdsBoolFilterBuilder);
             }
         }
 
         if (null != startPrice) {    //限定最低价格
-            boolFilterBuilder.must(rangeQuery("memberPrice").gt(startPrice));
+            boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
         }
 
         if (null != endPrice) {      //限定最高价格
-            boolFilterBuilder.must(rangeQuery("memberPrice").lt(endPrice));
+            boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
         }
 
         if (StringUtils.isNotBlank(attributes)) {  //限定商品参数
@@ -630,16 +632,16 @@ public class SearchService {
                         String attributeId = attrValues[0];
                         String attributeOptionId = attrValues[1];
 
-                        boolFilterBuilder.must(nestedQuery("attributeOptionValueModels",
-                                nestedQuery("attributeOptionValueModels.attributeOption",
-                                        boolQuery().must(termQuery("attributeOptionValueModels.attributeOption.attributeId", Long.valueOf(attributeId)))
-                                                .must(termQuery("attributeOptionValueModels.attributeOption.id", Long.valueOf(attributeOptionId))))));
+                        boolFilterBuilder.must(nestedFilter("attributeOptionValueModels",
+                                nestedFilter("attributeOptionValueModels.attributeOption",
+                                        boolFilter().must(termFilter("attributeOptionValueModels.attributeOption.attributeId", Long.valueOf(attributeId)))
+                                                .must(termFilter("attributeOptionValueModels.attributeOption.id", Long.valueOf(attributeOptionId))))));
                     }
                 }
             }
         }
 
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder.filter(boolFilterBuilder));
+        nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
 
         if (null != sortType && !sortType.equals("default")) {       //排序
             SortBuilder sortBuilder = null;
@@ -746,26 +748,25 @@ public class SearchService {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
-        BoolQueryBuilder queryBuilder = boolQuery().must(matchAllQuery());
         boolean filterFlag = false; //判断是否需要过滤的标记
 
-        BoolQueryBuilder boolFilterBuilder = boolQuery();
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(matchAllQuery());
+
+        BoolFilterBuilder boolFilterBuilder = boolFilter();
 
         if (StringUtils.isNotBlank(keyword)) {
-            boolFilterBuilder.must(termQuery("name", keyword));
+            boolFilterBuilder.must(termFilter("name", keyword));
             filterFlag = true;
         }
 
         if (null != categoryId) {
-            boolFilterBuilder.must(termQuery("id", categoryId));
+            boolFilterBuilder.must(termFilter("id", categoryId));
             filterFlag = true;
         }
 
         if (filterFlag) {
-            queryBuilder.filter(boolFilterBuilder);
+            nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
         }
-
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(queryBuilder);
 
         FacetedPage<Category> facetedPage = categoryRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);

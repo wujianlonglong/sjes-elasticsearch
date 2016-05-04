@@ -134,7 +134,7 @@ public class ElasticsearchSnapshotUtils {
 
         try {
             parser = XContentFactory.xContent(XContentType.JSON).createParser(response.body().string());
-            Map<String, Object> responseParsed = parser.map();
+            Map<String, Object> responseParsed = parser.mapAndClose();
 
             if(responseParsed.containsKey("snapshot") && responseParsed.get("snapshot") != null){
                 HashMap snapshot = (HashMap)responseParsed.get("snapshot");
@@ -235,7 +235,7 @@ public class ElasticsearchSnapshotUtils {
 
         try {
             parser = XContentFactory.xContent(XContentType.JSON).createParser(response.body().string());
-            Map<String, Object> responseParsed = parser.map();
+            Map<String, Object> responseParsed = parser.mapAndClose();
             if (responseParsed.containsKey("acknowledged") && (Boolean) responseParsed.get("acknowledged")) {
                 result = true;
             }
@@ -264,7 +264,7 @@ public class ElasticsearchSnapshotUtils {
 
         try {
             parser = XContentFactory.xContent(XContentType.JSON).createParser(response.body().string());
-            Map<String, Object> responseParsed = parser.map();
+            Map<String, Object> responseParsed = parser.mapAndClose();
             if (responseParsed.containsKey("accepted") && (Boolean) responseParsed.get("accepted")) {
                 result = true;
             }

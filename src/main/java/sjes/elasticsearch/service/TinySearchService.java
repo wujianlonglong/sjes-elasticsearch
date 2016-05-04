@@ -1,6 +1,7 @@
 package sjes.elasticsearch.service;
 
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,8 @@ import sjes.elasticsearch.repository.ProductIndexRepository;
 
 import java.util.List;
 
+import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
+import static org.elasticsearch.index.query.FilterBuilders.termFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 /**
@@ -71,18 +74,17 @@ public class TinySearchService {
         if (null != id) {
             boolQueryBuilder.must(wildcardQuery("searchStr", "*" + id + "*"));
         }
+        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
 
-        BoolQueryBuilder boolFilterBuilder = boolQuery().must(termQuery("status", 0));
+        BoolFilterBuilder boolFilterBuilder = boolFilter().must(termFilter("status", 0));
 
         //过滤掉秒杀商品
         if (saleType != null && saleType == SaleConstant.secondKill) {
             List<Promotion> promotionList = promotionFeign.productIdsForSecondKill(SaleConstant.secondKill);
-            promotionList.forEach(promotion -> boolFilterBuilder.mustNot(termQuery("erpGoodsId", promotion.getProductId())));
+            promotionList.forEach(promotion -> boolFilterBuilder.mustNot(termFilter("erpGoodsId", promotion.getProductId())));
         }
 
-        boolQueryBuilder.filter(boolFilterBuilder);
-
-        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
+        nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
 
         FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);

@@ -50,7 +50,7 @@ public class Product implements Serializable {
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String namePinYinAddr; // 商品名称（拼音首字母）
 
-    @Field(index = FieldIndex.not_analyzed,type = FieldType.String)
+    @Field(index = FieldIndex.no,type = FieldType.String)
     private String displayName; // 展示的商品名称(高亮)
 
     @JsonSerialize(using = MoneySerializer.class)
@@ -105,14 +105,14 @@ public class Product implements Serializable {
 
     private Long erpProductId; // ERP产品ID
 
-  //  @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    //  @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String adSlogan; // 广告语
 
     private Boolean isPromotionParticular; // 是否是促销例
 
     private Integer promotionType; // 促销类型
 
-   // @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    // @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String introduction; // 介绍
 
     @JsonDeserialize(using = CustomDateDeSerializer.class)

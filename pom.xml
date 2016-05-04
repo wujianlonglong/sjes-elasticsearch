@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.4.0.M1</version>
+        <version>1.3.0.RELEASE</version>
     </parent>
 
     <groupId>sjes.elasticsearch</groupId>
@@ -18,7 +18,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <spring-cloud.version>Brixton.RC2</spring-cloud.version>
+        <spring-cloud.version>Brixton.M3</spring-cloud.version>
     </properties>
 
     <dependencies>
