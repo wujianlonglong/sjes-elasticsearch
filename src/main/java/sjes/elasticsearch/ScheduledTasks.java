@@ -1,9 +1,5 @@
 package sjes.elasticsearch;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,6 +8,9 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
 
 /**
  * Created by 白 on 2016/2/25.
@@ -36,7 +35,6 @@ public class ScheduledTasks {
     //每天凌晨三点自动更新索引
     @Scheduled(cron="0 0 3 * * *")
     public void autoIndex() throws ServiceException, IOException {
-        //System.out.println("The time is now " + dateFormat.format(new Date()));
 
         int retryTimes = backupFailRetryTimes;
         boolean isBackupSucceed;
