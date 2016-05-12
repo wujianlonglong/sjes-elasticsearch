@@ -501,8 +501,32 @@ public class SearchService {
      * @param page       页面
      * @param size       页面大小
      * @return 分页商品信息
+     *
+     *
+     * 搜索逻辑:
+     *
+     * 1.判断是否搜索关键词是否是拼音
+     * 2.对特殊的搜索关键词进行处理
+     * 3.添加商品名词的查询条件
+     * 4.添加商品品牌的查询条件
+     * 5.添加商品分类的查询条件
+     * 6.添加商品标签的查询条件
+     * 7.添加惠商品的过滤条件
+     * 8.添加商品状态的过滤条件
+     * 9.添加商品分类的过滤条件
+     * 10.添加商品品牌的过滤条件
+     * 11.添加商品价格的过滤条件
+     * 12.添加商品参数的过滤条件
+     * 13.添加排序规则
+     * 14.限制搜索结果的最低分数线
+     * 15.添加搜索关键词高亮
+     * 16.聚合搜索结果
+     *
      */
-    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size) throws ServiceException {
+    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
+                                   String attributes, Boolean stock, Double startPrice, Double endPrice,
+                                   Boolean isBargains, Integer page, Integer size) throws ServiceException {
+
         Pageable pageable = new Pageable(page, size);
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
@@ -510,11 +534,13 @@ public class SearchService {
         }
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
-        BoolQueryBuilder boolQueryBuilder = boolQuery();        //查询条件
-        BoolFilterBuilder boolFilterBuilder = boolFilter();     //过滤条件
+        BoolQueryBuilder boolQueryBuilder = boolQuery();                 //查询条件
+        BoolFilterBuilder boolFilterBuilder = boolFilter();              //过滤条件
 
-        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+") && !specificWords.containsKey(keyword.toUpperCase())) {
+        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")
+                                            && !specificWords.containsKey(keyword.toUpperCase())) {     //判断搜索关键词是否只有字母数字,且不需要进行特殊处理
 
+            //模糊搜索商品名词的拼音
             final String searchKeyword = "*" + keyword.toUpperCase() + "*";
             boolQueryBuilder.should(wildcardQuery("namePinYin", searchKeyword))
                     .should(wildcardQuery("namePinYinAddr", searchKeyword))
@@ -523,52 +549,61 @@ public class SearchService {
         } else if (StringUtils.isNotBlank(keyword)) {
 
             final String searchKeyword;                 //搜索的关键词
-            if (keyword.matches("[A-Za-z0-9]+") && specificWords.containsKey(keyword.toUpperCase())) {  //对特殊的搜索词进行转换
+
+            if (keyword.matches("[A-Za-z0-9]+") && specificWords.containsKey(keyword.toUpperCase())) {      //对特殊的搜索词（只包含字母数字）进行处理
                 searchKeyword = specificWords.get(keyword.toUpperCase());
-            } else if (specificWords.containsKey(keyword)) {
+            } else if (specificWords.containsKey(keyword)) {                                                //对特殊的搜索词进行处理
                 searchKeyword = specificWords.get(keyword);
             } else {
                 searchKeyword = keyword;
             }
 
-            if (isMatchMostName(searchKeyword)) {       //根据商品名称分词检索
-                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));
+            if (isMatchMostName(searchKeyword)) {
+                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));      //要求搜索词和商品名的重合度必须在85%以上
             }else{
                 if (similarNames.containsKey(searchKeyword)) {
+
+                    //商品名中需要匹配部分搜索词,或者匹配搜索词的同义词
                     boolQueryBuilder.must(boolQuery().should(matchQuery("name", searchKeyword).analyzer("ik"))
                             .should(matchQuery("name", similarNames.get(searchKeyword)).minimumShouldMatch("100%"))
                             .minimumNumberShouldMatch(1));
+
                 } else if (shouldMatchNames.contains(searchKeyword)) {
-                    boolQueryBuilder.should(matchQuery("name", searchKeyword).analyzer("ik"));
+                    boolQueryBuilder.should(matchQuery("name", searchKeyword).analyzer("ik"));              //商品名可能包含（分词后的）搜索词
                 } else {
-                    boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));
+                    boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));                //商品名必须包含（分词后的）搜索词
                 }
             }
 
-            //判断搜索词是否包含品牌
             if (isBandName(searchKeyword)) {
-                if (isspecificBandName(searchKeyword)) {     //判断品牌是否是其他品牌的子产品（如小浣熊）
-                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));
+                if (isspecificBandName(searchKeyword)) {
+                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
                 } else {
-                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));       //查询品牌
+                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));           //（分词后的）搜索词必须包含商品品牌
                 }
             }
 
-            if (specificCategories.containsKey(searchKeyword)) {      //特殊搜索词指定分类指定搜索分类
+            if (specificCategories.containsKey(searchKeyword)) {
+
+                //指定搜索结果必须为某些分类下的商品
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
                 specificCategories.get(searchKeyword).forEach(specificCategoryId ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", specificCategoryId)));
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
-            } else if (isCategoryName(searchKeyword)) {      //判断搜索词是否是分类
+
+            } else if (isCategoryName(searchKeyword)) {
+
+                //搜索结果的分类名中必须包含搜索词
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
                 categoryRepository.findByNameLike("*" + searchKeyword.replaceAll(" ", "") + "*").forEach(category ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
             }
 
-            //TODO 判断搜索词是否是标签
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));    //根据标签分词检索
-            if (similarTags.containsKey(searchKeyword)) {          //将搜索词的同义词进行标签检索
+            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));          //将搜索词与标签匹配查询
+
+            //将搜索词的同义词与标签匹配查询
+            if (similarTags.containsKey(searchKeyword)) {
                 boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", similarTags.get(searchKeyword)).analyzer("ik")));
             }
         } else {
@@ -592,19 +627,22 @@ public class SearchService {
             boolFilterBuilder.must(termFilter("isBargains", isBargains));
         }
 
+        //限制搜索结果的商品状态为0
         boolFilterBuilder.must(termFilter("status", 0));
 
-        if (null != categoryId) {       //限定商品分类
+        //判断是否限定搜索结果的分类
+        if (null != categoryId) {
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
         }
 
-        //排除结果中的指定分类
+        //去除搜索结果中指定分类的商品
         if (StringUtils.isNotBlank(keyword) && exceptCategories.containsKey(keyword)) {
             exceptCategories.get(keyword).forEach(exceptCategoryId ->
                     boolFilterBuilder.mustNot(termFilter("productCategoryIds", exceptCategoryId)));
         }
 
-        if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
+        //限定搜索结果中的商品品牌
+        if (StringUtils.isNotBlank(brandIds)) {
             String[] brandIdArr = StringUtils.split(brandIds, "_");
             if (brandIdArr.length > 0) {
                 BoolFilterBuilder brandIdsBoolFilterBuilder = boolFilter();
@@ -615,15 +653,18 @@ public class SearchService {
             }
         }
 
-        if (null != startPrice) {    //限定最低价格
+        //限定最低价格
+        if (null != startPrice) {
             boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
         }
 
-        if (null != endPrice) {      //限定最高价格
+        //限定最高价格
+        if (null != endPrice) {
             boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
         }
 
-        if (StringUtils.isNotBlank(attributes)) {  //限定商品参数
+        //限定商品参数
+        if (StringUtils.isNotBlank(attributes)) {
             String[] attrs = StringUtils.split(attributes, "_");
             if (attrs.length > 0) {
                 for (String attr : attrs) {
@@ -643,7 +684,8 @@ public class SearchService {
 
         nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
 
-        if (null != sortType && !sortType.equals("default")) {       //排序
+        //对搜索结果进行排序
+        if (null != sortType && !sortType.equals("default")) {
             SortBuilder sortBuilder = null;
             if (sortType.equals("sales")) {  //销量降序
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.DESC);
@@ -666,6 +708,7 @@ public class SearchService {
 //            return null;
 //        });
 
+        //限制搜索结果的最低分数线
         if (null == categoryId) {
             if (StringUtils.isNotBlank(keyword)  && keyword.matches("[A-Za-z0-9]+")) {
                 nativeSearchQueryBuilder.withMinScore(0.1f);
@@ -674,6 +717,7 @@ public class SearchService {
             }
         }
 
+        //搜索结果中关键词的高亮显示
         if (StringUtils.isNotBlank(keyword)) {
             nativeSearchQueryBuilder.withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>"));
         }
@@ -826,7 +870,7 @@ public class SearchService {
     }
 
     /**
-     * 判断是否是特殊品牌名
+     * 判断是否是特殊品牌名,比如小浣熊（统一小浣熊方便面,小浣熊倍润润唇膏）
      */
     private boolean isspecificBandName(String keyword) {
         final boolean[] flag = {false};
@@ -840,14 +884,14 @@ public class SearchService {
     }
 
     /**
-     * 判断关键词是否是分类
+     * 判断搜索关键词是否是分类
      */
     private boolean isCategoryName(String keyword) {
         return categoryRepository.countByNameLike("*" + keyword.replaceAll(" ", "") + "*") > 0;
     }
 
     /**
-     * 判断是否匹配大部分商品名
+     * 判断是否匹配大部分商品名（搜索搜索关键词和商品名分词后进行匹配,85%以上的词重合）
      */
     private boolean isMatchMostName(String keyword) {
         return keyword.length() > 3 && elasticsearchTemplate.query(
