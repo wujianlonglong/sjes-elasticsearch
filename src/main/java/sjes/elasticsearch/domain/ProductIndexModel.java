@@ -13,7 +13,9 @@ import sjes.elasticsearch.feigns.item.model.ProductImage;
 public class ProductIndexModel extends Product {
 
     /**
-     * 商品图片(不分析)
+     * 商品图片
+     *
+     * 该字段在mapping中:不分词,嵌套类型
      */
     @Field(type = FieldType.Nested)
     private ProductImage productImage;

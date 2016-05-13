@@ -497,7 +497,7 @@ public class SearchService {
      * @param stock      库存
      * @param startPrice 价格satrt
      * @param endPrice   价格 end
-     * @pram isBargains 是否是惠商品
+     * @param isBargains 是否是惠商品
      * @param page       页面
      * @param size       页面大小
      * @return 分页商品信息

@@ -12,6 +12,6 @@ import sjes.elasticsearch.feigns.category.model.AttributeOption;
 @Data
 public class AttributeOptionValueModel extends Attribute {
 
-    @Field(type = FieldType.Nested)
+    @Field(type = FieldType.Nested)     //嵌套类型
     private AttributeOption attributeOption;
 }

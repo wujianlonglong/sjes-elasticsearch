@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * Created by qinhailong on 15-8-21.
  */
 @Data
-@Document(indexName="goodses", type="goods")
+@Document(indexName="goodses", type="goods")    //索引(index)名称:goodses,映射(mapping)名称:goods,注:未使用
 public class Goods implements Serializable {
 
     private Long id; // 主键
