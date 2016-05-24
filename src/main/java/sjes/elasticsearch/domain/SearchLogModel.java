@@ -18,12 +18,13 @@ import java.time.LocalDateTime;
  * Created by 白 on 2015/12/21.
  */
 @Data
-@Document(indexName = "logstash-sjes", type = "searchlog")
+@Document(indexName = "logstash-sjes", type = "searchlog")      //索引(index)名称:logstash-sjes,映射(mapping)名称:searchlog
 public class SearchLogModel implements Serializable {
 
     @Id
     private Long id; // 主键
 
+    //keyword在mapping中为不分词,String类型的字段
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String keyword;         // 搜索内容
 
@@ -47,6 +48,6 @@ public class SearchLogModel implements Serializable {
 
     @JsonDeserialize(using = CustomDateDeSerializer.class)
     @JsonSerialize(using = CustomDateSerializer.class)
-    @Field(type = FieldType.Date)
+    @Field(type = FieldType.Date)                       //时间戳类型
     private LocalDateTime createDate; // 创建时间
 }

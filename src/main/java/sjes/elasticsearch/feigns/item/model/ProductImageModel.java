@@ -12,7 +12,9 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 public class ProductImageModel extends Product {
 
     /**
-     * 商品图片(不分析)
+     * 商品图片
+     *
+     * 不分词,嵌套类型
      */
     @Field(type = FieldType.Nested)
     private ProductImage productImage;

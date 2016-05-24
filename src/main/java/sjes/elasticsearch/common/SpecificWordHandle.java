@@ -11,13 +11,13 @@ import java.util.HashSet;
  * 对特定搜索词进行处理
  */
 public class SpecificWordHandle {
-    public static HashSet<String> shouldMatchNames;             //名字中不带搜索词的商品
-    public static HashMap<String, String> specificWords;        //将特殊的搜索词进行转换
-    public static HashSet<String> specificBrandNames;            //可能为品牌的关键词，如小浣熊
-    public static HashMap<String, String> similarNames;         //同义词名称搜索(如 酸奶->酸牛奶)
-    public static HashMap<String, String> similarTags;         //同义词标签搜索(如 牛奶->搜含乳饮料标签)
-    public static HashMap<String, HashSet<Long>> specificCategories;     //指定分类
-    public static HashMap<String, HashSet<Long>> exceptCategories;     //排除分类
+    public static HashSet<String> shouldMatchNames;                     //名字中不带搜索词的商品,如搜索『水果』需要出来『苹果』等商品
+    public static HashMap<String, String> specificWords;                //将特殊的搜索词进行转换,如搜索『奶』出来『牛奶』的搜索结果
+    public static HashSet<String> specificBrandNames;                   //可能为品牌的关键词，如搜索『小浣熊』出来『统一小浣熊方便面』和『小浣熊倍润唇膏』
+    public static HashMap<String, String> similarNames;                 //同义词名称搜索,如搜索『酸奶』出来『酸奶』和『酸牛奶』的搜索结果
+    public static HashMap<String, String> similarTags;                  //同义词标签搜索,如搜索『牛奶』搜索结果中包括『标签为含乳饮料的商品』
+    public static HashMap<String, HashSet<Long>> specificCategories;    //指定分类,搜索结果必须为此分类下的商品
+    public static HashMap<String, HashSet<Long>> exceptCategories;      //排除分类,搜索结果包括此分类下的商品
 
     static {
         shouldMatchNames = new HashSet<>();

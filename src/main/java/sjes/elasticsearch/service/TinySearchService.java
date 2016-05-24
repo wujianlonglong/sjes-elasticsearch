@@ -63,20 +63,25 @@ public class TinySearchService {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim().replaceAll(" ","");
             if (keyword.matches("[A-Za-z0-9]+")) {
+
+                //将搜索词与商品名词的拼音进行匹配
                 final String searchKeyword = "*" + keyword.toUpperCase() + "*";
                 boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
                         .should(wildcardQuery("namePinYinAddr", searchKeyword)).minimumNumberShouldMatch(1));
+
             }else{
-                boolQueryBuilder.must(wildcardQuery("searchStr", "*" + keyword + "*"));
+                boolQueryBuilder.must(wildcardQuery("searchStr", "*" + keyword + "*"));     //模糊查询
             }
         }
 
+        //限制id
         if (null != id) {
             boolQueryBuilder.must(wildcardQuery("searchStr", "*" + id + "*"));
         }
+
         nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
 
-        BoolFilterBuilder boolFilterBuilder = boolFilter().must(termFilter("status", 0));
+        BoolFilterBuilder boolFilterBuilder = boolFilter().must(termFilter("status", 0));      //限定商品状态为0
 
         //过滤掉秒杀商品
         if (saleType != null && saleType == SaleConstant.secondKill) {

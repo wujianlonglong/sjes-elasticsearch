@@ -14,11 +14,13 @@ import java.util.List;
  * Created by qinhailong on 15-12-4.
  */
 @Data
-@Document(indexName = "sjes", type = "products")
+@Document(indexName = "sjes", type = "products")        //索引(index)名称:sjes,映射(mapping)名称:products
 public class ProductIndex extends ProductImageModel {
 
     /**
      * 商品分类属性值
+     *
+     * 该字段在mapping中:嵌套类型
      */
     @Field(type = FieldType.Nested)
     private List<AttributeOptionValueModel> attributeOptionValueModels;
@@ -36,6 +38,8 @@ public class ProductIndex extends ProductImageModel {
 
     /**
      * 品牌
+     *
+     * 该字段在mapping中:不分词,String类型
      */
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String brandName;

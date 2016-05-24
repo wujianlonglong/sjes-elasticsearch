@@ -29,6 +29,7 @@ public class Product implements Serializable {
 
     private Long erpGoodsId; // 对应ERP GoodsID
 
+    //不分词,String类型
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String searchStr;  //用于查询，"goodsId/erpGoodsId/sn/name"
 
@@ -41,6 +42,7 @@ public class Product implements Serializable {
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String barCode; // 商品条码
 
+    //索引时使用ik分词(即中文分词),搜索时使用ik分词,String类型
     @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String name; // 商品名称
 
@@ -50,11 +52,12 @@ public class Product implements Serializable {
     @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
     private String namePinYinAddr; // 商品名称（拼音首字母）
 
+    //不索引
     @Field(index = FieldIndex.no,type = FieldType.String)
     private String displayName; // 展示的商品名称(高亮)
 
     @JsonSerialize(using = MoneySerializer.class)
-    @Field(type = FieldType.Double)
+    @Field(type = FieldType.Double)             //Double类型
     private BigDecimal salePrice; // 销售价
 
     @JsonSerialize(using = MoneySerializer.class)

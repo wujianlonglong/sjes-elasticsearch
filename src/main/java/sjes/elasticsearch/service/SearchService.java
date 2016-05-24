@@ -3,7 +3,6 @@ package sjes.elasticsearch.service;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -28,34 +27,11 @@ import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
-
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
-import sjes.elasticsearch.domain.AttributeOptionValueModel;
-import sjes.elasticsearch.domain.CategoryIndex;
-import sjes.elasticsearch.domain.PageModel;
-import sjes.elasticsearch.domain.Pageable;
-import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.feigns.category.model.Attribute;
-import sjes.elasticsearch.feigns.category.model.AttributeModel;
-import sjes.elasticsearch.feigns.category.model.AttributeOption;
-import sjes.elasticsearch.feigns.category.model.Category;
-import sjes.elasticsearch.feigns.category.model.Tag;
+import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.Brand;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.feigns.item.model.ProductCategory;
@@ -65,25 +41,20 @@ import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
 import sjes.elasticsearch.utils.LogWriter;
 
-import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
-import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
-import static org.elasticsearch.index.query.FilterBuilders.rangeFilter;
-import static org.elasticsearch.index.query.FilterBuilders.termFilter;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.util.*;
+
+import static org.elasticsearch.index.query.FilterBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import static sjes.elasticsearch.common.SpecificWordHandle.exceptCategories;
-import static sjes.elasticsearch.common.SpecificWordHandle.shouldMatchNames;
-import static sjes.elasticsearch.common.SpecificWordHandle.similarNames;
-import static sjes.elasticsearch.common.SpecificWordHandle.similarTags;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificBrandNames;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificCategories;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificWords;
+import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
 import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
 
@@ -178,7 +149,7 @@ public class SearchService {
                 List<Brand> brands = brandService.listAll();
                 Map<Long, String> brandNameMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(brands)) {
-                    brands.forEach(brand -> brandNameMap.put(brand.getBrandId(), brand.getName()));
+                    brands.forEach(brand-> brandNameMap.put(brand.getBrandId(), brand.getName()));
                 }
                 Map<Long, ProductIndex> productMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(productImageModels)) {
@@ -197,8 +168,7 @@ public class SearchService {
                             try {
                                 productIndex.setNamePinYin(formatToPinYin(productIndex.getName()).toUpperCase());         //商品名称转拼音
                                 productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
-                            } catch (Exception ignored) {
-                            }
+                            } catch (Exception ignored) {}
                         }
                         productIndex.setSearchStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId()
                                 + "/" + productIndex.getSn() + "/" + productIndex.getName());
@@ -259,28 +229,27 @@ public class SearchService {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
-            if (!backupService.isIndexVaild()) {
+            if(!backupService.isIndexVaild()){
                 int retryTimes = restoreFailRetryTimes;
                 boolean isRestoreSucceed;
 
                 do {
                     isRestoreSucceed = backupService.restore();
-                } while (!isRestoreSucceed && retryTimes-- > 0);
+                }while (!isRestoreSucceed && retryTimes-- > 0);
             }
         }
     }
 
     /**
      * 填充分类标签
-     *
      * @param categoryIdMap 分类idMap
-     * @param productIndex  商品Index
-     * @param categoryId    分类id
+     * @param productIndex 商品Index
+     * @param categoryId 分类id
      */
     private void populateCategoryTag(Map<Long, Category> categoryIdMap, ProductIndex productIndex, Long categoryId) {
         List<Tag> tags = productIndex.getTags();
         int tagOrders = tags.size();
-        Tag tag;
+        Tag tag ;
         if (null != categoryId) {
             do {
                 Category category = categoryIdMap.get(categoryId);
@@ -291,17 +260,18 @@ public class SearchService {
                     tag.setOrders(tagOrders + category.getGrade() - 1);
                     tags.add(tag);
                     categoryId = category.getParentId();
-                } else {
+                }
+                else {
                     categoryId = null;
                 }
-            } while (null != categoryId);
+            } while(null != categoryId);
         }
     }
 
     /**
      * 索引单个商品
-     *
      * @param productIndex 商品
+     * @throws ServiceException
      */
     public void index(ProductIndex productIndex) throws ServiceException {
         ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
@@ -313,12 +283,11 @@ public class SearchService {
 
     /**
      * 索引productIndex
-     *
      * @param productId productIndex
      * @return ProductIndex
      */
     public void index(Long productId) throws ServiceException {
-        LOGGER.info(" 商品productId: {}, index beginning ......", new Long[]{productId});
+        LOGGER.info(" 商品productId: {}, index beginning ......", new Long[] { productId });
         if (null != productId) {
             ProductIndex productIndex = buildProductIndex(productService.getProductImageModel(productId));
             if (null != productIndex) {
@@ -327,46 +296,44 @@ public class SearchService {
                     productIndex.setId(dbProductIndex.getId());
                 }
                 productIndexRepository.save(productIndex);
-                LOGGER.info(" 商品productId: {}, index ending ......", new Long[]{productId});
+                LOGGER.info(" 商品productId: {}, index ending ......", new Long[] { productId });
             }
         }
     }
 
     /**
      * 索引productIndex
-     *
      * @param productIds productIndex
      * @return ProductIndex
      */
     public void index(List<Long> productIds) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
-        LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
+        LOGGER.info(" 商品productIds: {}, index beginning ......", new String[] {prodIds});
         if (CollectionUtils.isNotEmpty(productIds)) {
             List<ProductImageModel> productImageModels = productService.listProductsImageModel(productIds);
             List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexRepository.save(productIndexes);
             }
-            LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+            LOGGER.info(" 商品productId: {}, index ending ......", new String[] { prodIds });
         }
     }
 
     /**
      * 索引productIndex
-     *
      * @param sns sns
      * @return ProductIndex
      */
     public void indexSns(List<String> sns) throws ServiceException {
         String snsStr = StringUtils.join(sns, ",");
-        LOGGER.info(" sns: {}, index beginning ......", new String[]{snsStr});
+        LOGGER.info(" sns: {}, index beginning ......", new String[] {snsStr});
         if (CollectionUtils.isNotEmpty(sns)) {
             List<ProductImageModel> productImageModels = productService.listBySns(sns);
             List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexRepository.save(productIndexes);
             }
-            LOGGER.info(" 商品sns: {}, index ending ......", new String[]{snsStr});
+            LOGGER.info(" 商品sns: {}, index ending ......", new String[] { snsStr });
         }
     }
 
@@ -468,21 +435,23 @@ public class SearchService {
                 try {
                     productIndex.setNamePinYin(formatToPinYin(productIndex.getName()).toUpperCase());         //商品名称转拼音
                     productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
-                } catch (Exception ignored) {
-                }
+                } catch (Exception ignored) {}
             }
             productIndex.setSearchStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId()
                     + "/" + productIndex.getSn() + "/" + productIndex.getName());
 
             productIndex.setTags(tags);
-        } else {
-            LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
+        }
+        else {
+            LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId });
         }
         return productIndex;
     }
 
     /**
      * 删除全部索引
+     *
+     * @throws ServiceException
      */
     public void deleteIndex() throws ServiceException {
         LogWriter.append("delete", "start");
@@ -506,23 +475,12 @@ public class SearchService {
 
     /**
      * 根据商品id得到ProductIndex
-     *
      * @param productId 商品id
      * @return ProductIndex
      */
     public ProductIndex getProductIndexByProductId(Long productId) {
         if (null != productId) {
             return productIndexRepository.findOne(productId);
-        }
-        return null;
-    }
-
-    /**
-     * 根据ERPGOODSID得到ProductIndex
-     */
-    public ProductIndex getProductIndexByErpGoodsId(Long erpGoodsId) {
-        if (null != erpGoodsId) {
-            return productIndexRepository.findByErpGoodsId(erpGoodsId);
         }
         return null;
     }
@@ -539,12 +497,42 @@ public class SearchService {
      * @param stock      库存
      * @param startPrice 价格satrt
      * @param endPrice   价格 end
+     * @param isBargains 是否是惠商品
      * @param page       页面
      * @param size       页面大小
      * @return 分页商品信息
-     * @pram isBargains 是否是惠商品
+     *
+     *
+     * 搜索逻辑:
+     *
+     * 1.判断是否搜索关键词是否是拼音
+     *      是则与商品名词的拼音进行匹配
+     * 2.对特殊的搜索关键词进行处理
+     * 3.添加商品名词的查询条件
+     *      如果搜索词与商品名词重合85%以上,则这个作为必须条件
+     * 4.添加商品品牌的查询条件
+     *      如果搜索词中包含品牌名,则只搜索该品牌的商品
+     * 5.添加商品分类的查询条件
+     *      如果分类名包含搜索词,则只搜索该分类的商品
+     * 6.添加商品标签的查询条件
+     *      将搜索词与商品标签匹配搜索
+     *      如果搜索词有同义词,同时将同义词与标签匹配搜索
+     * 7.添加惠商品的过滤条件
+     * 8.添加商品状态的过滤条件
+     * 9.添加商品分类的过滤条件
+     * 10.添加商品品牌的过滤条件
+     * 11.添加商品价格的过滤条件
+     * 12.添加商品参数的过滤条件
+     * 13.添加排序规则
+     * 14.限制搜索结果的最低分数线
+     * 15.添加搜索关键词高亮
+     * 16.聚合搜索结果
+     *
      */
-    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size) throws ServiceException {
+    public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
+                                   String attributes, Boolean stock, Double startPrice, Double endPrice,
+                                   Boolean isBargains, Integer page, Integer size) throws ServiceException {
+
         Pageable pageable = new Pageable(page, size);
 
         if (StringUtils.isBlank(keyword) && null == categoryId) {
@@ -552,11 +540,13 @@ public class SearchService {
         }
 
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
-        BoolQueryBuilder boolQueryBuilder = boolQuery();        //查询条件
-        BoolFilterBuilder boolFilterBuilder = boolFilter();     //过滤条件
+        BoolQueryBuilder boolQueryBuilder = boolQuery();                 //查询条件
+        BoolFilterBuilder boolFilterBuilder = boolFilter();              //过滤条件
 
-        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+") && !specificWords.containsKey(keyword.toUpperCase())) {
+        if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")
+                                            && !specificWords.containsKey(keyword.toUpperCase())) {     //判断搜索关键词是否只有字母数字,且不需要进行特殊处理
 
+            //模糊搜索商品名词的拼音
             final String searchKeyword = "*" + keyword.toUpperCase() + "*";
             boolQueryBuilder.should(wildcardQuery("namePinYin", searchKeyword))
                     .should(wildcardQuery("namePinYinAddr", searchKeyword))
@@ -565,52 +555,61 @@ public class SearchService {
         } else if (StringUtils.isNotBlank(keyword)) {
 
             final String searchKeyword;                 //搜索的关键词
-            if (keyword.matches("[A-Za-z0-9]+") && specificWords.containsKey(keyword.toUpperCase())) {  //对特殊的搜索词进行转换
+
+            if (keyword.matches("[A-Za-z0-9]+") && specificWords.containsKey(keyword.toUpperCase())) {      //对特殊的搜索词（只包含字母数字）进行处理
                 searchKeyword = specificWords.get(keyword.toUpperCase());
-            } else if (specificWords.containsKey(keyword)) {
+            } else if (specificWords.containsKey(keyword)) {                                                //对特殊的搜索词进行处理
                 searchKeyword = specificWords.get(keyword);
             } else {
                 searchKeyword = keyword;
             }
 
-            if (isMatchMostName(searchKeyword)) {       //根据商品名称分词检索
-                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));
-            } else {
+            if (isMatchMostName(searchKeyword)) {
+                boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));      //要求搜索词和商品名的重合度必须在85%以上
+            }else{
                 if (similarNames.containsKey(searchKeyword)) {
+
+                    //商品名中需要匹配部分搜索词,或者匹配搜索词的同义词
                     boolQueryBuilder.must(boolQuery().should(matchQuery("name", searchKeyword).analyzer("ik"))
                             .should(matchQuery("name", similarNames.get(searchKeyword)).minimumShouldMatch("100%"))
                             .minimumNumberShouldMatch(1));
+
                 } else if (shouldMatchNames.contains(searchKeyword)) {
-                    boolQueryBuilder.should(matchQuery("name", searchKeyword).analyzer("ik"));
+                    boolQueryBuilder.should(matchQuery("name", searchKeyword).analyzer("ik"));              //商品名可能包含（分词后的）搜索词
                 } else {
-                    boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));
+                    boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik"));                //商品名必须包含（分词后的）搜索词
                 }
             }
 
-            //判断搜索词是否包含品牌
             if (isBandName(searchKeyword)) {
-                if (isspecificBandName(searchKeyword)) {     //判断品牌是否是其他品牌的子产品（如小浣熊）
-                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));
+                if (isspecificBandName(searchKeyword)) {
+                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
                 } else {
-                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));       //查询品牌
+                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));           //（分词后的）搜索词必须包含商品品牌
                 }
             }
 
-            if (specificCategories.containsKey(searchKeyword)) {      //特殊搜索词指定分类指定搜索分类
+            if (specificCategories.containsKey(searchKeyword)) {
+
+                //指定搜索结果必须为某些分类下的商品
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
                 specificCategories.get(searchKeyword).forEach(specificCategoryId ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", specificCategoryId)));
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
-            } else if (isCategoryName(searchKeyword)) {      //判断搜索词是否是分类
+
+            } else if (isCategoryName(searchKeyword)) {
+
+                //搜索结果的分类名中必须包含搜索词
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
                 categoryRepository.findByNameLike("*" + searchKeyword.replaceAll(" ", "") + "*").forEach(category ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
             }
 
-            //TODO 判断搜索词是否是标签
-            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));    //根据标签分词检索
-            if (similarTags.containsKey(searchKeyword)) {          //将搜索词的同义词进行标签检索
+            boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));          //将搜索词与标签匹配查询
+
+            //将搜索词的同义词与标签匹配查询
+            if (similarTags.containsKey(searchKeyword)) {
                 boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", similarTags.get(searchKeyword)).analyzer("ik")));
             }
         } else {
@@ -634,19 +633,22 @@ public class SearchService {
             boolFilterBuilder.must(termFilter("isBargains", isBargains));
         }
 
+        //限制搜索结果的商品状态为0
         boolFilterBuilder.must(termFilter("status", 0));
 
-        if (null != categoryId) {       //限定商品分类
+        //判断是否限定搜索结果的分类
+        if (null != categoryId) {
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
         }
 
-        //排除结果中的指定分类
+        //去除搜索结果中指定分类的商品
         if (StringUtils.isNotBlank(keyword) && exceptCategories.containsKey(keyword)) {
             exceptCategories.get(keyword).forEach(exceptCategoryId ->
                     boolFilterBuilder.mustNot(termFilter("productCategoryIds", exceptCategoryId)));
         }
 
-        if (StringUtils.isNotBlank(brandIds)) {     //限定品牌
+        //限定搜索结果中的商品品牌
+        if (StringUtils.isNotBlank(brandIds)) {
             String[] brandIdArr = StringUtils.split(brandIds, "_");
             if (brandIdArr.length > 0) {
                 BoolFilterBuilder brandIdsBoolFilterBuilder = boolFilter();
@@ -657,15 +659,18 @@ public class SearchService {
             }
         }
 
-        if (null != startPrice) {    //限定最低价格
+        //限定最低价格
+        if (null != startPrice) {
             boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
         }
 
-        if (null != endPrice) {      //限定最高价格
+        //限定最高价格
+        if (null != endPrice) {
             boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
         }
 
-        if (StringUtils.isNotBlank(attributes)) {  //限定商品参数
+        //限定商品参数
+        if (StringUtils.isNotBlank(attributes)) {
             String[] attrs = StringUtils.split(attributes, "_");
             if (attrs.length > 0) {
                 for (String attr : attrs) {
@@ -685,7 +690,8 @@ public class SearchService {
 
         nativeSearchQueryBuilder.withFilter(boolFilterBuilder);
 
-        if (null != sortType && !sortType.equals("default")) {       //排序
+        //对搜索结果进行排序
+        if (null != sortType && !sortType.equals("default")) {
             SortBuilder sortBuilder = null;
             if (sortType.equals("sales")) {  //销量降序
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.DESC);
@@ -708,14 +714,16 @@ public class SearchService {
 //            return null;
 //        });
 
+        //限制搜索结果的最低分数线
         if (null == categoryId) {
-            if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
+            if (StringUtils.isNotBlank(keyword)  && keyword.matches("[A-Za-z0-9]+")) {
                 nativeSearchQueryBuilder.withMinScore(0.1f);
-            } else {
+            }else {
                 nativeSearchQueryBuilder.withMinScore(0.2f);
             }
         }
 
+        //搜索结果中关键词的高亮显示
         if (StringUtils.isNotBlank(keyword)) {
             nativeSearchQueryBuilder.withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>"));
         }
@@ -735,7 +743,7 @@ public class SearchService {
 
                         //聚合结果中所有的分类Id
                         Filter aggs = searchResponse.getAggregations().get("aggs");
-                        Terms categoryIdAggr = aggs.getAggregations().get("categoryIdSet");
+                        Terms categoryIdAggr  = aggs.getAggregations().get("categoryIdSet");
                         categoryIdAggr.getBuckets().forEach(bucket -> categoryIdSet.add(bucket.getKeyAsNumber().longValue()));
 
                         if (searchResponse.getHits().getTotalHits() > 0) {
@@ -782,6 +790,7 @@ public class SearchService {
      * @param page       页面
      * @param size       页面大小
      * @return 分类信息
+     * @throws ServiceException
      */
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
@@ -817,8 +826,12 @@ public class SearchService {
      * Map转Object
      *
      * @param classType 类
-     * @param map       Map
+     * @param map Map
      * @return 对象
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     * @throws IntrospectionException
+     * @throws InvocationTargetException
      */
     private Object mapToObject(Class classType, Map map) throws IllegalAccessException,
             InstantiationException, IntrospectionException, InvocationTargetException {
@@ -863,7 +876,7 @@ public class SearchService {
     }
 
     /**
-     * 判断是否是特殊品牌名
+     * 判断是否是特殊品牌名,比如小浣熊（统一小浣熊方便面,小浣熊倍润润唇膏）
      */
     private boolean isspecificBandName(String keyword) {
         final boolean[] flag = {false};
@@ -877,14 +890,14 @@ public class SearchService {
     }
 
     /**
-     * 判断关键词是否是分类
+     * 判断搜索关键词是否是分类
      */
     private boolean isCategoryName(String keyword) {
         return categoryRepository.countByNameLike("*" + keyword.replaceAll(" ", "") + "*") > 0;
     }
 
     /**
-     * 判断是否匹配大部分商品名
+     * 判断是否匹配大部分商品名（搜索搜索关键词和商品名分词后进行匹配,85%以上的词重合）
      */
     private boolean isMatchMostName(String keyword) {
         return keyword.length() > 3 && elasticsearchTemplate.query(
