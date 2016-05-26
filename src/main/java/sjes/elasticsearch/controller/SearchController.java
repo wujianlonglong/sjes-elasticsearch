@@ -3,7 +3,16 @@ package sjes.elasticsearch.controller;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.List;
+
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
@@ -12,9 +21,6 @@ import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by qinhailong on 15-12-2.
@@ -37,6 +43,7 @@ public class SearchController {
 
     /**
      * 建立索引
+     *
      * @return 索引的数据
      */
     @RequestMapping(value = "index", method = RequestMethod.GET)
@@ -46,7 +53,7 @@ public class SearchController {
 
         do {
             isBackupSucceed = backupService.backup();
-        }while (!isBackupSucceed && retryTimes-- > 0);
+        } while (!isBackupSucceed && retryTimes-- > 0);
 
         searchService.deleteIndex();
         return searchService.initService();
@@ -54,6 +61,7 @@ public class SearchController {
 
     /**
      * 索引productIndex
+     *
      * @param productIndex productIndex
      */
     @RequestMapping(method = RequestMethod.POST)
@@ -63,6 +71,7 @@ public class SearchController {
 
     /**
      * 索引productIndex
+     *
      * @param productId productIndex
      */
     @RequestMapping(method = RequestMethod.PUT)
@@ -72,19 +81,19 @@ public class SearchController {
 
     /**
      * 索引productIndex
-     * @param productIds
      */
-    @RequestMapping(value="index/productIds", method = RequestMethod.PUT)
+    @RequestMapping(value = "index/productIds", method = RequestMethod.PUT)
     public void index(@RequestBody List<Long> productIds) throws ServiceException {
         searchService.index(productIds);
     }
 
     /**
      * 索引productIndex
+     *
      * @param sns sns
      * @return ProductIndex
      */
-    @RequestMapping(value="index/sns", method = RequestMethod.PUT)
+    @RequestMapping(value = "index/sns", method = RequestMethod.PUT)
     public void indexSns(@RequestBody List<String> sns) throws ServiceException {
         searchService.indexSns(sns);
     }
@@ -93,23 +102,24 @@ public class SearchController {
      * 删除索引
      */
     @RequestMapping(method = RequestMethod.DELETE)
-    public void deleteIndex() throws ServiceException  {
+    public void deleteIndex() throws ServiceException {
         searchService.deleteIndex();
     }
 
     /**
      * 查询商品列表
-     * @param keyword 关键字
+     *
+     * @param keyword    关键字
      * @param categoryId 分类id
-     * @param brandIds 品牌ids
-     * @param shopId 门店id
-     * @param sortType 排序类型
+     * @param brandIds   品牌ids
+     * @param shopId     门店id
+     * @param sortType   排序类型
      * @param attributes 属性
-     * @param stock 库存
+     * @param stock      库存
      * @param startPrice 价格satrt
-     * @param endPrice 价格 end
-     * @param page 页面
-     * @param size 页面大小
+     * @param endPrice   价格 end
+     * @param page       页面
+     * @param size       页面大小
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
@@ -124,14 +134,13 @@ public class SearchController {
 
     /**
      * 查询分类列表
-     * @param keyword 关键字
+     *
+     * @param keyword    关键字
      * @param categoryId 分类 id
-     * @param page 页码
-     * @param size 每页数量
-     * @return
-     * @throws ServiceException
+     * @param page       页码
+     * @param size       每页数量
      */
-    @RequestMapping(value = "categorySearch",method = RequestMethod.GET)
+    @RequestMapping(value = "categorySearch", method = RequestMethod.GET)
     public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
@@ -141,11 +150,20 @@ public class SearchController {
 
     /**
      * 根据商品id得到ProductIndex
+     *
      * @param productId 分类id
      * @return ProductIndex
      */
     @RequestMapping(value = "{productId}", method = RequestMethod.GET)
     public ProductIndex getProductIndexByProductId(@PathVariable("productId") Long productId) {
         return searchService.getProductIndexByProductId(productId);
+    }
+
+    /**
+     * 根据ERPID得到ProductIndex
+     */
+    @RequestMapping(value = "/erpGoodsId/{erpGoodsId}", method = RequestMethod.GET)
+    public ProductIndex getProductIndexByErpGoodsId(@PathVariable("erpGoodsId") Long erpGoodsId) {
+        return searchService.getProductIndexByErpGoodsId(erpGoodsId);
     }
 }
