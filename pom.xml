@@ -10,7 +10,7 @@
 
     <groupId>sjes.elasticsearch</groupId>
     <artifactId>sjes-elasticsearch</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-RELEASE</version>
     <packaging>jar</packaging>
 
     <name>sjes-elasticsearch</name>
