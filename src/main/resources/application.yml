@@ -23,7 +23,7 @@ elasticsearch-backup:
   indices: sjes                               #备份的索引
   repository:
     name: es_backup                           #本地备份仓库的名称
-    location: ~/es_backup   #本地备份仓库的位置
+    location: ~/es_backup                     #本地备份仓库的位置
   snapshot: snapshot_auto                     #自动备份快照的名称
   retry:
     backup: 1                                 #备份失败重试次数
