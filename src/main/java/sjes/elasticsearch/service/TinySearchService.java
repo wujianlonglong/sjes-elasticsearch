@@ -69,7 +69,7 @@ public class TinySearchService {
                 boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
                         .should(wildcardQuery("namePinYinAddr", searchKeyword)).minimumNumberShouldMatch(1));
 
-            }else{
+            } else {
                 boolQueryBuilder.must(wildcardQuery("searchStr", "*" + keyword + "*"));     //模糊查询
             }
         }

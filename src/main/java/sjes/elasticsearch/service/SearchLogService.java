@@ -1,5 +1,6 @@
 package sjes.elasticsearch.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -12,8 +13,6 @@ import org.springframework.data.elasticsearch.core.ResultsExtractor;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.data.elasticsearch.core.query.SearchQuery;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.HotWordModel;
 import sjes.elasticsearch.domain.SearchLogModel;
@@ -56,17 +55,26 @@ public class SearchLogService {
      * @throws ServiceException
      */
     public void index(String keyword, Long categoryId, String shopId, String sortType, Double startPrice, Double endPrice, String userAgent, String ip) throws ServiceException {
-        SearchLogModel searchLogModel = new SearchLogModel();
-        searchLogModel.setKeyword(keyword);
-        searchLogModel.setCategoryId(categoryId);
-        searchLogModel.setShopId(shopId);
-        searchLogModel.setSortType(sortType);
-        searchLogModel.setStartPrice(startPrice);
-        searchLogModel.setEndPrice(endPrice);
-        searchLogModel.setUserAgent(userAgent);
-        searchLogModel.setIp(ip);
-        searchLogModel.setCreateDate(LocalDateTime.now());
-        searchLogRepository.save(searchLogModel);
+        if (StringUtils.isNotBlank(keyword)) {
+            SearchLogModel searchLogModel = new SearchLogModel();
+            searchLogModel.setKeyword(keyword);
+            searchLogModel.setCategoryId(categoryId);
+            searchLogModel.setShopId(shopId);
+            searchLogModel.setSortType(sortType);
+            searchLogModel.setStartPrice(startPrice);
+            searchLogModel.setEndPrice(endPrice);
+            searchLogModel.setUserAgent(userAgent);
+            searchLogModel.setIp(ip);
+            searchLogModel.setCreateDate(LocalDateTime.now());
+            searchLogRepository.save(searchLogModel);
+        }
+    }
+
+    /**
+     * 删除所有搜索记录
+     */
+    public void deleteAll() {
+        searchLogRepository.deleteAll();
     }
 
     /**

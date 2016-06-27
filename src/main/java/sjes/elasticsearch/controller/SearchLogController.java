@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.HotWordModel;
-import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 
 import java.util.List;
@@ -17,6 +16,14 @@ public class SearchLogController {
 
     @Autowired
     private SearchLogService searchLogService;
+
+    /**
+     * 删除所有搜索记录
+     */
+    @RequestMapping(value = "delete", method = RequestMethod.GET)
+    public void deleteAll() {
+        searchLogService.deleteAll();
+    }
 
     /**
      * 索引搜索记录

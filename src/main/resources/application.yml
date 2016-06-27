@@ -9,6 +9,7 @@ spring:
   profiles: development
   data:
     elasticsearch:
+      cluster-name: elasticsearch_production
       cluster-nodes: srv4.sanjiang.info:9300
 hystrix:
   command:
