@@ -20,7 +20,7 @@ public class SearchLogController {
     /**
      * 删除所有搜索记录
      */
-    @RequestMapping(value = "delete", method = RequestMethod.GET)
+    @RequestMapping(method = RequestMethod.DELETE)
     public void deleteAll() {
         searchLogService.deleteAll();
     }
