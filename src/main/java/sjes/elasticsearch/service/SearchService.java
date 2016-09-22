@@ -779,15 +779,12 @@ public class SearchService {
         List<ProductIndex> returnContent = Lists.newArrayList();
         int addCount = 0;
         if (CollectionUtils.isNotEmpty(content)) {
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ totalElements: " + queryForPage.getTotalElements());
             Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
             content.forEach(productIndex -> {
                 categoryIdSet.add(productIndex.getCategoryId());
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ page: " + pageable.getPage());
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ size: " + pageable.getSize());
             int startIndex = pageable.getPage() * pageable.getSize();
             int endIndex =  (pageable.getPage() + 1) * pageable.getSize();
             int contentSize = content.size();
@@ -800,12 +797,13 @@ public class SearchService {
                 long stockNumber = null != stockNum ? stockNum : 0;
                 if (stockNumber > 0) {
                     addCount ++;
-                    if (addCount >= startIndex && addCount < endIndex) {
+                    if (addCount >= startIndex && addCount <= endIndex) {
                         returnContent.add(productIndex);
                     }
                 }
             }
         }
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ returnContent size: " + returnContent.size());
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ addCount: " + addCount);
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
