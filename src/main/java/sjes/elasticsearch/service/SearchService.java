@@ -785,8 +785,8 @@ public class SearchService {
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
-            int startIndex = pageable.getPage() * pageable.getSize();
-            int endIndex =  (pageable.getPage() + 1) * pageable.getSize();
+            int startIndex = pageable.getPage() * size;
+            int endIndex =  (pageable.getPage() + 1) * size;
             int contentSize = content.size();
             if (endIndex > contentSize) {
                 endIndex = contentSize;
@@ -796,10 +796,10 @@ public class SearchService {
                 Integer stockNum = stockMap.get(productIndex.getErpGoodsId());
                 long stockNumber = null != stockNum ? stockNum : 0;
                 if (stockNumber > 0) {
-                    addCount ++;
-                    if (addCount >= startIndex && addCount <= endIndex) {
+                    if (addCount >= startIndex && addCount < endIndex) {
                         returnContent.add(productIndex);
                     }
+                    addCount ++;
                 }
             }
         }
