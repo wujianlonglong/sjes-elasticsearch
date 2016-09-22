@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.feigns.store.StockFeign;
 import sjes.elasticsearch.feigns.store.model.StockViewModel;
+import sjes.elasticsearch.utils.ListUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -28,12 +29,16 @@ public class StockService {
      */
     public Map<Long, Integer> stockForList(String shopId, List<Long> goodsIdList) {
         Objects.requireNonNull(shopId, "门店ID不能为空");
+        Map<Long, Integer> stockNumMap = Maps.newHashMap();
         if (CollectionUtils.isNotEmpty(goodsIdList)) {
             StockViewModel stockViewModel = new StockViewModel();
             stockViewModel.setShopId(shopId);
-            stockViewModel.setGoodsIdList(goodsIdList);
-            return stockFeign.stockForList(stockViewModel);
+            List<List<Long>> goodsIdsList = ListUtils.splitList(goodsIdList, ListUtils.SPLIT_SUB_LIST_SIZE);
+            for (List<Long> goodsIds : goodsIdsList) {
+                stockViewModel.setGoodsIdList(goodsIds);
+                stockNumMap.putAll(stockFeign.stockForList(stockViewModel));
+            }
         }
-        return Maps.newHashMap();
+        return stockNumMap;
     }
 }
