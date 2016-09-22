@@ -785,6 +785,9 @@ public class SearchService {
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
+            if (null == size) {
+                size = pageable.getSize();
+            }
             int startIndex = pageable.getPage() * size;
             int endIndex =  (pageable.getPage() + 1) * size;
             int contentSize = content.size();
