@@ -3,7 +3,6 @@ package sjes.elasticsearch.service;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -28,34 +27,11 @@ import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
-
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
-import sjes.elasticsearch.domain.AttributeOptionValueModel;
-import sjes.elasticsearch.domain.CategoryIndex;
-import sjes.elasticsearch.domain.PageModel;
-import sjes.elasticsearch.domain.Pageable;
-import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.feigns.category.model.Attribute;
-import sjes.elasticsearch.feigns.category.model.AttributeModel;
-import sjes.elasticsearch.feigns.category.model.AttributeOption;
-import sjes.elasticsearch.feigns.category.model.Category;
-import sjes.elasticsearch.feigns.category.model.Tag;
+import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.Brand;
 import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
 import sjes.elasticsearch.feigns.item.model.ProductCategory;
@@ -65,25 +41,20 @@ import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
 import sjes.elasticsearch.utils.LogWriter;
 
-import static org.elasticsearch.index.query.FilterBuilders.boolFilter;
-import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
-import static org.elasticsearch.index.query.FilterBuilders.rangeFilter;
-import static org.elasticsearch.index.query.FilterBuilders.termFilter;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.util.*;
+
+import static org.elasticsearch.index.query.FilterBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
-import static sjes.elasticsearch.common.SpecificWordHandle.exceptCategories;
-import static sjes.elasticsearch.common.SpecificWordHandle.shouldMatchNames;
-import static sjes.elasticsearch.common.SpecificWordHandle.similarNames;
-import static sjes.elasticsearch.common.SpecificWordHandle.similarTags;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificBrandNames;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificCategories;
-import static sjes.elasticsearch.common.SpecificWordHandle.specificWords;
+import static sjes.elasticsearch.common.SpecificWordHandle.*;
 import static sjes.elasticsearch.utils.PinYinUtils.formatAbbrToPinYin;
 import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
 
@@ -127,6 +98,9 @@ public class SearchService {
 
     @Autowired
     private BackupService backupService;
+
+    @Autowired
+    private StockService stockService;
 
     @Value("${elasticsearch-backup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
@@ -754,7 +728,7 @@ public class SearchService {
             nativeSearchQueryBuilder.withHighlightFields(new HighlightBuilder.Field("name").highlightQuery(matchQuery("name", keyword)).preTags("<b class=\"highlight\">").postTags("</b>"));
         }
 
-        final long[] totalHits = {0};   //总记录数
+//        final long[] totalHits = {0};   //总记录数
         Set<Long> categoryIdSet = Sets.newHashSet();
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
                 nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withIndices("sjes").withTypes("products")
@@ -765,7 +739,7 @@ public class SearchService {
                     public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
                         List<ProductIndex> productIndexes = new ArrayList<>();
 
-                        totalHits[0] = searchResponse.getHits().getTotalHits();
+//                        totalHits[0] = searchResponse.getHits().getTotalHits();
 
                         //聚合结果中所有的分类Id
                         Filter aggs = searchResponse.getAggregations().get("aggs");
@@ -801,11 +775,37 @@ public class SearchService {
                         return new FacetedPageImpl<>((List<T>) productIndexes);
                     }
                 });
+        List<ProductIndex> content = queryForPage.getContent();
+        List<ProductIndex> returnContent = Lists.newArrayList();
+        int addCount = 0;
+        if (CollectionUtils.isNotEmpty(content)) {
+            Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
 
-        return new PageModel(queryForPage.getContent(), totalHits[0], categoryIdSet, pageable);
-
-//        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).withMinScore(0.35f).build());
-//        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
+            content.forEach(productIndex -> {
+                categoryIdSet.add(productIndex.getCategoryId());
+                productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
+            });
+            Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~   pageable   ========================" + pageable);
+            int startIndex = pageable.getPage() * pageable.getSize();
+            int endIndex =  (pageable.getPage() + 1) * pageable.getSize();
+            int contentSize = content.size();
+            if (endIndex > contentSize) {
+                endIndex = contentSize;
+            }
+            for (int i = 0; i < contentSize; i ++) {
+                ProductIndex productIndex = content.get(i);
+                Integer stockNum = stockMap.get(productIndex.getErpGoodsId());
+                long stockNumber = null != stockNum ? stockNum : 0;
+                if (stockNumber > 0) {
+                    addCount ++;
+                    if (addCount >= startIndex && addCount < endIndex) {
+                        returnContent.add(productIndex);
+                    }
+                }
+            }
+        }
+        return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 
     /**
