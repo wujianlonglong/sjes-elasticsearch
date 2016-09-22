@@ -806,8 +806,6 @@ public class SearchService {
                 }
             }
         }
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ returnContent size: " + returnContent.size());
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ addCount: " + addCount);
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 
