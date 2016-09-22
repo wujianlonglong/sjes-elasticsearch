@@ -779,6 +779,7 @@ public class SearchService {
         List<ProductIndex> returnContent = Lists.newArrayList();
         int addCount = 0;
         if (CollectionUtils.isNotEmpty(content)) {
+            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~ totalElements: " + queryForPage.getTotalElements());
             Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
             content.forEach(productIndex -> {
                 categoryIdSet.add(productIndex.getCategoryId());
