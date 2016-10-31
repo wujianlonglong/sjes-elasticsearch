@@ -731,7 +731,7 @@ public class SearchService {
 //        final long[] totalHits = {0};   //总记录数
         Set<Long> categoryIdSet = Sets.newHashSet();
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
-                nativeSearchQueryBuilder.withPageable(new PageRequest(0, Integer.MAX_VALUE)).withIndices("sjes").withTypes("products")
+                nativeSearchQueryBuilder.withPageable(new PageRequest(0, 999)).withIndices("sjes").withTypes("products")
                         .addAggregation(filter("aggs").filter(boolFilterBuilder).subAggregation(terms("categoryIdSet").field("categoryId").size(100)))
                         .build(), ProductIndex.class, new SearchResultMapper() {
 
