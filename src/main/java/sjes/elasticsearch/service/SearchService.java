@@ -546,8 +546,19 @@ public class SearchService {
         if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")
                 && !specificWords.containsKey(keyword.toUpperCase())) {     //判断搜索关键词是否只有字母数字,且不需要进行特殊处理
 
+            LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ 用户输入的搜索的关键字keyword: {}", keyword);
             //模糊搜索商品名词的拼音
-            final String searchKeyword = "*" + keyword.toUpperCase() + "*";
+            String keyWordUpperCase = keyword.toUpperCase();
+            StringBuffer searchKey = new StringBuffer("");
+            if (!StringUtils.startsWith(keyWordUpperCase, "*")) {
+                searchKey.append("*");
+            }
+            searchKey.append(keyWordUpperCase);
+            if (!StringUtils.endsWith(keyWordUpperCase, "*")) {
+                searchKey.append("*");
+            }
+            final String searchKeyword = searchKey.toString();
+            LOGGER.info("--------------------- 用户输入的搜索的关键字searchKeyword: {}", searchKeyword);
             boolQueryBuilder.should(wildcardQuery("namePinYin", searchKeyword))
                     .should(wildcardQuery("namePinYinAddr", searchKeyword))
                     .minimumNumberShouldMatch(1);
