@@ -565,6 +565,8 @@ public class SearchService {
 
         } else if (StringUtils.isNotBlank(keyword)) {
 
+            LOGGER.info("--------------------- 用户输入的搜索的关键字keyword: {}", keyword);
+
             final String searchKeyword;                 //搜索的关键词
 
             if (keyword.matches("[A-Za-z0-9]+") && specificWords.containsKey(keyword.toUpperCase())) {      //对特殊的搜索词（只包含字母数字）进行处理
@@ -612,7 +614,16 @@ public class SearchService {
 
                 //搜索结果的分类名中必须包含搜索词
                 BoolQueryBuilder categoryQueryBuilder = boolQuery();
-                categoryRepository.findByNameLike("*" + searchKeyword.replaceAll(" ", "") + "*").forEach(category ->
+                StringBuffer likeName = new StringBuffer("");
+                String cateSearchKey = searchKeyword.replaceAll(" ", "");
+                if (!StringUtils.startsWith(cateSearchKey, "*")) {
+                    likeName.append("*");
+                }
+                likeName.append(cateSearchKey);
+                if (!StringUtils.endsWith(cateSearchKey, "*")) {
+                    likeName.append("*");
+                }
+                categoryRepository.findByNameLike(likeName.toString()).forEach(category ->
                         categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
                 boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
             }
