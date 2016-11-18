@@ -105,6 +105,10 @@ public class SearchService {
     @Value("${elasticsearch-backup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
 
+    //
+    private String[] specificChar = {"~", "`", "!", "@", "#", "$", "%", "^", "&", "=", "|", "\\", "{", "}", ";", "\"", "<", ">", "?",
+                                     "～", "｀", "！", "＠", "＃", "￥", "％", "＆", "＝", "｜", "、", "｛", "｝", "；", "“", "《", "》", "？"};
+
     /**
      * 初始化索引
      */
@@ -535,10 +539,9 @@ public class SearchService {
 
         Pageable pageable = new Pageable(page, size);
 
-        if (StringUtils.isBlank(keyword) && null == categoryId) {
+        if ((StringUtils.isBlank(keyword) && null == categoryId) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
-
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();                 //查询条件
         BoolFilterBuilder boolFilterBuilder = boolFilter();              //过滤条件
