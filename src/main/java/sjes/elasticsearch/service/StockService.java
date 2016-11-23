@@ -33,7 +33,7 @@ public class StockService {
         if (CollectionUtils.isNotEmpty(goodsIdList)) {
             StockViewModel stockViewModel = new StockViewModel();
             stockViewModel.setShopId(shopId);
-            List<List<Long>> goodsIdsList = ListUtils.splitList(goodsIdList, 500);
+            List<List<Long>> goodsIdsList = ListUtils.splitList(goodsIdList, ListUtils.SPLIT_SUB_LIST_SIZE);
             for (List<Long> goodsIds : goodsIdsList) {
                 stockViewModel.setGoodsIdList(goodsIds);
                 stockNumMap.putAll(stockFeign.stockForList(stockViewModel));
