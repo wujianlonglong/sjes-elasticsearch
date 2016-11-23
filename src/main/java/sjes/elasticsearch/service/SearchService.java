@@ -537,6 +537,19 @@ public class SearchService {
                                    String attributes, Boolean stock, Double startPrice, Double endPrice,
                                    Boolean isBargains, Integer page, Integer size) throws ServiceException {
 
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ keyword : ", keyword);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ categoryId : ", categoryId);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ brandIds : ", brandIds);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ shopId : ", shopId);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ sortType : ", sortType);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ attributes : ", attributes);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ stock : ", stock);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ startPrice : ", startPrice);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ endPrice : ", endPrice);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ isBargains : ", isBargains);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ page : ", page);
+        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ size : ", size);
+
         Pageable pageable = new Pageable(page, size);
 
         if ((StringUtils.isBlank(keyword) && null == categoryId) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
@@ -809,6 +822,8 @@ public class SearchService {
                 categoryIdSet.add(productIndex.getCategoryId());
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
+
+
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
             if (null == size) {
                 size = pageable.getSize();
