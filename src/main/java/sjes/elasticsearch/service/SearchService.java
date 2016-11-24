@@ -536,20 +536,7 @@ public class SearchService {
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
                                    String attributes, Boolean stock, Double startPrice, Double endPrice,
                                    Boolean isBargains, Integer page, Integer size) throws ServiceException {
-
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ keyword : {} ", keyword);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ categoryId :{} ", categoryId);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ brandIds : {} ", brandIds);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ shopId : {} ", shopId);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ sortType : {} ", sortType);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ attributes : {} ", attributes);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ stock : {} ", stock);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ startPrice : {} ", startPrice);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ endPrice : {} ", endPrice);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ isBargains : {} ", isBargains);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ page : {} ", page);
-        LOGGER.info("~~~~~~~~~~~~~~~~~~~~~ size : {} ", size);
-
+        long searchBefore = System.currentTimeMillis();
         Pageable pageable = new Pageable(page, size);
 
         if ((StringUtils.isBlank(keyword) && null == categoryId) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
@@ -823,8 +810,10 @@ public class SearchService {
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
 
-
+            long stockBefore = System.currentTimeMillis();
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
+            long stockAfter = System.currentTimeMillis();
+            LOGGER.info("####stock for list use time: " + (stockAfter - stockBefore));
             if (null == size) {
                 size = pageable.getSize();
             }
@@ -846,6 +835,9 @@ public class SearchService {
                 }
             }
         }
+        long searchAfter = System.currentTimeMillis();
+        LOGGER.info("####elasticsearch query use time: " + (searchAfter - searchBefore));
+
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 

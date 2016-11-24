@@ -1,18 +1,11 @@
 package sjes.elasticsearch.controller;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.io.IOException;
-import java.util.List;
-
+import org.springframework.web.bind.annotation.*;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
@@ -22,6 +15,9 @@ import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
 
+import java.io.IOException;
+import java.util.List;
+
 /**
  * Created by qinhailong on 15-12-2.
  */
@@ -29,6 +25,7 @@ import sjes.elasticsearch.service.SearchService;
 @RequestMapping("searchs")
 public class SearchController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SearchController.class);
     @Autowired
     private SearchService searchService;
 
@@ -127,8 +124,10 @@ public class SearchController {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
+        long indexBefore = System.currentTimeMillis();
         searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
-
+        long indexAfter = System.currentTimeMillis();
+        LOG.info("####sjes.elasticsearch index log time: " + (indexAfter - indexBefore));
         return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size);
     }
 
