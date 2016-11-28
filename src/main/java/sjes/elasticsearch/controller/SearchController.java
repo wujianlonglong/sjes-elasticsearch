@@ -124,10 +124,7 @@ public class SearchController {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
-        long indexBefore = System.currentTimeMillis();
         searchLogService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
-        long indexAfter = System.currentTimeMillis();
-        LOG.info("####sjes.elasticsearch index log time: " + (indexAfter - indexBefore));
         return searchService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size);
     }
 
