@@ -712,7 +712,8 @@ public class SearchService {
             else if (null != endPrice) { //限定最高价格
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").lt(endPrice))));
             }
-        } else {
+        }
+        else {
             if (null != startPrice && null != endPrice) {
                 boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice).lt(endPrice));
             }
