@@ -701,9 +701,9 @@ public class SearchService {
             }
         }
 
-        if (null != shopId) {
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
-        }
+//        if (null != shopId) {
+//            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+//        }
 
         if (null != startPrice && null != endPrice) {
             boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
