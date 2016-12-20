@@ -3,6 +3,7 @@ package sjes.elasticsearch.service;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
@@ -32,10 +33,7 @@ import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.*;
-import sjes.elasticsearch.feigns.item.model.Brand;
-import sjes.elasticsearch.feigns.item.model.ProductAttributeValue;
-import sjes.elasticsearch.feigns.item.model.ProductCategory;
-import sjes.elasticsearch.feigns.item.model.ProductImageModel;
+import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
@@ -102,8 +100,14 @@ public class SearchService {
     @Autowired
     private StockService stockService;
 
+    @Autowired
+    private ItemPriceService itemPriceService;
+
     @Value("${elasticsearch-backup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
+
+    @Value("${elasticsearch-backup.indices}")
+    private String SJES_INDICES;      //恢复失败重试次数
 
     //
     private String[] specificChar = {"~", "`", "!", "@", "#", "$", "%", "^", "&", "=", "|", "\\", "{", "}", ";", "\"", "<", ">", "?",
@@ -216,6 +220,18 @@ public class SearchService {
                 }
                 // productIndex索引
                 List<ProductIndex> productIndexes = Lists.newArrayList(productMap.values());
+                if (CollectionUtils.isNotEmpty(productIndexes)) {
+                    Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
+                    productIndexes.forEach(productIndex -> {
+                        productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
+                    });
+                    List<ItemPrice> itemPrices = itemPriceService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
+                    if (CollectionUtils.isNotEmpty(itemPrices)) {
+                        itemPrices.forEach(itemPrice -> {
+                            productIndexMap.get(itemPrice.getErpGoodsId()).getItemPrices().add(itemPrice);
+                        });
+                    }
+                }
                 productIndexService.saveBat(productIndexes);        //耗时操作
                 LOGGER.debug("商品索引完成......");
                 LogWriter.append("index", "success");
@@ -368,7 +384,7 @@ public class SearchService {
         Long productId = productImageModel.getId();
         ProductIndex productIndex = null;
         if (null != categoryId) {
-            categoryRepository.delete(productId);
+            categoryRepository.delete(categoryId);
             productIndex = new ProductIndex();
             productIndex.setAttributeOptionValueModels(Lists.newArrayList());
             BeanUtils.copyProperties(productImageModel, productIndex);
@@ -453,6 +469,8 @@ public class SearchService {
                     + "/" + productIndex.getSn() + "/" + productIndex.getName());
 
             productIndex.setTags(tags);
+            productIndex.setItemPrices(itemPriceService.findByErpGoodsId(productIndex.getErpGoodsId()));
+
         } else {
             LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
         }
@@ -683,15 +701,29 @@ public class SearchService {
             }
         }
 
-        //限定最低价格
-        if (null != startPrice) {
-            boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
+        if (null != shopId) {
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
         }
 
-        //限定最高价格
-        if (null != endPrice) {
-            boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
+        if (null != startPrice && null != endPrice) {
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
         }
+        else if (null != startPrice) {  //限定最低价格
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice))));
+        }
+        else if (null != endPrice) { //限定最高价格
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").lt(endPrice))));
+        }
+
+//        //限定最低价格
+//        if (null != startPrice) {
+//            boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
+//        }
+//
+//        //限定最高价格
+//        if (null != endPrice) {
+//            boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
+//        }
 
         //限定商品参数
         if (StringUtils.isNotBlank(attributes)) {
@@ -754,8 +786,9 @@ public class SearchService {
 
 //        final long[] totalHits = {0};   //总记录数
         Set<Long> categoryIdSet = Sets.newHashSet();
+        Gson gson = new Gson();
         FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
-                nativeSearchQueryBuilder.withPageable(new PageRequest(0, 999)).withIndices("sjes").withTypes("products")
+                nativeSearchQueryBuilder.withPageable(new PageRequest(0, 999)).withIndices(SJES_INDICES).withTypes("products")
                         .addAggregation(filter("aggs").filter(boolFilterBuilder).subAggregation(terms("categoryIdSet").field("categoryId").size(100)))
                         .build(), ProductIndex.class, new SearchResultMapper() {
 
@@ -774,12 +807,12 @@ public class SearchService {
                             //final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
 
-                                //LOGGER.error((i[0]++) +"."+ searchHit.getSource().get("name") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore());
+                                LOGGER.error(("."+ searchHit.getSource().get("itemPrices") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore()));
 
                                 ProductIndex productIndex = null;
                                 try {
-                                    productIndex = (ProductIndex) mapToObject(aClass, searchHit.getSource());
-                                } catch (IllegalAccessException | InstantiationException | IntrospectionException | InvocationTargetException e) {
+                                    productIndex = (ProductIndex) mapToObject(ProductIndex.class, searchHit.getSource());
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
 
@@ -808,7 +841,6 @@ public class SearchService {
                 categoryIdSet.add(productIndex.getCategoryId());
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
-
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
             if (null == size) {
                 size = pageable.getSize();
@@ -825,13 +857,24 @@ public class SearchService {
                 long stockNumber = null != stockNum ? stockNum : 0;
                 if (stockNumber > 0) {
                     if (addCount >= startIndex && addCount < endIndex) {
+                        List<ItemPrice> itemPrices = productIndex.getItemPrices();
+                        if (CollectionUtils.isNotEmpty(itemPrices)) {
+                            int itemPriceSize = itemPrices.size();
+                            for (int j = 0; j < itemPriceSize; j ++) {
+                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);;
+                                if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
+                                    productIndex.setSalePrice(itemPrice.getSalePrice());
+                                    productIndex.setMemberPrice(itemPrice.getMemberPrice());
+                                    break;
+                                }
+                            }
+                        }
                         returnContent.add(productIndex);
                     }
                     addCount ++;
                 }
             }
         }
-
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 

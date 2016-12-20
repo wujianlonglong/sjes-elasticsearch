@@ -3,9 +3,9 @@ package sjes.elasticsearch.domain;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldIndex;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.feigns.category.model.Tag;
+import sjes.elasticsearch.feigns.item.model.ItemPrice;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 
 import java.util.List;
@@ -34,6 +34,7 @@ public class ProductIndex extends ProductImageModel {
     /**
      * 多分类ids
      */
+    @Field(type = FieldType.Nested)
     private List<String> productCategoryIds;
 
     /**
@@ -41,7 +42,13 @@ public class ProductIndex extends ProductImageModel {
      *
      * 该字段在mapping中:不分词,String类型
      */
-    @Field(index = FieldIndex.not_analyzed, type = FieldType.String)
+    @Field( type = FieldType.String)
     private String brandName;
+
+    /**
+     * 商品价格列表
+     */
+    @Field(type = FieldType.Nested)
+    private List<ItemPrice> itemPrices;
 
 }

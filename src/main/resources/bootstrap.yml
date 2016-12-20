@@ -7,6 +7,15 @@ spring:
 ---
 
 spring:
+  profiles: local
+  cloud:
+    config:
+      profile: local
+      enabled: false
+
+---
+
+spring:
   profiles: development
   cloud:
     config:
@@ -23,3 +32,4 @@ spring:
       profile: production
       uri: http://srv3.sanjiang.info:8888
       fail-fast: true
+

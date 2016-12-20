@@ -35,7 +35,7 @@ public class CategoryService {
     public List<Category> all() {
         Category category = new Category();
         category.setDisplay(true);
-        return  categoryFeign.list(category);
+        return categoryFeign.list(category);
     }
 
     /**
