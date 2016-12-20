@@ -701,29 +701,28 @@ public class SearchService {
             }
         }
 
-//        if (null != shopId) {
-//            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
-//        }
-
-        if (null != startPrice && null != endPrice) {
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
+        if (null != shopId) {
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+            if (null != startPrice && null != endPrice) {
+                boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
+            }
+            else if (null != startPrice) {  //限定最低价格
+                boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice))));
+            }
+            else if (null != endPrice) { //限定最高价格
+                boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").lt(endPrice))));
+            }
+        } else {
+            if (null != startPrice && null != endPrice) {
+                boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice).lt(endPrice));
+            }
+            else if (null != startPrice) {  //限定最低价格
+                boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
+            }
+            else if (null != endPrice) { //限定最高价格
+                boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
+            }
         }
-        else if (null != startPrice) {  //限定最低价格
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice))));
-        }
-        else if (null != endPrice) { //限定最高价格
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").lt(endPrice))));
-        }
-
-//        //限定最低价格
-//        if (null != startPrice) {
-//            boolFilterBuilder.must(rangeFilter("memberPrice").gt(startPrice));
-//        }
-//
-//        //限定最高价格
-//        if (null != endPrice) {
-//            boolFilterBuilder.must(rangeFilter("memberPrice").lt(endPrice));
-//        }
 
         //限定商品参数
         if (StringUtils.isNotBlank(attributes)) {
