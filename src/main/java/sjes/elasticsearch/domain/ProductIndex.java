@@ -1,5 +1,6 @@
 package sjes.elasticsearch.domain;
 
+import com.google.common.collect.Lists;
 import lombok.Data;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -49,6 +50,6 @@ public class ProductIndex extends ProductImageModel {
      * 商品价格列表
      */
     @Field(type = FieldType.Nested)
-    private List<ItemPrice> itemPrices;
+    private List<ItemPrice> itemPrices = Lists.newArrayList();
 
 }
