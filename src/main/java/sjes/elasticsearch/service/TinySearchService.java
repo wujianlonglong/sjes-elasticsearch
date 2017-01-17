@@ -94,4 +94,49 @@ public class TinySearchService {
         FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
         return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
     }
+
+    /**
+     * 根据相关条件获取商品列表
+     *
+     * @param id 编号
+     * @param keyword 名称
+     * @param page 页面
+     * @param size 页面大小
+     * @return 符合条件的商品（分页）
+     */
+    public PageModel listProducts(Long id, String keyword, Integer page, Integer size) {
+        Pageable pageable = new Pageable(page, size);
+
+        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
+        BoolQueryBuilder boolQueryBuilder = boolQuery();
+
+        if (null == id && StringUtils.isBlank(keyword)) {
+            boolQueryBuilder.must(matchAllQuery());
+        }
+
+        if (StringUtils.isNotBlank(keyword)) {
+            keyword = keyword.trim().replaceAll(" ","");
+            if (keyword.matches("[A-Za-z0-9]+")) {
+
+                //将搜索词与商品名词的拼音进行匹配
+                final String searchKeyword = "*" + keyword.toUpperCase() + "*";
+                boolQueryBuilder.must(boolQuery().should(wildcardQuery("namePinYin", searchKeyword))
+                        .should(wildcardQuery("namePinYinAddr", searchKeyword)).minimumNumberShouldMatch(1));
+
+            } else {
+                boolQueryBuilder.must(wildcardQuery("searchStr", "*" + keyword + "*"));     //模糊查询
+            }
+        }
+
+        //限制id
+        if (null != id) {
+            boolQueryBuilder.must(wildcardQuery("searchStr", "*" + id + "*"));
+        }
+
+        nativeSearchQueryBuilder.withQuery(boolQueryBuilder);
+
+
+        FacetedPage<ProductIndex> facetedPage = productIndexRepository.search(nativeSearchQueryBuilder.withPageable(new PageRequest(pageable.getPage(), pageable.getSize())).build());
+        return new PageModel(facetedPage.getContent(), facetedPage.getTotalElements(), pageable);
+    }
 }
