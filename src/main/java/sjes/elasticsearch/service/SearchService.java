@@ -806,9 +806,6 @@ public class SearchService {
                         if (searchResponse.getHits().getTotalHits() > 0) {
                             //final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
-
-                                LOGGER.error(("."+ searchHit.getSource().get("itemPrices") + "|" + searchHit.getSource().get("categoryId") + "|" + searchHit.getScore()));
-
                                 ProductIndex productIndex = null;
                                 try {
                                     productIndex = (ProductIndex) mapToObject(ProductIndex.class, searchHit.getSource());

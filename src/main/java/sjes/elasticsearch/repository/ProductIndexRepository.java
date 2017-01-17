@@ -21,4 +21,5 @@ public interface ProductIndexRepository extends ElasticsearchRepository<ProductI
      * 根据ERPGOODSID查询 ProductIndex.
      */
     ProductIndex findByErpGoodsId(Long erpGoodsId);
+
 }
