@@ -13,7 +13,7 @@ public class ListUtils {
     /**
      * 分拆列表大小
      */
-    public static final int SPLIT_SUB_LIST_SIZE = 1000;
+    public static final int SPLIT_SUB_LIST_SIZE = 500;
 
     /**
      * 拆分 list
