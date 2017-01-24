@@ -33,7 +33,7 @@ public class ScheduledTasks {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
     //每天凌晨三点自动更新索引
-    @Scheduled(cron="0 0 10 * * *")
+    @Scheduled(cron="0 0 3 * * *")
     public void autoIndex() throws ServiceException, IOException {
 
         int retryTimes = backupFailRetryTimes;
@@ -42,10 +42,8 @@ public class ScheduledTasks {
         do {
             isBackupSucceed = backupService.backup();
         }while (!isBackupSucceed && retryTimes-- > 0);
-        searchService.deleteIndex();
-        System.out.println("********************************* 每天10点自动更新索引 begin *********************************************");
-        searchService.initService();
-        System.out.println("********************************* 每天10点自动更新索引 end *********************************************");
 
+        searchService.deleteIndex();
+        searchService.initService();
     }
 }
