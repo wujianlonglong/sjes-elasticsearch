@@ -4,8 +4,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.feigns.item.feign.ProductFeign;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 import sjes.elasticsearch.utils.ListUtils;
@@ -55,7 +53,6 @@ public class ProductService {
      * @param categoryIds 分类Ids
      * @return 商品列表
      */
-    @RequestMapping(value = "categoryIds", method = RequestMethod.POST)
     public List<ProductImageModel> listByCategoryIds(List<Long> categoryIds) {
         List<ProductImageModel> productImageModels = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(categoryIds)) {

@@ -33,7 +33,7 @@ public class ScheduledTasks {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
     //每天凌晨三点自动更新索引
-    @Scheduled(cron="0 0 3 * * *")
+    @Scheduled(cron="0 0 8 * * *")
     public void autoIndex() throws ServiceException, IOException {
 
         int retryTimes = backupFailRetryTimes;
