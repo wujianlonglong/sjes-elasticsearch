@@ -162,4 +162,9 @@ public class SearchController {
     public ProductIndex getProductIndexByErpGoodsId(@PathVariable("erpGoodsId") Long erpGoodsId) {
         return searchService.getProductIndexByErpGoodsId(erpGoodsId);
     }
+
+    @RequestMapping(value = "/erpGoodsId/list", method = RequestMethod.POST)
+    public List<ProductIndex> listProductIndexByErpGoodsIds(@RequestBody List<Long> erpGoodsIds) {
+        return searchService.listProductIndex(erpGoodsIds);
+    }
 }

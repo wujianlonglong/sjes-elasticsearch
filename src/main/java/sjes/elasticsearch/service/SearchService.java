@@ -111,7 +111,7 @@ public class SearchService {
 
     //
     private String[] specificChar = {"~", "`", "!", "@", "#", "$", "%", "^", "&", "=", "|", "\\", "{", "}", ";", "\"", "<", ">", "?",
-                                     "～", "｀", "！", "＠", "＃", "￥", "％", "＆", "＝", "｜", "、", "｛", "｝", "；", "“", "《", "》", "？"};
+            "～", "｀", "！", "＠", "＃", "￥", "％", "＆", "＝", "｜", "、", "｛", "｝", "；", "“", "《", "》", "？"};
 
     /**
      * 初始化索引
@@ -526,6 +526,11 @@ public class SearchService {
         return null;
     }
 
+    public List<ProductIndex> listProductIndex(List<Long> erpGoodsIds) {
+        return CollectionUtils.isEmpty(erpGoodsIds) ? null : productIndexRepository.findByErpGoodsIdIn(erpGoodsIds);
+
+    }
+
     /**
      * 商品搜索
      *
@@ -542,10 +547,10 @@ public class SearchService {
      * @param page       页面
      * @param size       页面大小
      * @return 分页商品信息
-     *
-     *
+     * <p>
+     * <p>
      * 搜索逻辑:
-     *
+     * <p>
      * 1.判断是否搜索关键词是否是拼音 是则与商品名词的拼音进行匹配 2.对特殊的搜索关键词进行处理 3.添加商品名词的查询条件 如果搜索词与商品名词重合85%以上,则这个作为必须条件
      * 4.添加商品品牌的查询条件 如果搜索词中包含品牌名,则只搜索该品牌的商品 5.添加商品分类的查询条件 如果分类名包含搜索词,则只搜索该分类的商品 6.添加商品标签的查询条件
      * 将搜索词与商品标签匹配搜索 如果搜索词有同义词,同时将同义词与标签匹配搜索 7.添加惠商品的过滤条件 8.添加商品状态的过滤条件 9.添加商品分类的过滤条件 10.添加商品品牌的过滤条件
@@ -705,11 +710,9 @@ public class SearchService {
             boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
             if (null != startPrice && null != endPrice) {
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
-            }
-            else if (null != startPrice) {  //限定最低价格
+            } else if (null != startPrice) {  //限定最低价格
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice))));
-            }
-            else if (null != endPrice) { //限定最高价格
+            } else if (null != endPrice) { //限定最高价格
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").lt(endPrice))));
             }
         }
@@ -843,12 +846,12 @@ public class SearchService {
                 size = pageable.getSize();
             }
             int startIndex = pageable.getPage() * size;
-            int endIndex =  (pageable.getPage() + 1) * size;
+            int endIndex = (pageable.getPage() + 1) * size;
             int contentSize = content.size();
             if (endIndex > contentSize) {
                 endIndex = contentSize;
             }
-            for (int i = 0; i < contentSize; i ++) {
+            for (int i = 0; i < contentSize; i++) {
                 ProductIndex productIndex = content.get(i);
                 Integer stockNum = stockMap.get(productIndex.getErpGoodsId());
                 long stockNumber = null != stockNum ? stockNum : 0;
@@ -857,8 +860,9 @@ public class SearchService {
                         List<ItemPrice> itemPrices = productIndex.getItemPrices();
                         if (CollectionUtils.isNotEmpty(itemPrices)) {
                             int itemPriceSize = itemPrices.size();
-                            for (int j = 0; j < itemPriceSize; j ++) {
-                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);;
+                            for (int j = 0; j < itemPriceSize; j++) {
+                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
+                                ;
                                 if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
                                     productIndex.setSalePrice(itemPrice.getSalePrice());
                                     productIndex.setMemberPrice(itemPrice.getMemberPrice());
@@ -868,7 +872,7 @@ public class SearchService {
                         }
                         returnContent.add(productIndex);
                     }
-                    addCount ++;
+                    addCount++;
                 }
             }
         }
