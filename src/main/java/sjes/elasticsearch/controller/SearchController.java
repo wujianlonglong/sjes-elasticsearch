@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.CategoryIndex;
 import sjes.elasticsearch.domain.PageModel;
+import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.service.BackupService;
@@ -164,7 +165,13 @@ public class SearchController {
     }
 
     @RequestMapping(value = "/erpGoodsId/list", method = RequestMethod.POST)
-    public List<ProductIndex> listProductIndexByErpGoodsIds(@RequestBody List<Long> erpGoodsIds) {
-        return searchService.listProductIndex(erpGoodsIds);
+    public PageModel<ProductIndex> listProductIndexByErpGoodsIds(@RequestBody SearchParam<List<Long>> searchParam) {
+        if (null == searchParam) {
+            return new PageModel<>(null, 0, new Pageable(1, 10));
+        }
+        List<Long> erpGoodsIds = searchParam.getData();
+        Integer page = searchParam.getPage();
+        Integer size = searchParam.getSize();
+        return searchService.listProductIndex(erpGoodsIds, page, size);
     }
 }

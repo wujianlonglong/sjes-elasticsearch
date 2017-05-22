@@ -1,5 +1,7 @@
 package sjes.elasticsearch.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
 import sjes.elasticsearch.domain.ProductIndex;
 
@@ -23,6 +25,6 @@ public interface ProductIndexRepository extends ElasticsearchRepository<ProductI
      */
     ProductIndex findByErpGoodsId(Long erpGoodsId);
 
-    List<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds);
+    Page<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds, Pageable pageable);
 
 }

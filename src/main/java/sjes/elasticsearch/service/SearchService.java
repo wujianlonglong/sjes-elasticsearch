@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.FacetedPage;
@@ -526,9 +527,13 @@ public class SearchService {
         return null;
     }
 
-    public List<ProductIndex> listProductIndex(List<Long> erpGoodsIds) {
-        return CollectionUtils.isEmpty(erpGoodsIds) ? null : productIndexRepository.findByErpGoodsIdIn(erpGoodsIds);
-
+    public PageModel<ProductIndex> listProductIndex(List<Long> erpGoodsIds, Integer page, Integer size) {
+        org.springframework.data.domain.Pageable pageable = new PageRequest(page - 1, size);
+        if (CollectionUtils.isNotEmpty(erpGoodsIds)) {
+            Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
+            return new PageModel<>(productIndexPage.getContent(), productIndexPage.getTotalElements(), new Pageable(page - 1, size));
+        }
+        return new PageModel<>(null, 0, new Pageable(page - 1, size));
     }
 
     /**
