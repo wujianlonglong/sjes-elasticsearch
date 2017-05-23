@@ -528,12 +528,12 @@ public class SearchService {
     }
 
     public PageModel<ProductIndex> listProductIndex(List<Long> erpGoodsIds, Integer page, Integer size) {
-        org.springframework.data.domain.Pageable pageable = new PageRequest(page - 1, size);
+        org.springframework.data.domain.Pageable pageable = new PageRequest(page, size);
         if (CollectionUtils.isNotEmpty(erpGoodsIds)) {
             Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
-            return new PageModel<>(productIndexPage.getContent(), productIndexPage.getTotalElements(), new Pageable(page, size));
+            return new PageModel<>(productIndexPage.getContent(), productIndexPage.getTotalElements(), new Pageable(page - 1, size));
         }
-        return new PageModel<>(null, 0, new Pageable(page, size));
+        return new PageModel<>(null, 0, new Pageable(page - 1, size));
     }
 
     /**
