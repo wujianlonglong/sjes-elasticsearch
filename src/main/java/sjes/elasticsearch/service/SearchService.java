@@ -527,7 +527,7 @@ public class SearchService {
         return null;
     }
 
-    public PageModel<ProductIndex> listProductIndex(List<Long> erpGoodsIds, Integer page, Integer size) {
+    public PageModel<ProductIndex> listProductIndex(LinkedList<Long> erpGoodsIds, Integer page, Integer size) {
         org.springframework.data.domain.Pageable pageable = new PageRequest(page, size);
         if (CollectionUtils.isNotEmpty(erpGoodsIds)) {
             Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);

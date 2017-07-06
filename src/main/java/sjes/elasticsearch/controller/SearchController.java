@@ -17,6 +17,7 @@ import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -165,11 +166,11 @@ public class SearchController {
     }
 
     @RequestMapping(value = "/erpGoodsId/list", method = RequestMethod.POST)
-    public PageModel<ProductIndex> listProductIndexByErpGoodsIds(@RequestBody SearchParam<List<Long>> searchParam) {
+    public PageModel<ProductIndex> listProductIndexByErpGoodsIds(@RequestBody SearchParam<LinkedList<Long>> searchParam) {
         if (null == searchParam) {
             return new PageModel<>(null, 0, new Pageable(1, 10));
         }
-        List<Long> erpGoodsIds = searchParam.getData();
+        LinkedList<Long> erpGoodsIds = searchParam.getData();
         Integer page = searchParam.getPage();
         Integer size = searchParam.getSize();
         return searchService.listProductIndex(erpGoodsIds, page, size);
