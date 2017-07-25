@@ -881,6 +881,19 @@ public class SearchService {
                 }
             }
         }
+
+        //对搜索结果重新排序，防止门店获取价格时排序错误
+        if (null != sortType && !sortType.equals("default")) {
+            if (sortType.equals("sales")) {  //销量降序
+                returnContent.sort((h1,h2)->h2.getSales().compareTo(h1.getSales()));
+            } else if (sortType.equals("salesUp")) {  //销量升序
+                returnContent.sort((h1,h2)->h1.getSales().compareTo(h1.getSales()));
+            } else if (sortType.equals("price")) {  //价格降序
+                returnContent.sort((h1,h2)->h2.getMemberPrice().compareTo(h1.getMemberPrice()));
+            } else if (sortType.equals("priceUp")) {  //销价格升序
+                returnContent.sort((h1,h2)->h1.getMemberPrice().compareTo(h2.getMemberPrice()));
+            }
+        }
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 

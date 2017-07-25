@@ -20,6 +20,7 @@ public interface ProductIndexRepository extends ElasticsearchRepository<ProductI
      */
     ProductIndex findBySn(String sn);
 
+
     /**
      * 根据ERPGOODSID查询 ProductIndex.
      */
