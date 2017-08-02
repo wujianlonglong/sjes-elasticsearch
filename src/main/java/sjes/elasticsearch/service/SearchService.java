@@ -9,6 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.FilterBuilder;
+import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.FacetedPageImpl;
@@ -527,6 +530,14 @@ public class SearchService {
         return null;
     }
 
+    public List<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds){
+        org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
+        Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
+        return productIndexPage.getContent();
+    }
+
+
+
     public PageModel<ProductIndex> listProductIndex(LinkedList<Long> erpGoodsIds, Integer page, Integer size) {
         org.springframework.data.domain.Pageable pageable = new PageRequest(page, size);
         if (CollectionUtils.isNotEmpty(erpGoodsIds)) {
@@ -762,9 +773,11 @@ public class SearchService {
             } else if (sortType.equals("salesUp")) {  //销量升序
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.ASC);
             } else if (sortType.equals("price")) {  //价格降序
-                sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
+                sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.DESC);
+              //  sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
             } else if (sortType.equals("priceUp")) {  //销价格升序
-                sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
+                sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.ASC);
+               // sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
@@ -867,7 +880,6 @@ public class SearchService {
                             int itemPriceSize = itemPrices.size();
                             for (int j = 0; j < itemPriceSize; j++) {
                                 ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
-                                ;
                                 if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
                                     productIndex.setSalePrice(itemPrice.getSalePrice());
                                     productIndex.setMemberPrice(itemPrice.getMemberPrice());
@@ -883,17 +895,17 @@ public class SearchService {
         }
 
         //对搜索结果重新排序，防止门店获取价格时排序错误
-        if (null != sortType && !sortType.equals("default")) {
-            if (sortType.equals("sales")) {  //销量降序
-                returnContent.sort((h1,h2)->h2.getSales().compareTo(h1.getSales()));
-            } else if (sortType.equals("salesUp")) {  //销量升序
-                returnContent.sort((h1,h2)->h1.getSales().compareTo(h1.getSales()));
-            } else if (sortType.equals("price")) {  //价格降序
-                returnContent.sort((h1,h2)->h2.getMemberPrice().compareTo(h1.getMemberPrice()));
-            } else if (sortType.equals("priceUp")) {  //销价格升序
-                returnContent.sort((h1,h2)->h1.getMemberPrice().compareTo(h2.getMemberPrice()));
-            }
-        }
+//        if (null != sortType && !sortType.equals("default")) {
+//            if (sortType.equals("sales")) {  //销量降序
+//                returnContent.sort((h1, h2) -> h2.getSales().compareTo(h1.getSales()));
+//            } else if (sortType.equals("salesUp")) {  //销量升序
+//                returnContent.sort((h1, h2) -> h1.getSales().compareTo(h1.getSales()));
+//            } else if (sortType.equals("price")) {  //价格降序
+//                returnContent.sort((h1, h2) -> h2.getMemberPrice().compareTo(h1.getMemberPrice()));
+//            } else if (sortType.equals("priceUp")) {  //销价格升序
+//                returnContent.sort((h1, h2) -> h1.getMemberPrice().compareTo(h2.getMemberPrice()));
+//            }
+//        }
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 
