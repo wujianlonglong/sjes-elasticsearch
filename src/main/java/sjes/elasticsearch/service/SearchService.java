@@ -36,9 +36,11 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.domainAxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.repository.CategoryRepository;
+import sjes.elasticsearch.repository.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
 import sjes.elasticsearch.utils.LogWriter;
@@ -73,6 +75,9 @@ public class SearchService {
 
     @Autowired
     private ProductIndexRepository productIndexRepository;
+
+    @Autowired
+    private ProductIndexAxshRepository productIndexAxshRepository;
 
     @Autowired
     private CategoryService categoryService;
@@ -313,7 +318,7 @@ public class SearchService {
      * 索引productIndex
      *
      * @param productId productIndex
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     public void index(Long productId) throws ServiceException {
         LOGGER.info(" 商品productId: {}, index beginning ......", new Long[]{productId});
@@ -334,7 +339,7 @@ public class SearchService {
      * 索引productIndex
      *
      * @param productIds productIndex
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     public void index(List<Long> productIds) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
@@ -353,7 +358,7 @@ public class SearchService {
      * 索引productIndex
      *
      * @param sns sns
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     public void indexSns(List<String> sns) throws ServiceException {
         String snsStr = StringUtils.join(sns, ",");
@@ -508,7 +513,7 @@ public class SearchService {
      * 根据商品id得到ProductIndex
      *
      * @param productId 商品id
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     public ProductIndex getProductIndexByProductId(Long productId) {
         if (null != productId) {
@@ -521,7 +526,7 @@ public class SearchService {
      * 根据商品ERPGOODSID得到ProductIndex
      *
      * @param erpGoodsId ERPGOODSID
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     public ProductIndex getProductIndexByErpGoodsId(Long erpGoodsId) {
         if (null != erpGoodsId) {
@@ -529,6 +534,21 @@ public class SearchService {
         }
         return null;
     }
+
+
+
+    public List<ProductIndexAxsh> findBySnInAxsh(List<String> sns){
+        org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
+        Page<ProductIndexAxsh> productIndexAxshPage = productIndexAxshRepository.findBySnIn(sns, pageable);
+        return productIndexAxshPage.getContent();
+    }
+
+    public List<ProductIndex> findBySnIn(List<String> sns){
+        org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
+        Page<ProductIndex> productIndexPage = productIndexRepository.findBySnIn(sns, pageable);
+        return productIndexPage.getContent();
+    }
+
 
     public List<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds){
         org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);

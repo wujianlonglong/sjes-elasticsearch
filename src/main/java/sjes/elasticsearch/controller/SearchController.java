@@ -90,7 +90,7 @@ public class SearchController {
      * 索引productIndex
      *
      * @param sns sns
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     @RequestMapping(value = "index/sns", method = RequestMethod.PUT)
     public void indexSns(@RequestBody List<String> sns) throws ServiceException {
@@ -150,7 +150,7 @@ public class SearchController {
      * 根据商品id得到ProductIndex
      *
      * @param productId 分类id
-     * @return ProductIndex
+     * @return ProductIndexAxsh
      */
     @RequestMapping(value = "{productId}", method = RequestMethod.GET)
     public ProductIndex getProductIndexByProductId(@PathVariable("productId") Long productId) {

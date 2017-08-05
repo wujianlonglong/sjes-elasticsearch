@@ -1,33 +1,21 @@
 package sjes.elasticsearch.controller;
 
-import com.netflix.discovery.converters.Auto;
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.collections.IteratorUtils;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
-import org.springframework.data.elasticsearch.core.FacetedPage;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import sjes.elasticsearch.common.CommonMethod;
 import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.domain.ProductIndexNew;
-import sjes.elasticsearch.feigns.item.model.ItemPrice;
-import sjes.elasticsearch.repository.ProductIndexNewRepository;
+
+import sjes.elasticsearch.domainAxsh.ProductIndexAxsh;
+import sjes.elasticsearch.repository.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Controller
 @RequestMapping("product")
@@ -37,7 +25,7 @@ public class ProductController {
     ProductIndexRepository productIndexRepository;
 
     @Autowired
-    ProductIndexNewRepository productIndexNewRepository;
+    ProductIndexAxshRepository productIndexAxshRepository;
 
     @Autowired
     ElasticsearchTemplate elasticsearchTemplate;
@@ -48,20 +36,20 @@ public class ProductController {
         List<ProductIndex> productIndices = IteratorUtils.toList(productIndexRepository.findAll().iterator());
       //  productIndexRepository.save(productIndices);
 //        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
-//        FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
-//                nativeSearchQueryBuilder.withQuery(matchAllQuery()).withPageable(new PageRequest(0, 10000)).withIndices("sjes").withTypes("products").build(), ProductIndex.class);
-//        List<ProductIndex> productIndices = queryForPage.getContent();
+//        FacetedPage<ProductIndexAxsh> queryForPage = elasticsearchTemplate.queryForPage(
+//                nativeSearchQueryBuilder.withQuery(matchAllQuery()).withPageable(new PageRequest(0, 10000)).withIndices("sjes").withTypes("products").build(), ProductIndexAxsh.class);
+//        List<ProductIndexAxsh> productIndices = queryForPage.getContent();
 //        List<ItemPrice> itemPriceList=productIndices.get(0).getItemPrices();
-        List<ProductIndexNew> productIndexNewList = CommonMethod.listCopy(productIndices, ProductIndexNew.class);
-//        List<ProductIndexNew> productIndexNewList=new ArrayList<>();
-      //  BeanUtils.copyProperties(productIndexNewList,productIndices);
-//        for (ProductIndex productIndex : productIndices) {
-//            ProductIndexNew productIndexNew=new ProductIndexNew();
+        List<ProductIndexAxsh> productIndexAxshList = CommonMethod.listCopy(productIndices, ProductIndexAxsh.class);
+//        List<ProductIndexAxsh> productIndexAxshList=new ArrayList<>();
+      //  BeanUtils.copyProperties(productIndexAxshList,productIndices);
+//        for (ProductIndexAxsh productIndex : productIndices) {
+//            ProductIndexAxsh productIndexNew=new ProductIndexAxsh();
 //            BeanUtils.copyProperties(productIndexNew,productIndex);
-//            productIndexNewList.add(productIndexNew);
+//            productIndexAxshList.add(productIndexNew);
 //        }
 
-        productIndexNewRepository.save(productIndexNewList);
+        productIndexAxshRepository.save(productIndexAxshList);
         System.out.println("成功！");
 
 

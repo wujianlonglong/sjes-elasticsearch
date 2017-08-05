@@ -20,9 +20,11 @@ public interface ProductIndexRepository extends ElasticsearchRepository<ProductI
      */
     ProductIndex findBySn(String sn);
 
+    Page<ProductIndex> findBySnIn(List<String> sns,Pageable pageable);
+
 
     /**
-     * 根据ERPGOODSID查询 ProductIndex.
+     * 根据ERPGOODSID查询 ProductIndex
      */
     ProductIndex findByErpGoodsId(Long erpGoodsId);
 

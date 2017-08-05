@@ -10,7 +10,7 @@ public class ProductSales {
     /**
      * 商品编号
      */
-    private Long goodId;
+    private String goodId;
 
     /**
      * 销售数量

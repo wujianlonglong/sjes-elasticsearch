@@ -1,7 +1,6 @@
-package sjes.elasticsearch.common.opt;
+package sjes.elasticsearch.opt;
 
 import org.apache.commons.collections.MapUtils;
-import org.elasticsearch.rest.action.support.RestTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,14 +9,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.domain.ProductIndexNew;
 import sjes.elasticsearch.domain.ProductSales;
-import sjes.elasticsearch.repository.ProductIndexNewRepository;
+import sjes.elasticsearch.domainAxsh.ProductIndexAxsh;
+import sjes.elasticsearch.repository.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
-import sjes.elasticsearch.service.SearchNewService;
 import sjes.elasticsearch.service.SearchService;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,23 +29,20 @@ public class ProductSalesOpt {
     @Autowired
     RestTemplate restTemplate;
 
-    private static final String productSalesUrl = "";
+    private static final String productSalesUrl = "srv0.sanjiang.info:20060/orders/outservice/sellList";
 
 
     @Autowired
-    ProductIndexNewRepository productIndexNewRepository;
+    ProductIndexAxshRepository productIndexAxshRepository;
 
 
     @Autowired
     ProductIndexRepository productIndexRepository;
 
     @Autowired
-    SearchNewService searchNewService;
-
-    @Autowired
     SearchService searchService;
 
-    @Scheduled(cron = "* */30 7-19 * * ?")
+    @Scheduled(cron = "0 */30 7-19 * * ?")
     public void ProductSalesSync() {
         log.info("同步商品销量开始-------" + LocalDateTime.now());
         try {
@@ -56,11 +50,11 @@ public class ProductSalesOpt {
             if (CollectionUtils.isEmpty(productSalesList)) {
                 return;
             }
-            Map<Long, Long> cxllProductSalesMap = new HashMap<>();
-            Map<Long, Long> sjejProductSalesMap = new HashMap<>();
+            Map<String, Long> cxllProductSalesMap = new HashMap<>();
+            Map<String, Long> sjejProductSalesMap = new HashMap<>();
             for (ProductSales productSales : productSalesList) {
                 String platId = productSales.getPlatId();
-                Long goodId = productSales.getGoodId();
+                String goodId = productSales.getGoodId();
                 Long saleNum = productSales.getSaleNum();
                 if (platId == "10004") {
                     if (sjejProductSalesMap.containsKey(goodId)) {
@@ -78,14 +72,14 @@ public class ProductSalesOpt {
             }
 
             if (!MapUtils.isEmpty(cxllProductSalesMap)) {
-                List<ProductIndexNew> productIndexNewList = searchNewService.findByErpGoodsIdIn(new ArrayList<Long>(cxllProductSalesMap.keySet()));
-                for (ProductIndexNew productIndexNew : productIndexNewList) {
-                    productIndexNew.setSales(productIndexNew.getSales() + cxllProductSalesMap.get(productIndexNew.getErpGoodsId()));
+                List<ProductIndexAxsh> productIndexAxshList = searchService.findBySnInAxsh(new ArrayList<String>(cxllProductSalesMap.keySet()));
+                for (ProductIndexAxsh productIndexAxsh : productIndexAxshList) {
+                    productIndexAxsh.setSales(productIndexAxsh.getSales() + cxllProductSalesMap.get(productIndexAxsh.getErpGoodsId()));
                 }
-                productIndexNewRepository.save(productIndexNewList);
+                productIndexAxshRepository.save(productIndexAxshList);
             }
             if (!MapUtils.isEmpty(sjejProductSalesMap)) {
-                List<ProductIndex> productIndexList = searchService.findByErpGoodsIdIn(new ArrayList<Long>(sjejProductSalesMap.keySet()));
+                List<ProductIndex> productIndexList = searchService.findBySnIn(new ArrayList<String>(sjejProductSalesMap.keySet()));
                 for (ProductIndex productIndex : productIndexList) {
                     productIndex.setSales(productIndex.getSales() + sjejProductSalesMap.get(productIndex.getErpGoodsId()));
                 }
