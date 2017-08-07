@@ -45,4 +45,13 @@ public interface CategoryFeign {
     @RequestMapping(value = "batUpdateProductNum", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
     ResponseMessage updateProductNum(Map<Long, Integer> categoryProductNumMap);
 
+
+    /**
+     * 更新分类下的商品数目Axsh
+     * @param categoryProductNumMap 商品分类Id和商品数目
+     * @return
+     */
+    @RequestMapping(value = "batUpdateProductNumAxsh", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseMessage updateProductNumAxsh(Map<Long, Integer> categoryProductNumMap);
+
 }

@@ -1,4 +1,4 @@
-package sjes.elasticsearch.domainAxsh;
+package sjes.elasticsearch.domainaxsh;
 
 import lombok.Data;
 import sjes.elasticsearch.feigns.category.model.Category;

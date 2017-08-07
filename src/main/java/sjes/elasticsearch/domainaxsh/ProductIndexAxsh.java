@@ -1,4 +1,4 @@
-package sjes.elasticsearch.domainAxsh;
+package sjes.elasticsearch.domainaxsh;
 
 import com.google.common.collect.Lists;
 import lombok.Data;

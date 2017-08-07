@@ -10,9 +10,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import sjes.elasticsearch.domain.ProductIndex;
 import sjes.elasticsearch.domain.ProductSales;
-import sjes.elasticsearch.domainAxsh.ProductIndexAxsh;
-import sjes.elasticsearch.repository.ProductIndexAxshRepository;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
+import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
+import sjes.elasticsearch.serviceaxsh.SearchAxshService;
 import sjes.elasticsearch.service.SearchService;
 
 import java.time.LocalDateTime;
@@ -41,6 +42,9 @@ public class ProductSalesOpt {
 
     @Autowired
     SearchService searchService;
+
+    @Autowired
+    SearchAxshService searchAxshService;
 
     @Scheduled(cron = "0 */30 7-19 * * ?")
     public void ProductSalesSync() {
@@ -72,7 +76,7 @@ public class ProductSalesOpt {
             }
 
             if (!MapUtils.isEmpty(cxllProductSalesMap)) {
-                List<ProductIndexAxsh> productIndexAxshList = searchService.findBySnInAxsh(new ArrayList<String>(cxllProductSalesMap.keySet()));
+                List<ProductIndexAxsh> productIndexAxshList = searchAxshService.findBySnInAxsh(new ArrayList<String>(cxllProductSalesMap.keySet()));
                 for (ProductIndexAxsh productIndexAxsh : productIndexAxshList) {
                     productIndexAxsh.setSales(productIndexAxsh.getSales() + cxllProductSalesMap.get(productIndexAxsh.getErpGoodsId()));
                 }

@@ -1,9 +1,9 @@
-package sjes.elasticsearch.repository;
+package sjes.elasticsearch.repositoryaxsh;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
-import sjes.elasticsearch.domainAxsh.ProductIndexAxsh;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 
 import java.util.List;
 

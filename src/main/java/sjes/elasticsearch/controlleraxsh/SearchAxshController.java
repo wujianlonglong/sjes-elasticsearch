@@ -1,0 +1,179 @@
+package sjes.elasticsearch.controlleraxsh;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.*;
+import sjes.elasticsearch.common.ServiceException;
+import sjes.elasticsearch.controller.SearchParam;
+import sjes.elasticsearch.domainaxsh.CategoryIndexAxsh;
+import sjes.elasticsearch.domain.PageModel;
+import sjes.elasticsearch.domain.Pageable;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
+import sjes.elasticsearch.feigns.category.model.Category;
+import sjes.elasticsearch.serviceaxsh.BackupAxshService;
+import sjes.elasticsearch.serviceaxsh.SearchAxshService;
+import sjes.elasticsearch.serviceaxsh.SearchLogAxshService;
+
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Created by qinhailong on 15-12-2.
+ */
+@RestController
+@RequestMapping("searchsaxsh")
+public class SearchAxshController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SearchAxshController.class);
+    @Autowired
+    private SearchAxshService searchAxshService;
+
+    @Autowired
+    private SearchLogAxshService searchLogAxshService;
+
+    @Autowired
+    private BackupAxshService backupAxshService;
+
+    @Value("${elasticsearch-backup.retry.backup}")
+    private int backupFailRetryTimes;       //备份失败重试次数
+
+    /**
+     * 建立索引
+     *
+     * @return 索引的数据
+     */
+    @RequestMapping(value = "index", method = RequestMethod.GET)
+    public List<CategoryIndexAxsh> index() throws ServiceException, IOException {
+        int retryTimes = backupFailRetryTimes;
+        boolean isBackupSucceed;
+
+        do {
+            isBackupSucceed = backupAxshService.backup();
+        } while (!isBackupSucceed && retryTimes-- > 0);
+
+        searchAxshService.deleteIndex();
+        return searchAxshService.initService();
+    }
+
+    /**
+     * 索引productIndex
+     *
+     * @param productIndex productIndex
+     */
+    @RequestMapping(method = RequestMethod.POST)
+    public void index(@RequestBody ProductIndexAxsh productIndex) throws ServiceException {
+        searchAxshService.index(productIndex);
+    }
+
+    /**
+     * 索引productIndex
+     *
+     * @param productId productIndex
+     */
+    @RequestMapping(method = RequestMethod.PUT)
+    public void index(@RequestParam("productId") Long productId) throws ServiceException {
+        searchAxshService.index(productId);
+    }
+
+    /**
+     * 索引productIndex
+     */
+    @RequestMapping(value = "index/productIds", method = RequestMethod.PUT)
+    public void index(@RequestBody List<Long> productIds) throws ServiceException {
+        searchAxshService.index(productIds);
+    }
+
+    /**
+     * 索引productIndex
+     *
+     * @param sns sns
+     * @return ProductIndexAxsh
+     */
+    @RequestMapping(value = "index/sns", method = RequestMethod.PUT)
+    public void indexSns(@RequestBody List<String> sns) throws ServiceException {
+        searchAxshService.indexSns(sns);
+    }
+
+    /**
+     * 删除索引
+     */
+    @RequestMapping(method = RequestMethod.DELETE)
+    public void deleteIndex() throws ServiceException {
+        searchAxshService.deleteIndex();
+    }
+
+    /**
+     * 查询商品列表
+     *
+     * @param keyword    关键字
+     * @param categoryId 分类id
+     * @param brandIds   品牌ids
+     * @param shopId     门店id
+     * @param sortType   排序类型
+     * @param attributes 属性
+     * @param stock      库存
+     * @param startPrice 价格satrt
+     * @param endPrice   价格 end
+     * @param page       页面
+     * @param size       页面大小
+     * @return 分页商品信息
+     */
+    @RequestMapping(method = RequestMethod.GET)
+    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size) throws ServiceException {
+        if (StringUtils.isNotBlank(keyword)) {
+            keyword = keyword.trim();
+        }
+        searchLogAxshService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
+        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size);
+    }
+
+    /**
+     * 查询分类列表
+     *
+     * @param keyword    关键字
+     * @param categoryId 分类 id
+     * @param page       页码
+     * @param size       每页数量
+     */
+    @RequestMapping(value = "categorySearch", method = RequestMethod.GET)
+    public PageModel<Category> categorySearch(String keyword, Long categoryId, Integer page, Integer size) throws ServiceException {
+        if (StringUtils.isNotBlank(keyword)) {
+            keyword = keyword.trim();
+        }
+        return searchAxshService.categorySearch(keyword, categoryId, page, size);
+    }
+
+    /**
+     * 根据商品id得到ProductIndex
+     *
+     * @param productId 分类id
+     * @return ProductIndexAxsh
+     */
+    @RequestMapping(value = "{productId}", method = RequestMethod.GET)
+    public ProductIndexAxsh getProductIndexByProductId(@PathVariable("productId") Long productId) {
+        return searchAxshService.getProductIndexByProductId(productId);
+    }
+
+    /**
+     * 根据ERPID得到ProductIndex
+     */
+    @RequestMapping(value = "/erpGoodsId/{erpGoodsId}", method = RequestMethod.GET)
+    public ProductIndexAxsh getProductIndexByErpGoodsId(@PathVariable("erpGoodsId") Long erpGoodsId) {
+        return searchAxshService.getProductIndexByErpGoodsId(erpGoodsId);
+    }
+
+    @RequestMapping(value = "/erpGoodsId/list", method = RequestMethod.POST)
+    public PageModel<ProductIndexAxsh> listProductIndexByErpGoodsIds(@RequestBody SearchParam<LinkedList<Long>> searchParam) {
+        if (null == searchParam) {
+            return new PageModel<>(null, 0, new Pageable(1, 10));
+        }
+        LinkedList<Long> erpGoodsIds = searchParam.getData();
+        Integer page = searchParam.getPage();
+        Integer size = searchParam.getSize();
+        return searchAxshService.listProductIndex(erpGoodsIds, page, size);
+    }
+}

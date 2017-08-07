@@ -1,4 +1,4 @@
-package sjes.elasticsearch.service;
+package sjes.elasticsearch.serviceaxsh;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -33,10 +33,15 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.domainaxsh.CategoryIndexAxsh;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.repository.CategoryRepository;
-import sjes.elasticsearch.repository.ProductIndexRepository;
+import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
+import sjes.elasticsearch.service.AttributeService;
+import sjes.elasticsearch.service.CategoryService;
+import sjes.elasticsearch.service.StockService;
 import sjes.elasticsearch.utils.DateConvertUtils;
 import sjes.elasticsearch.utils.LogWriter;
 
@@ -60,56 +65,56 @@ import static sjes.elasticsearch.utils.PinYinUtils.formatToPinYin;
 /**
  * Created by qinhailong on 15-12-2.
  */
-@Service("searchService")
-public class SearchService {
+@Service("searchAxshService")
+public class SearchAxshService {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(SearchAxshService.class);
 
     @Autowired
     private CategoryRepository categoryRepository;
 
-    @Autowired
-    private ProductIndexRepository productIndexRepository;
 
+    @Autowired
+    private ProductIndexAxshRepository productIndexAxshRepository;
 
     @Autowired
     private CategoryService categoryService;
 
     @Autowired
-    private ProductService productService;
+    private ProductAxshService productAxshService;
 
     @Autowired
-    private ProductAttributeValueService productAttributeValueService;
+    private ProductAttributeValueAxshService productAttributeValueAxshService;
 
     @Autowired
     private AttributeService attributeService;
 
     @Autowired
-    private ProductIndexService productIndexService;
+    private ProductIndexAxshService productIndexAxshService;
 
     @Autowired
-    private ProductCategoryService productCategoryService;
+    private ProductCategoryAxshService productCategoryAxshService;
 
     @Autowired
-    private BrandService brandService;
+    private BrandAxshService brandAxshService;
 
     @Autowired
     private ElasticsearchTemplate elasticsearchTemplate;
 
     @Autowired
-    private BackupService backupService;
+    private BackupAxshService backupAxshService;
 
     @Autowired
     private StockService stockService;
 
     @Autowired
-    private ItemPriceService itemPriceService;
+    private ItemPriceAxshService itemPriceAxshService;
 
     @Value("${elasticsearch-backup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
 
-    @Value("${elasticsearch-backup.indices}")
-    private String SJES_INDICES;      //恢复失败重试次数
+    @Value("${elasticsearch-backup.axshindex}")
+    private String AXSH_INDICES;
 
     //
     private String[] specificChar = {"~", "`", "!", "@", "#", "$", "%", "^", "&", "=", "|", "\\", "{", "}", ";", "\"", "<", ">", "?",
@@ -118,22 +123,22 @@ public class SearchService {
     /**
      * 初始化索引
      */
-    public List<CategoryIndex> initService() throws ServiceException, IOException {
+    public List<CategoryIndexAxsh> initService() throws ServiceException, IOException {
         LogWriter.append("index", "start");
         LOGGER.debug("开始初始化索引！");
         try {
             List<Category> thirdCategories = Lists.newArrayList();
-            Map<Long, CategoryIndex> categoryIndexMap = Maps.newHashMap();
+            Map<Long, CategoryIndexAxsh> categoryIndexMap = Maps.newHashMap();
             List<Category> allCategories = categoryService.all();
             Map<Long, Category> categoryIdMap = Maps.newHashMap();
-            if (CollectionUtils.isNotEmpty(allCategories) && backupService.isIndexExists()) {
+            if (CollectionUtils.isNotEmpty(allCategories) && backupAxshService.isIndexExists()) {
                 allCategories.forEach(category -> {
                     Integer grade = category.getGrade();
                     if (null != grade && Constants.CategoryGradeConstants.GRADE_THREE == grade) {
                         thirdCategories.add(category);
 
-                        CategoryIndex categoryIndex = new CategoryIndex();
-                        categoryIndex.setProductIndexes(Lists.newArrayList());
+                        CategoryIndexAxsh categoryIndex = new CategoryIndexAxsh();
+                        categoryIndex.setProductIndexAxshes(Lists.newArrayList());
                         BeanUtils.copyProperties(category, categoryIndex);
                         categoryIndexMap.put(category.getId(), categoryIndex);
                     }
@@ -145,7 +150,7 @@ public class SearchService {
                 categoryRepository.save(thirdCategories);
                 LOGGER.debug("分类索引完成......");
                 List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-                List<ProductImageModel> productImageModels = productService.listByCategoryIds(categoryIds); //耗时操作
+                List<ProductImageModel> productImageModels = productAxshService.listByCategoryIds(categoryIds); //耗时操作
                 List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
                 Map<Long, Attribute> attributeMaps = Maps.newHashMap();
                 Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
@@ -159,15 +164,15 @@ public class SearchService {
                         }
                     });
                 }
-                List<Brand> brands = brandService.listAll();
+                List<Brand> brands = brandAxshService.listAll();
                 Map<Long, String> brandNameMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(brands)) {
                     brands.forEach(brand -> brandNameMap.put(brand.getBrandId(), brand.getName()));
                 }
-                Map<Long, ProductIndex> productMap = Maps.newHashMap();
+                Map<Long, ProductIndexAxsh> productMap = Maps.newHashMap();
                 if (CollectionUtils.isNotEmpty(productImageModels)) {
                     productImageModels.forEach(productImageModel -> {
-                        ProductIndex productIndex = new ProductIndex();
+                        ProductIndexAxsh productIndex = new ProductIndexAxsh();
                         productIndex.setTags(Lists.newArrayList());
                         productIndex.setAttributeOptionValueModels(Lists.newArrayList());
                         productIndex.setProductCategoryIds(Lists.newArrayList());
@@ -175,7 +180,7 @@ public class SearchService {
                         productIndex.setBrandName(brandNameMap.get(productIndex.getBrandId()));
                         Long categoryId = productIndex.getCategoryId();
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
-                        categoryIndexMap.get(productImageModel.getCategoryId()).getProductIndexes().add(productIndex);
+                        categoryIndexMap.get(productImageModel.getCategoryId()).getProductIndexAxshes().add(productIndex);
 
                         if (StringUtils.isNotBlank(productIndex.getName())) {
                             try {
@@ -190,19 +195,19 @@ public class SearchService {
                         productMap.put(productImageModel.getId(), productIndex);
                     });
                 }
-                List<ProductCategory> productCategories = productCategoryService.listAll();
+                List<ProductCategory> productCategories = productCategoryAxshService.listAll();
                 if (CollectionUtils.isNotEmpty(productCategories)) {
                     productCategories.forEach(productCategory -> {
-                        ProductIndex productIndex = productMap.get(productCategory.getProductId());
+                        ProductIndexAxsh productIndex = productMap.get(productCategory.getProductId());
                         Long categoryId = productCategory.getCategoryId();
                         productIndex.getProductCategoryIds().add(categoryId.toString());
                         this.populateCategoryTag(categoryIdMap, productIndex, categoryId);
                     });
                 }
-                List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productMap.keySet()));
+                List<ProductAttributeValue> productAttributeValues = productAttributeValueAxshService.listByProductIds(Lists.newArrayList(productMap.keySet()));
                 if (CollectionUtils.isNotEmpty(productAttributeValues)) {
                     productAttributeValues.forEach(productAttributeValue -> {
-                        ProductIndex productIndex = productMap.get(productAttributeValue.getProductId());
+                        ProductIndexAxsh productIndex = productMap.get(productAttributeValue.getProductId());
                         List<Tag> tags = productIndex.getTags();
                         AttributeOptionValueModel attributeOptionValueModel = new AttributeOptionValueModel();
                         Attribute attribute = attributeMaps.get(productAttributeValue.getAttributeId());
@@ -221,30 +226,30 @@ public class SearchService {
                     });
                 }
                 // productIndex索引
-                List<ProductIndex> productIndexes = Lists.newArrayList(productMap.values());
+                List<ProductIndexAxsh> productIndexes = Lists.newArrayList(productMap.values());
                 if (CollectionUtils.isNotEmpty(productIndexes)) {
-                    Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
+                    Map<Long, ProductIndexAxsh> productIndexMap = Maps.newHashMap();
                     productIndexes.forEach(productIndex -> {
                         productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
                     });
-                    List<ItemPrice> itemPrices = itemPriceService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
+                    List<ItemPrice> itemPrices = itemPriceAxshService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
                     if (CollectionUtils.isNotEmpty(itemPrices)) {
                         itemPrices.forEach(itemPrice -> {
                             productIndexMap.get(itemPrice.getErpGoodsId()).getItemPrices().add(itemPrice);
                         });
                     }
                 }
-                productIndexService.saveBat(productIndexes);        //耗时操作
+                productIndexAxshService.saveBat(productIndexes);        //耗时操作
                 LOGGER.debug("商品索引完成......");
                 LogWriter.append("index", "success");
             }
-            List<CategoryIndex> categoryIndexList = Lists.newArrayList(categoryIndexMap.values());
+            List<CategoryIndexAxsh> categoryIndexList = Lists.newArrayList(categoryIndexMap.values());
             Map<Long, Integer> categoryProductNumMap = Maps.newHashMap();
             if (CollectionUtils.isNotEmpty(categoryIndexList)) {
                 categoryIndexList.forEach(categoryIndex -> {
-                    categoryProductNumMap.put(categoryIndex.getId(), categoryIndex.getProductIndexes().size());
+                    categoryProductNumMap.put(categoryIndex.getId(), categoryIndex.getProductIndexAxshes().size());
                 });
-                ResponseMessage responseMessage = categoryService.updateProductNum(categoryProductNumMap);
+                ResponseMessage responseMessage = categoryService.updateProductNumAxsh(categoryProductNumMap);
                 if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
                     LOGGER.debug("分类绑定的商品数目统计成功！");
                 }
@@ -255,12 +260,12 @@ public class SearchService {
             LOGGER.error("初始化索引出现错误！", e);
             throw new ServiceException("初始化索引出现错误！", e.getCause());
         } finally {
-            if (!backupService.isIndexVaild()) {
+            if (!backupAxshService.isIndexVaild()) {
                 int retryTimes = restoreFailRetryTimes;
                 boolean isRestoreSucceed;
 
                 do {
-                    isRestoreSucceed = backupService.restore();
+                    isRestoreSucceed = backupAxshService.restore();
                 } while (!isRestoreSucceed && retryTimes-- > 0);
             }
         }
@@ -273,7 +278,7 @@ public class SearchService {
      * @param productIndex  商品Index
      * @param categoryId    分类id
      */
-    private void populateCategoryTag(Map<Long, Category> categoryIdMap, ProductIndex productIndex, Long categoryId) {
+    private void populateCategoryTag(Map<Long, Category> categoryIdMap, ProductIndexAxsh productIndex, Long categoryId) {
         List<Tag> tags = productIndex.getTags();
         int tagOrders = tags.size();
         Tag tag;
@@ -299,12 +304,12 @@ public class SearchService {
      *
      * @param productIndex 商品
      */
-    public void index(ProductIndex productIndex) throws ServiceException {
-        ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
+    public void index(ProductIndexAxsh productIndex) throws ServiceException {
+        ProductIndexAxsh dbProductIndex = productIndexAxshRepository.findBySn(productIndex.getSn());
         if (null != dbProductIndex) {
             productIndex.setId(dbProductIndex.getId());
         }
-        productIndexRepository.save(productIndex);
+        productIndexAxshRepository.save(productIndex);
     }
 
     /**
@@ -316,13 +321,13 @@ public class SearchService {
     public void index(Long productId) throws ServiceException {
         LOGGER.info(" 商品productId: {}, index beginning ......", new Long[]{productId});
         if (null != productId) {
-            ProductIndex productIndex = buildProductIndex(productService.getProductImageModel(productId));
+            ProductIndexAxsh productIndex = buildProductIndex(productAxshService.getProductImageModel(productId));
             if (null != productIndex) {
-                ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
+                ProductIndexAxsh dbProductIndex = productIndexAxshRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
                 }
-                productIndexRepository.save(productIndex);
+                productIndexAxshRepository.save(productIndex);
                 LOGGER.info(" 商品productId: {}, index ending ......", new Long[]{productId});
             }
         }
@@ -338,10 +343,10 @@ public class SearchService {
         String prodIds = StringUtils.join(productIds, ",");
         LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
         if (CollectionUtils.isNotEmpty(productIds)) {
-            List<ProductImageModel> productImageModels = productService.listProductsImageModel(productIds);
-            List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
+            List<ProductImageModel> productImageModels = productAxshService.listProductsImageModel(productIds);
+            List<ProductIndexAxsh> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
-                productIndexRepository.save(productIndexes);
+                productIndexAxshRepository.save(productIndexes);
             }
             LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
         }
@@ -357,21 +362,21 @@ public class SearchService {
         String snsStr = StringUtils.join(sns, ",");
         LOGGER.info(" sns: {}, index beginning ......", new String[]{snsStr});
         if (CollectionUtils.isNotEmpty(sns)) {
-            List<ProductImageModel> productImageModels = productService.listBySns(sns);
-            List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
+            List<ProductImageModel> productImageModels = productAxshService.listBySns(sns);
+            List<ProductIndexAxsh> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
-                productIndexRepository.save(productIndexes);
+                productIndexAxshRepository.save(productIndexes);
             }
             LOGGER.info(" 商品sns: {}, index ending ......", new String[]{snsStr});
         }
     }
 
-    private List<ProductIndex> getProductIndexes(List<ProductImageModel> productImageModels) {
-        List<ProductIndex> productIndexes = Lists.newArrayList();
+    private List<ProductIndexAxsh> getProductIndexes(List<ProductImageModel> productImageModels) {
+        List<ProductIndexAxsh> productIndexes = Lists.newArrayList();
         for (ProductImageModel productImageModel : productImageModels) {
-            ProductIndex productIndex = buildProductIndex(productImageModel);
+            ProductIndexAxsh productIndex = buildProductIndex(productImageModel);
             if (null != productIndex) {
-                ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
+                ProductIndexAxsh dbProductIndex = productIndexAxshRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
                 }
@@ -381,15 +386,15 @@ public class SearchService {
         return productIndexes;
     }
 
-    private ProductIndex buildProductIndex(ProductImageModel productImageModel) {
+    private ProductIndexAxsh buildProductIndex(ProductImageModel productImageModel) {
         Long categoryId = productImageModel.getCategoryId();
         Long productId = productImageModel.getId();
-        ProductIndex productIndex = null;
+        ProductIndexAxsh productIndexAxsh = null;
         if (null != categoryId) {
             categoryRepository.delete(categoryId);
-            productIndex = new ProductIndex();
-            productIndex.setAttributeOptionValueModels(Lists.newArrayList());
-            BeanUtils.copyProperties(productImageModel, productIndex);
+            productIndexAxsh = new ProductIndexAxsh();
+            productIndexAxsh.setAttributeOptionValueModels(Lists.newArrayList());
+            BeanUtils.copyProperties(productImageModel, productIndexAxsh);
             List<Tag> tags = Lists.newArrayList();
             List<Category> categories = categoryService.findClusters(categoryId);
             List<String> productCategoryIds = Lists.newArrayList();
@@ -408,12 +413,12 @@ public class SearchService {
             }
             Long brandId = productImageModel.getBrandId();
             if (null != brandId) {
-                Brand brand = brandService.get(brandId);
+                Brand brand = brandAxshService.get(brandId);
                 if (null != brand) {
-                    productIndex.setBrandName(brand.getName());
+                    productIndexAxsh.setBrandName(brand.getName());
                 }
             }
-            List<ProductCategory> productCategories = productCategoryService.findProductCategorysByProductId(productId);
+            List<ProductCategory> productCategories = productCategoryAxshService.findProductCategorysByProductId(productId);
             if (CollectionUtils.isNotEmpty(productCategories)) {
                 productCategories.forEach(productCategory -> {
                     Long cateId = productCategory.getCategoryId();
@@ -429,8 +434,8 @@ public class SearchService {
                     productCategoryIds.add(cateId.toString());
                 });
             }
-            productIndex.setProductCategoryIds(productCategoryIds);
-            List<ProductAttributeValue> productAttributeValues = productAttributeValueService.listByProductIds(Lists.newArrayList(productId));
+            productIndexAxsh.setProductCategoryIds(productCategoryIds);
+            List<ProductAttributeValue> productAttributeValues = productAttributeValueAxshService.listByProductIds(Lists.newArrayList(productId));
             List<AttributeModel> attributeModels = attributeService.lists(Lists.newArrayList(categoryId));
             Map<Long, Attribute> attributeMaps = Maps.newHashMap();
             Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
@@ -456,27 +461,27 @@ public class SearchService {
                     tags.add(tag);
                     BeanUtils.copyProperties(attribute, attributeOptionValueModel);
                     attributeOptionValueModel.setAttributeOption(attributeOption);
-                    productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
+                    productIndexAxsh.getAttributeOptionValueModels().add(attributeOptionValueModel);
                 }
             }
 
-            if (StringUtils.isNotBlank(productIndex.getName())) {
+            if (StringUtils.isNotBlank(productIndexAxsh.getName())) {
                 try {
-                    productIndex.setNamePinYin(formatToPinYin(productIndex.getName()).toUpperCase());         //商品名称转拼音
-                    productIndex.setNamePinYinAddr(formatAbbrToPinYin(productIndex.getName()).toUpperCase()); //商品名称转拼音首字母
+                    productIndexAxsh.setNamePinYin(formatToPinYin(productIndexAxsh.getName()).toUpperCase());         //商品名称转拼音
+                    productIndexAxsh.setNamePinYinAddr(formatAbbrToPinYin(productIndexAxsh.getName()).toUpperCase()); //商品名称转拼音首字母
                 } catch (Exception ignored) {
                 }
             }
-            productIndex.setSearchStr(productIndex.getGoodsId() + "/" + productIndex.getErpGoodsId()
-                    + "/" + productIndex.getSn() + "/" + productIndex.getName());
+            productIndexAxsh.setSearchStr(productIndexAxsh.getGoodsId() + "/" + productIndexAxsh.getErpGoodsId()
+                    + "/" + productIndexAxsh.getSn() + "/" + productIndexAxsh.getName());
 
-            productIndex.setTags(tags);
-            productIndex.setItemPrices(itemPriceService.findByErpGoodsId(productIndex.getErpGoodsId()));
+            productIndexAxsh.setTags(tags);
+            productIndexAxsh.setItemPrices(itemPriceAxshService.findByErpGoodsId(productIndexAxsh.getErpGoodsId()));
 
         } else {
             LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
         }
-        return productIndex;
+        return productIndexAxsh;
     }
 
     /**
@@ -485,7 +490,7 @@ public class SearchService {
     public void deleteIndex() throws ServiceException {
         LogWriter.append("delete", "start");
 
-        if (!backupService.isIndexExists()) {
+        if (!backupAxshService.isIndexExists()) {
             LOGGER.error("index missing ......");
             return;
         }
@@ -495,7 +500,7 @@ public class SearchService {
         categoryRepository.deleteAll();
         LOGGER.info("delete category index ending ......");
         LOGGER.info("delete product index beginning ......");
-        productIndexRepository.deleteAll();
+        productIndexAxshRepository.deleteAll();
         LOGGER.info("delete product index ending ......");
 
         LOGGER.info("index delete successful ......");
@@ -508,9 +513,9 @@ public class SearchService {
      * @param productId 商品id
      * @return ProductIndexAxsh
      */
-    public ProductIndex getProductIndexByProductId(Long productId) {
+    public ProductIndexAxsh getProductIndexByProductId(Long productId) {
         if (null != productId) {
-            return productIndexRepository.findOne(productId);
+            return productIndexAxshRepository.findOne(productId);
         }
         return null;
     }
@@ -521,34 +526,40 @@ public class SearchService {
      * @param erpGoodsId ERPGOODSID
      * @return ProductIndexAxsh
      */
-    public ProductIndex getProductIndexByErpGoodsId(Long erpGoodsId) {
+    public ProductIndexAxsh getProductIndexByErpGoodsId(Long erpGoodsId) {
         if (null != erpGoodsId) {
-            return productIndexRepository.findByErpGoodsId(erpGoodsId);
+            return productIndexAxshRepository.findByErpGoodsId(erpGoodsId);
         }
         return null;
     }
 
 
 
-    public List<ProductIndex> findBySnIn(List<String> sns){
+    public List<ProductIndexAxsh> findBySnInAxsh(List<String> sns){
         org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
-        Page<ProductIndex> productIndexPage = productIndexRepository.findBySnIn(sns, pageable);
+        Page<ProductIndexAxsh> productIndexAxshPage = productIndexAxshRepository.findBySnIn(sns, pageable);
+        return productIndexAxshPage.getContent();
+    }
+
+    public List<ProductIndexAxsh> findBySnIn(List<String> sns){
+        org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
+        Page<ProductIndexAxsh> productIndexPage = productIndexAxshRepository.findBySnIn(sns, pageable);
         return productIndexPage.getContent();
     }
 
 
-    public List<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds){
+    public List<ProductIndexAxsh> findByErpGoodsIdIn(List<Long> erpGoodsIds){
         org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
-        Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
+        Page<ProductIndexAxsh> productIndexPage = productIndexAxshRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
         return productIndexPage.getContent();
     }
 
 
 
-    public PageModel<ProductIndex> listProductIndex(LinkedList<Long> erpGoodsIds, Integer page, Integer size) {
+    public PageModel<ProductIndexAxsh> listProductIndex(LinkedList<Long> erpGoodsIds, Integer page, Integer size) {
         org.springframework.data.domain.Pageable pageable = new PageRequest(page, size);
         if (CollectionUtils.isNotEmpty(erpGoodsIds)) {
-            Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
+            Page<ProductIndexAxsh> productIndexPage = productIndexAxshRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
             return new PageModel<>(productIndexPage.getContent(), productIndexPage.getTotalElements(), new Pageable(productIndexPage.getNumber(), productIndexPage.getSize()));
         }
         return new PageModel<>(null, 0, new Pageable(1, size));
@@ -815,14 +826,14 @@ public class SearchService {
 //        final long[] totalHits = {0};   //总记录数
         Set<Long> categoryIdSet = Sets.newHashSet();
         Gson gson = new Gson();
-        FacetedPage<ProductIndex> queryForPage = elasticsearchTemplate.queryForPage(
-                nativeSearchQueryBuilder.withPageable(new PageRequest(0, 999)).withIndices(SJES_INDICES).withTypes("products")
+        FacetedPage<ProductIndexAxsh> queryForPage = elasticsearchTemplate.queryForPage(
+                nativeSearchQueryBuilder.withPageable(new PageRequest(0, 999)).withIndices(AXSH_INDICES).withTypes("products")
                         .addAggregation(filter("aggs").filter(boolFilterBuilder).subAggregation(terms("categoryIdSet").field("categoryId").size(100)))
-                        .build(), ProductIndex.class, new SearchResultMapper() {
+                        .build(), ProductIndexAxsh.class, new SearchResultMapper() {
 
                     @Override
                     public <T> FacetedPage<T> mapResults(SearchResponse searchResponse, Class<T> aClass, org.springframework.data.domain.Pageable pageable) {
-                        List<ProductIndex> productIndexes = new ArrayList<>();
+                        List<ProductIndexAxsh> productIndexes = new ArrayList<>();
 
 //                        totalHits[0] = searchResponse.getHits().getTotalHits();
 
@@ -834,9 +845,9 @@ public class SearchService {
                         if (searchResponse.getHits().getTotalHits() > 0) {
                             //final int[] i = {1};
                             searchResponse.getHits().forEach(searchHit -> {
-                                ProductIndex productIndex = null;
+                                ProductIndexAxsh productIndex = null;
                                 try {
-                                    productIndex = (ProductIndex) mapToObject(ProductIndex.class, searchHit.getSource());
+                                    productIndex = (ProductIndexAxsh) mapToObject(ProductIndexAxsh.class, searchHit.getSource());
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -857,11 +868,11 @@ public class SearchService {
                         return new FacetedPageImpl<>((List<T>) productIndexes);
                     }
                 });
-        List<ProductIndex> content = queryForPage.getContent();
-        List<ProductIndex> returnContent = Lists.newArrayList();
+        List<ProductIndexAxsh> content = queryForPage.getContent();
+        List<ProductIndexAxsh> returnContent = Lists.newArrayList();
         int addCount = 0;
         if (CollectionUtils.isNotEmpty(content)) {
-            Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
+            Map<Long, ProductIndexAxsh> productIndexMap = Maps.newHashMap();
             content.forEach(productIndex -> {
                 categoryIdSet.add(productIndex.getCategoryId());
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
@@ -877,7 +888,7 @@ public class SearchService {
                 endIndex = contentSize;
             }
             for (int i = 0; i < contentSize; i++) {
-                ProductIndex productIndex = content.get(i);
+                ProductIndexAxsh productIndex = content.get(i);
                 Integer stockNum = stockMap.get(productIndex.getErpGoodsId());
                 long stockNumber = null != stockNum ? stockNum : 0;
                 if (stockNumber > 0) {

@@ -37,6 +37,11 @@ public class Constants {
     public static final String SJES_API_ITEM = "sjes-api-item";
 
     /**
+     * 应用名称
+     */
+    public static final String AXSH_API_ITEM = "sjes-api-item-anxian";
+
+    /**
      * 单品状态
      */
     public class ProductStatusConstants {

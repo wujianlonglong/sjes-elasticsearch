@@ -1,4 +1,4 @@
-package sjes.elasticsearch.controller;
+package sjes.elasticsearch.controlleraxsh;
 
 import org.apache.commons.collections.IteratorUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import sjes.elasticsearch.common.CommonMethod;
 import sjes.elasticsearch.domain.ProductIndex;
 
-import sjes.elasticsearch.domainAxsh.ProductIndexAxsh;
-import sjes.elasticsearch.repository.ProductIndexAxshRepository;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
+import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
 import java.lang.reflect.InvocationTargetException;
