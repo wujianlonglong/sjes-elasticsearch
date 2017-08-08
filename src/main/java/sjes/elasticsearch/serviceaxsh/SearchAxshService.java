@@ -256,7 +256,7 @@ public class SearchAxshService {
                             break;
 
                     }
-                    goodPromotion.put(erpSaleGoodId.getGoodsId(),promotionType);
+                    goodPromotion.put(erpSaleGoodId.getGoodsId(), promotionType);
                 }
                 // productIndex索引
                 List<ProductIndexAxsh> productIndexes = Lists.newArrayList(productMap.values());
@@ -273,7 +273,7 @@ public class SearchAxshService {
                                 return;
                             } else {
                                 String pro = null;
-                                String erpgoodsId=productIndex.getErpGoodsId().toString();
+                                String erpgoodsId = productIndex.getErpGoodsId().toString();
                                 if (goodPromotion.containsKey(erpgoodsId)) {
                                     pro = goodPromotion.get(erpgoodsId);
                                 }
@@ -281,7 +281,7 @@ public class SearchAxshService {
                             }
                         } else {
                             String pro = null;
-                            String erpgoodsId=productIndex.getErpGoodsId().toString();
+                            String erpgoodsId = productIndex.getErpGoodsId().toString();
                             if (goodPromotion.containsKey(erpgoodsId)) {
                                 pro = goodPromotion.get(erpgoodsId);
                             }
@@ -684,7 +684,7 @@ public class SearchAxshService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
                                    String attributes, Boolean stock, Double startPrice, Double endPrice,
-                                   Boolean isBargains, Integer page, Integer size,String promotionType) throws ServiceException {
+                                   Boolean isBargains, Integer page, Integer size, String promotionType) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
 
         if ((StringUtils.isBlank(keyword) && null == categoryId) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
@@ -693,6 +693,10 @@ public class SearchAxshService {
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
         BoolQueryBuilder boolQueryBuilder = boolQuery();                 //查询条件
         BoolFilterBuilder boolFilterBuilder = boolFilter();              //过滤条件
+
+        if(StringUtils.isNotBlank(promotionType)){
+            boolQueryBuilder.must(matchQuery("promotionType",promotionType).analyzer("ik"));
+        }
 
         if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")
                 && !specificWords.containsKey(keyword.toUpperCase())) {     //判断搜索关键词是否只有字母数字,且不需要进行特殊处理
@@ -727,7 +731,6 @@ public class SearchAxshService {
             } else {
                 searchKeyword = keyword;
             }
-
             if (isMatchMostName(searchKeyword)) {
                 boolQueryBuilder.must(matchQuery("name", searchKeyword).analyzer("ik").minimumShouldMatch("85%"));      //要求搜索词和商品名的重合度必须在85%以上
             } else {

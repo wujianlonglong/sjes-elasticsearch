@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 import sjes.elasticsearch.domain.ProductIndex;
-import sjes.elasticsearch.domain.ProductSales;
+import sjes.elasticsearch.feigns.order.feign.SellFeign;
+import sjes.elasticsearch.feigns.order.model.ProductSales;
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
@@ -30,8 +31,8 @@ public class ProductSalesOpt {
     @Autowired
     RestTemplate restTemplate;
 
-    private static final String productSalesUrl = "srv0.sanjiang.info:20060/orders/outservice/sellList";
-
+    @Autowired
+    SellFeign sellFeign;
 
     @Autowired
     ProductIndexAxshRepository productIndexAxshRepository;
@@ -50,23 +51,23 @@ public class ProductSalesOpt {
     public void ProductSalesSync() {
         log.info("同步商品销量开始-------" + LocalDateTime.now());
         try {
-            List<ProductSales> productSalesList = restTemplate.getForObject(productSalesUrl, ArrayList.class);
+            List<ProductSales> productSalesList=sellFeign.getSellList();
             if (CollectionUtils.isEmpty(productSalesList)) {
                 return;
             }
-            Map<String, Long> cxllProductSalesMap = new HashMap<>();
-            Map<String, Long> sjejProductSalesMap = new HashMap<>();
+            Map<Long, Long> cxllProductSalesMap = new HashMap<>();
+            Map<Long, Long> sjejProductSalesMap = new HashMap<>();
             for (ProductSales productSales : productSalesList) {
                 String platId = productSales.getPlatId();
-                String goodId = productSales.getGoodId();
+                Long goodId = productSales.getErpGoodsId();
                 Long saleNum = productSales.getSaleNum();
-                if (platId == "10004") {
+                if (platId.equals("10004")) {
                     if (sjejProductSalesMap.containsKey(goodId)) {
                         sjejProductSalesMap.put(goodId, sjejProductSalesMap.get(goodId) + saleNum);
                     } else {
                         sjejProductSalesMap.put(goodId, saleNum);
                     }
-                } else if (platId == "10005") {
+                } else if (platId.equals("10005")) {
                     if (cxllProductSalesMap.containsKey(goodId)) {
                         cxllProductSalesMap.put(goodId, cxllProductSalesMap.get(goodId) + saleNum);
                     } else {
@@ -76,16 +77,16 @@ public class ProductSalesOpt {
             }
 
             if (!MapUtils.isEmpty(cxllProductSalesMap)) {
-                List<ProductIndexAxsh> productIndexAxshList = searchAxshService.findBySnInAxsh(new ArrayList<String>(cxllProductSalesMap.keySet()));
+                List<ProductIndexAxsh> productIndexAxshList = searchAxshService.findByErpGoodsIdIn(new ArrayList<Long>(cxllProductSalesMap.keySet()));
                 for (ProductIndexAxsh productIndexAxsh : productIndexAxshList) {
-                    productIndexAxsh.setSales(productIndexAxsh.getSales() + cxllProductSalesMap.get(productIndexAxsh.getSn()));
+                    productIndexAxsh.setSales(productIndexAxsh.getSales() + cxllProductSalesMap.get(productIndexAxsh.getErpGoodsId()));
                 }
                 productIndexAxshRepository.save(productIndexAxshList);
             }
             if (!MapUtils.isEmpty(sjejProductSalesMap)) {
-                List<ProductIndex> productIndexList = searchService.findBySnIn(new ArrayList<String>(sjejProductSalesMap.keySet()));
+                List<ProductIndex> productIndexList = searchService.findByErpGoodsIdIn(new ArrayList<Long>(sjejProductSalesMap.keySet()));
                 for (ProductIndex productIndex : productIndexList) {
-                    productIndex.setSales(productIndex.getSales() + sjejProductSalesMap.get(productIndex.getSn()));
+                    productIndex.setSales(productIndex.getSales() + sjejProductSalesMap.get(productIndex.getErpGoodsId()));
                 }
                 productIndexRepository.save(productIndexList);
             }

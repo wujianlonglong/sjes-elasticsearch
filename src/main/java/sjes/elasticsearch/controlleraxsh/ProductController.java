@@ -11,6 +11,7 @@ import sjes.elasticsearch.common.CommonMethod;
 import sjes.elasticsearch.domain.ProductIndex;
 
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
+import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 
@@ -30,11 +31,14 @@ public class ProductController {
     @Autowired
     ElasticsearchTemplate elasticsearchTemplate;
 
+    @Autowired
+    ProductSalesOpt productSalesOpt;
+
     @RequestMapping(value = "copyProduct", method = RequestMethod.POST)
     @ResponseBody
     public void copyProduct() throws InstantiationException, IllegalAccessException, InvocationTargetException {
         List<ProductIndex> productIndices = IteratorUtils.toList(productIndexRepository.findAll().iterator());
-      //  productIndexRepository.save(productIndices);
+        //  productIndexRepository.save(productIndices);
 //        NativeSearchQueryBuilder nativeSearchQueryBuilder = new NativeSearchQueryBuilder();
 //        FacetedPage<ProductIndexAxsh> queryForPage = elasticsearchTemplate.queryForPage(
 //                nativeSearchQueryBuilder.withQuery(matchAllQuery()).withPageable(new PageRequest(0, 10000)).withIndices("sjes").withTypes("products").build(), ProductIndexAxsh.class);
@@ -42,7 +46,7 @@ public class ProductController {
 //        List<ItemPrice> itemPriceList=productIndices.get(0).getItemPrices();
         List<ProductIndexAxsh> productIndexAxshList = CommonMethod.listCopy(productIndices, ProductIndexAxsh.class);
 //        List<ProductIndexAxsh> productIndexAxshList=new ArrayList<>();
-      //  BeanUtils.copyProperties(productIndexAxshList,productIndices);
+        //  BeanUtils.copyProperties(productIndexAxshList,productIndices);
 //        for (ProductIndexAxsh productIndex : productIndices) {
 //            ProductIndexAxsh productIndexNew=new ProductIndexAxsh();
 //            BeanUtils.copyProperties(productIndexNew,productIndex);
@@ -52,10 +56,12 @@ public class ProductController {
         productIndexAxshRepository.save(productIndexAxshList);
         System.out.println("成功！");
 
-
-
-
-
     }
+
+    @RequestMapping(value = "syncSales", method = RequestMethod.POST)
+    public void syncSales() {
+        productSalesOpt.ProductSalesSync();
+    }
+
 
 }

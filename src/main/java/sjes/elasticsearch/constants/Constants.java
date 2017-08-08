@@ -41,6 +41,8 @@ public class Constants {
      */
     public static final String AXSH_API_ITEM = "sjes-api-item-anxian";
 
+    public static final String SJES_API_ORDER="sjes-api-order";
+
     /**
      * 单品状态
      */

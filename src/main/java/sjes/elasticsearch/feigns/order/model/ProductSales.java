@@ -1,8 +1,6 @@
-package sjes.elasticsearch.domain;
+package sjes.elasticsearch.feigns.order.model;
 
 import lombok.Data;
-
-import java.math.BigDecimal;
 
 @Data
 public class ProductSales {
@@ -10,7 +8,7 @@ public class ProductSales {
     /**
      * 商品编号
      */
-    private String goodId;
+    private Long erpGoodsId;
 
     /**
      * 销售数量
