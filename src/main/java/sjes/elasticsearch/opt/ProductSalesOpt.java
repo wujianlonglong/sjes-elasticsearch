@@ -78,14 +78,14 @@ public class ProductSalesOpt {
             if (!MapUtils.isEmpty(cxllProductSalesMap)) {
                 List<ProductIndexAxsh> productIndexAxshList = searchAxshService.findBySnInAxsh(new ArrayList<String>(cxllProductSalesMap.keySet()));
                 for (ProductIndexAxsh productIndexAxsh : productIndexAxshList) {
-                    productIndexAxsh.setSales(productIndexAxsh.getSales() + cxllProductSalesMap.get(productIndexAxsh.getErpGoodsId()));
+                    productIndexAxsh.setSales(productIndexAxsh.getSales() + cxllProductSalesMap.get(productIndexAxsh.getSn()));
                 }
                 productIndexAxshRepository.save(productIndexAxshList);
             }
             if (!MapUtils.isEmpty(sjejProductSalesMap)) {
                 List<ProductIndex> productIndexList = searchService.findBySnIn(new ArrayList<String>(sjejProductSalesMap.keySet()));
                 for (ProductIndex productIndex : productIndexList) {
-                    productIndex.setSales(productIndex.getSales() + sjejProductSalesMap.get(productIndex.getErpGoodsId()));
+                    productIndex.setSales(productIndex.getSales() + sjejProductSalesMap.get(productIndex.getSn()));
                 }
                 productIndexRepository.save(productIndexList);
             }

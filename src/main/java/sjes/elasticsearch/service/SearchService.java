@@ -33,6 +33,7 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.repository.CategoryRepository;
@@ -553,6 +554,45 @@ public class SearchService {
         }
         return new PageModel<>(null, 0, new Pageable(1, size));
     }
+
+
+
+    public ResponseMessage indexProductPromotions( List<ErpSaleGoodId> erpSaleGoodIds) {
+        LOGGER.info("开始更新商品非erp促销类型！");
+        try {
+            Map<String, String> productPromotionMap = new HashMap<>();
+            erpSaleGoodIds.forEach(erpSaleGoodId -> {
+                productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId.getPromotionType());
+            });
+            List<String> sns = new ArrayList<>(productPromotionMap.keySet());
+            int length = sns.size();
+            int batch_num = 1000;
+            int loop = (length + batch_num - 1) / batch_num;
+            org.springframework.data.domain.Pageable pageable = new PageRequest(0, batch_num);
+            List<ProductIndex> productIndexAxshList = new ArrayList<>();
+            for (int i = 0; i < loop; i++) {
+                int start = i * batch_num;
+                int end = (i + 1) * batch_num >= length ? length : (i + 1) * batch_num;
+                List<String> subList = sns.subList(start, end);
+                List<ProductIndex> productIndexAxshes = productIndexRepository.findBySnIn(subList, pageable).getContent();
+                productIndexAxshList.addAll(productIndexAxshes);
+            }
+            if (CollectionUtils.isNotEmpty(productIndexAxshList)) {
+                productIndexAxshList.forEach(productIndexAxsh -> {
+                    if (!productPromotionMap.containsKey(productIndexAxsh.getSn()))
+                        return;
+                    String promotionType = productPromotionMap.get(productIndexAxsh.getSn());
+                    productIndexAxsh.setPromotionType(promotionType);
+                });
+            }
+            productIndexRepository.save(productIndexAxshList);
+        } catch (Exception ex) {
+            LOGGER.error("更新商品非erp促销类型失败:" + ex.toString());
+            return ResponseMessage.error("更新商品非erp促销类型失败:" + ex.toString());
+        }
+        return ResponseMessage.success("更新商品非erp促销类型成功！");
+    }
+
 
     /**
      * 商品搜索

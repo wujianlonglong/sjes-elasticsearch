@@ -5,12 +5,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.controller.SearchParam;
-import sjes.elasticsearch.domainaxsh.CategoryIndexAxsh;
+import sjes.elasticsearch.domain.ErpSaleGoodId;
 import sjes.elasticsearch.domain.PageModel;
 import sjes.elasticsearch.domain.Pageable;
+import sjes.elasticsearch.domainaxsh.CategoryIndexAxsh;
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.serviceaxsh.BackupAxshService;
@@ -55,7 +58,7 @@ public class SearchAxshController {
             isBackupSucceed = backupAxshService.backup();
         } while (!isBackupSucceed && retryTimes-- > 0);
 
-        searchAxshService.deleteIndex();
+//        searchAxshService.deleteIndex();
         return searchAxshService.initService();
     }
 
@@ -123,12 +126,12 @@ public class SearchAxshController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size) throws ServiceException {
+    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size,String promotionType) throws ServiceException {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
         searchLogAxshService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
-        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size);
+        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size,promotionType);
     }
 
     /**
@@ -176,4 +179,20 @@ public class SearchAxshController {
         Integer size = searchParam.getSize();
         return searchAxshService.listProductIndex(erpGoodsIds, page, size);
     }
+
+
+    /**
+     * 更新商品非erp促销类型
+     *
+     * @param erpSaleGoodIds
+     */
+    @RequestMapping(value = "index/productPromotions", method = RequestMethod.POST)
+    public ResponseMessage updatePromotionType(@RequestBody List<ErpSaleGoodId> erpSaleGoodIds) {
+        if (CollectionUtils.isEmpty(erpSaleGoodIds)) {
+            return ResponseMessage.error("请求参数为空！");
+        }
+        ResponseMessage responseMessage = searchAxshService.indexProductPromotions(erpSaleGoodIds);
+        return responseMessage;
+    }
+
 }

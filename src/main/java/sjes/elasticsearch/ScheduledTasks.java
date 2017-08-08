@@ -57,17 +57,17 @@ public class ScheduledTasks {
 
 
     //每天凌晨三点十五分自动更新索引Axsh
-    @Scheduled(cron="0 15 3 * * *")
-    public void autoIndexAxsh() throws ServiceException, IOException {
-
-        int retryTimes = backupFailRetryTimes;
-        boolean isBackupSucceed;
-
-        do {
-            isBackupSucceed = backupAxshService.backup();
-        }while (!isBackupSucceed && retryTimes-- > 0);
-
-        searchAxshService.deleteIndex();
-        searchAxshService.initService();
-    }
+//    @Scheduled(cron="0 15 3 * * *")
+//    public void autoIndexAxsh() throws ServiceException, IOException {
+//
+//        int retryTimes = backupFailRetryTimes;
+//        boolean isBackupSucceed;
+//
+//        do {
+//            isBackupSucceed = backupAxshService.backup();
+//        }while (!isBackupSucceed && retryTimes-- > 0);
+//
+//       // searchAxshService.deleteIndex();
+//        searchAxshService.initService();
+//    }
 }

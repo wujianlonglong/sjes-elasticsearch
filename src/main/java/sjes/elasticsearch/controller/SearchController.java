@@ -5,12 +5,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
-import sjes.elasticsearch.domain.CategoryIndex;
-import sjes.elasticsearch.domain.PageModel;
-import sjes.elasticsearch.domain.Pageable;
-import sjes.elasticsearch.domain.ProductIndex;
+import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
@@ -174,5 +173,19 @@ public class SearchController {
         Integer page = searchParam.getPage();
         Integer size = searchParam.getSize();
         return searchService.listProductIndex(erpGoodsIds, page, size);
+    }
+
+    /**
+     * 更新商品非erp促销类型
+     *
+     * @param erpSaleGoodIds
+     */
+    @RequestMapping(value = "index/productPromotions", method = RequestMethod.POST)
+    public ResponseMessage updatePromotionType(@RequestBody List<ErpSaleGoodId> erpSaleGoodIds) {
+        if (CollectionUtils.isEmpty(erpSaleGoodIds)) {
+            return ResponseMessage.error("请求参数为空！");
+        }
+        ResponseMessage responseMessage = searchService.indexProductPromotions(erpSaleGoodIds);
+        return responseMessage;
     }
 }
