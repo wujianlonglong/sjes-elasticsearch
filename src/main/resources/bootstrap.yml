@@ -21,6 +21,8 @@ spring:
     config:
       profile: development
       enabled: true
+
+
 #      uri: http://srv3.sanjiang.info:8888
 #      fail-fast: true
 ---
