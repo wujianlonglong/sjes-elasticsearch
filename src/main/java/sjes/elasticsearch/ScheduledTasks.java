@@ -34,7 +34,7 @@ public class ScheduledTasks {
     @Autowired
     private BackupAxshService backupAxshService;
 
-    @Value("${elasticsearch-backup.retry.backup}")
+    @Value("${elasticsearchbackup.retry.backup}")
     private int backupFailRetryTimes;       //备份失败重试次数
 
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");

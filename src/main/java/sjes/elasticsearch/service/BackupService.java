@@ -21,25 +21,25 @@ import java.io.IOException;
 @Service("backupService")
 public class BackupService {
 
-    @Value("${elasticsearch-backup.url}")
+    @Value("${elasticsearchbackup.url}")
     private String elasticsearchUrl;        //elasticsearch 地址
 
-    @Value("${elasticsearch-backup.repository.name}")
+    @Value("${elasticsearchbackup.repository.name}")
     private String repositoryName;          //备份仓库的名称
 
-    @Value("${elasticsearch-backup.repository.location}")
+    @Value("${elasticsearchbackup.repository.location}")
     private String repositoryLocation;      //备份仓库的位置
 
-    @Value("${elasticsearch-backup.snapshot}")
+    @Value("${elasticsearchbackup.snapshot}")
     private String snapshotName;            //快照名称
 
-    @Value("${elasticsearch-backup.indices}")
+    @Value("${elasticsearchbackup.indices}")
     private String backupIndices;           //备份的索引
 
-    @Value("${elasticsearch-backup.check-index-count.product}")
+    @Value("${elasticsearchbackup.checkindexcount.product}")
     private int checkProductCount;        //检查索引的产品数量
 
-    @Value("${elasticsearch-backup.check-index-count.category}")
+    @Value("${elasticsearchbackup.checkindexcount.category}")
     private int checkCategoryCount;        //检查索引的分类数量
 
     private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);

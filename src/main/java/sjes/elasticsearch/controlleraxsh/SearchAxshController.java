@@ -41,7 +41,7 @@ public class SearchAxshController {
     @Autowired
     private BackupAxshService backupAxshService;
 
-    @Value("${elasticsearch-backup.retry.backup}")
+    @Value("${elasticsearchbackup.retry.backup}")
     private int backupFailRetryTimes;       //备份失败重试次数
 
     /**

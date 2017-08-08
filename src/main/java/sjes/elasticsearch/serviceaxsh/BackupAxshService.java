@@ -22,25 +22,25 @@ import java.io.IOException;
 @Service("backupAxshService")
 public class BackupAxshService {
 
-    @Value("${elasticsearch-backup.url}")
+    @Value("${elasticsearchbackup.url}")
     private String elasticsearchUrl;        //elasticsearch 地址
 
-    @Value("${elasticsearch-backup.repository-axsh.name}")
+    @Value("${elasticsearchbackup.repositoryaxsh.name}")
     private String repositoryName;          //axsh备份仓库的名称
 
-    @Value("${elasticsearch-backup.repository-axsh.location}")
+    @Value("${elasticsearchbackup.repositoryaxsh.location}")
     private String repositoryLocation;      //axsh备份仓库的位置
 
-    @Value("${elasticsearch-backup.snapshot-axsh}")
+    @Value("${elasticsearchbackup.snapshotaxsh}")
     private String snapshotName;            //axsh快照名称
 
-    @Value("${elasticsearch-backup.axshindex}")
+    @Value("${elasticsearchbackup.axshindex}")
     private String backupIndices;           //备份的索引
 
-    @Value("${elasticsearch-backup.check-index-count.product}")
+    @Value("${elasticsearchbackup.checkindexcount.product}")
     private int checkProductCount;        //检查索引的产品数量
 
-    @Value("${elasticsearch-backup.check-index-count.category}")
+    @Value("${elasticsearchbackup.checkindexcount.category}")
     private int checkCategoryCount;        //检查索引的分类数量
 
     private static Logger LOGGER = LoggerFactory.getLogger(SearchService.class);

@@ -106,10 +106,10 @@ public class SearchService {
     @Autowired
     private ItemPriceService itemPriceService;
 
-    @Value("${elasticsearch-backup.retry.restore}")
+    @Value("${elasticsearchbackup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
 
-    @Value("${elasticsearch-backup.indices}")
+    @Value("${elasticsearchbackup.indices}")
     private String SJES_INDICES;      //恢复失败重试次数
 
     //

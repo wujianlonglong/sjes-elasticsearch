@@ -115,10 +115,10 @@ public class SearchAxshService {
     @Autowired
     ErpSaleFeign erpSaleFeign;
 
-    @Value("${elasticsearch-backup.retry.restore}")
+    @Value("${elasticsearchbackup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
 
-    @Value("${elasticsearch-backup.axshindex}")
+    @Value("${elasticsearchbackup.axshindex}")
     private String AXSH_INDICES;
 
     //
