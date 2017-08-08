@@ -1,7 +1,8 @@
 spring:
   cache:
     cache-names: sjes-elasticsearch
-
+  profiles:
+    active: development
 ---
 server:
   port: 10100
