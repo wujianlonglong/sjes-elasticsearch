@@ -20,9 +20,9 @@ spring:
   cloud:
     config:
       profile: development
-#      enabled: false
-      uri: http://srv3.sanjiang.info:8888
-      fail-fast: true
+      enabled: true
+#      uri: http://srv3.sanjiang.info:8888
+#      fail-fast: true
 ---
 
 spring:
