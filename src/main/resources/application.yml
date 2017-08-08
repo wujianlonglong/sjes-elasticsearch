@@ -39,6 +39,9 @@ elasticsearch-backup:
 eureka:
   instance:
     hostname: srv5.sanjiang.info
+  client:
+    serviceUrl:
+      defaultZone: http://srv3.sanjiang.info:8761/eureka/
 
 ---
 server:
@@ -77,4 +80,4 @@ elasticsearch-backup:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://prod9.sjes.sanjiang.info:8761/eureka/
+      defaultZone: http://srv3.sanjiang.info:8761/eureka/
