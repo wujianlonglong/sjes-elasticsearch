@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
@@ -230,63 +231,15 @@ public class SearchAxshService {
                         productIndex.getAttributeOptionValueModels().add(attributeOptionValueModel);
                     });
                 }
-                List<ErpSaleGoodId> erpSaleGoodIds = erpSaleFeign.getErpSaleGoods();//获取商品erp活动
 
-                Map<String, String> goodPromotion = new HashMap<>();
-                for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
-                    String promotionType = erpSaleGoodId.getPromotionType();
-                    switch (promotionType) {
-                        case "A":
-                            promotionType = "金额满减";
-                            break;
-                        case "D":
-                            promotionType = "第N件N折";
-                            break;
-                        case "G":
-                            promotionType = "数量满减";
-                            break;
-                        case "K":
-                            promotionType = "捆绑";
-                            break;
-                        case "QC":
-                            promotionType = "全场打折";
-                            break;
-                        default:
-                            promotionType = promotionType;
-                            break;
-
-                    }
-                    goodPromotion.put(erpSaleGoodId.getGoodsId(), promotionType);
-                }
                 // productIndex索引
                 List<ProductIndexAxsh> productIndexes = Lists.newArrayList(productMap.values());
 
                 if (CollectionUtils.isNotEmpty(productIndexes)) {
                     Map<Long, ProductIndexAxsh> productIndexMap = Maps.newHashMap();
                     productIndexes.forEach(productIndex -> {
+                        productIndex.setSales(0L);//重新索引时，将销售量置0，重新同步销售量
                         productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
-                        String promotionType = productIndex.getPromotionType();
-
-                        if (StringUtils.isNotEmpty(promotionType)) {
-                            //有非erp活动的商品暂时不更新促销类型
-                            if (promotionType.equals("秒杀") || promotionType.equals("满赠")) {
-                                return;
-                            } else {
-                                String pro = null;
-                                String erpgoodsId = productIndex.getErpGoodsId().toString();
-                                if (goodPromotion.containsKey(erpgoodsId)) {
-                                    pro = goodPromotion.get(erpgoodsId);
-                                }
-                                productIndex.setPromotionType(pro);
-                            }
-                        } else {
-                            String pro = null;
-                            String erpgoodsId = productIndex.getErpGoodsId().toString();
-                            if (goodPromotion.containsKey(erpgoodsId)) {
-                                pro = goodPromotion.get(erpgoodsId);
-                            }
-                            productIndex.setPromotionType(pro);
-                        }
 
                     });
                     List<ItemPrice> itemPrices = itemPriceAxshService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
@@ -327,6 +280,76 @@ public class SearchAxshService {
             }
         }
     }
+
+
+    /**
+     * 更新商品erp促销信息
+     */
+    public void updatePromotion() {
+        List<ErpSaleGoodId> erpSaleGoodIds = erpSaleFeign.getErpSaleGoods();//获取商品erp活动
+
+        Map<String, ErpSaleGoodId> goodPromotion = new HashMap<>();
+        for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
+            String promotionType = erpSaleGoodId.getPromotionType();
+            switch (promotionType) {
+                case "A":
+                    erpSaleGoodId.setPromotionType("金额满减");
+                    break;
+                case "D":
+                    erpSaleGoodId.setPromotionType("第N件N折");
+                    break;
+                case "G":
+                    erpSaleGoodId.setPromotionType("数量满减");
+                    break;
+                case "K":
+                    erpSaleGoodId.setPromotionType("捆绑");
+                    break;
+                case "QC":
+                    erpSaleGoodId.setPromotionType("全场打折");
+                    break;
+                default:
+                    erpSaleGoodId.setPromotionType(promotionType);
+                    break;
+
+            }
+            goodPromotion.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId);
+        }
+
+        List<ProductIndexAxsh> productIndexAxshList = IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
+        productIndexAxshList.forEach(productIndexAxsh -> {
+            String promotionType = productIndexAxsh.getPromotionType();
+            if (StringUtils.isNotEmpty(promotionType)) {
+                //有非erp活动的商品暂时不更新促销类型
+                if (promotionType.equals("秒杀") || promotionType.equals("满赠")) {
+                    return;
+                } else {
+                    String pro = null;
+                    String shopId = null;
+                    String erpgoodsId = productIndexAxsh.getErpGoodsId().toString();
+                    if (goodPromotion.containsKey(erpgoodsId)) {
+                        pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                        shopId = goodPromotion.get(erpgoodsId).getShopIds();
+                    }
+                    productIndexAxsh.setPromotionType(pro);
+                    productIndexAxsh.setPromotionShop(shopId);
+                }
+            } else {
+                String pro = null;
+                String shopId = null;
+                String erpgoodsId = productIndexAxsh.getErpGoodsId().toString();
+                if (goodPromotion.containsKey(erpgoodsId)) {
+                    pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                    shopId = goodPromotion.get(erpgoodsId).getShopIds();
+                }
+                productIndexAxsh.setPromotionType(pro);
+                productIndexAxsh.setPromotionShop(shopId);
+            }
+        });
+
+        productIndexAxshRepository.save(productIndexAxshList);
+
+    }
+
 
     /**
      * 填充分类标签
@@ -624,9 +647,9 @@ public class SearchAxshService {
     public ResponseMessage indexProductPromotions(List<ErpSaleGoodId> erpSaleGoodIds) {
         LOGGER.info("开始更新商品非erp促销类型！");
         try {
-            Map<String, String> productPromotionMap = new HashMap<>();
+            Map<String, ErpSaleGoodId> productPromotionMap = new HashMap<>();
             erpSaleGoodIds.forEach(erpSaleGoodId -> {
-                productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId.getPromotionType());
+                productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId);
             });
             List<String> sns = new ArrayList<>(productPromotionMap.keySet());
             int length = sns.size();
@@ -645,8 +668,9 @@ public class SearchAxshService {
                 productIndexAxshList.forEach(productIndexAxsh -> {
                     if (!productPromotionMap.containsKey(productIndexAxsh.getSn()))
                         return;
-                    String promotionType = productPromotionMap.get(productIndexAxsh.getSn());
-                    productIndexAxsh.setPromotionType(promotionType);
+                    ErpSaleGoodId erpSaleGoodId = productPromotionMap.get(productIndexAxsh.getSn());
+                    productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
+                    productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
                 });
             }
             productIndexAxshRepository.save(productIndexAxshList);
@@ -694,9 +718,13 @@ public class SearchAxshService {
         BoolQueryBuilder boolQueryBuilder = boolQuery();                 //查询条件
         BoolFilterBuilder boolFilterBuilder = boolFilter();              //过滤条件
 
-        if(StringUtils.isNotBlank(promotionType)){
-            boolQueryBuilder.must(matchQuery("promotionType",promotionType).analyzer("ik"));
+        if (StringUtils.isNotBlank(promotionType)) {
+            boolQueryBuilder.must(matchQuery("promotionType", promotionType).analyzer("ik"));
+            if (StringUtils.isNotBlank(shopId)) {
+                boolQueryBuilder.must(wildcardQuery("promotionShop", "*" + shopId + "*"));
+            }
         }
+
 
         if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")
                 && !specificWords.containsKey(keyword.toUpperCase())) {     //判断搜索关键词是否只有字母数字,且不需要进行特殊处理

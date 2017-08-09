@@ -117,6 +117,8 @@ public class Product implements Serializable {
     @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String promotionType; // 促销类型
 
+    private String promotionShop;//促销门店
+
     // @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String introduction; // 介绍
 

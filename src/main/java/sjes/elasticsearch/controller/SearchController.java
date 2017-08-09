@@ -11,6 +11,7 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.feigns.category.model.Category;
+import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.service.BackupService;
 import sjes.elasticsearch.service.SearchLogService;
 import sjes.elasticsearch.service.SearchService;
@@ -39,6 +40,9 @@ public class SearchController {
     @Value("${elasticsearchbackup.retry.backup}")
     private int backupFailRetryTimes;       //备份失败重试次数
 
+
+    @Autowired
+    ProductSalesOpt productSalesOpt;
     /**
      * 建立索引
      *
@@ -54,7 +58,10 @@ public class SearchController {
         } while (!isBackupSucceed && retryTimes-- > 0);
 
         searchService.deleteIndex();
-        return searchService.initService();
+        List<CategoryIndex> categoryIndexList= searchService.initService();
+      //  searchAxshService.updatePromotion();//更新商品erp促销信息
+        productSalesOpt.productSalesAllSync();//全量同步商品销售量
+        return categoryIndexList;
     }
 
     /**

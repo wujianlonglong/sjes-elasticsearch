@@ -1,5 +1,6 @@
 package sjes.elasticsearch.opt;
 
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,11 +48,78 @@ public class ProductSalesOpt {
     @Autowired
     SearchAxshService searchAxshService;
 
+
+    /**
+     * 自动增量同步商品销售量
+     */
     @Scheduled(cron = "0 */30 7-19 * * ?")
-    public void ProductSalesSync() {
-        log.info("同步商品销量开始-------" + LocalDateTime.now());
+    public void productSalesIncrSync() {
+        log.info("增量同步商品销量开始-------" + LocalDateTime.now());
+        int syncType = 0;
         try {
-            List<ProductSales> productSalesList=sellFeign.getSellList();
+            ProductSalesSyncs(syncType);
+        } catch (Exception ex) {
+            log.error("增量同步商品销量失败：" + ex.toString());
+            return;
+        } finally {
+            log.info("增量同步商品销售结束-------" + LocalDateTime.now());
+        }
+
+    }
+
+
+    /**
+     * 自动全量同步商品销售量(暂时不启用)
+     */
+    // @Scheduled(cron="0 0 1 * * ?")
+    public void productSalesAllSync() {
+        log.info("全量同步商品销量开始-------" + LocalDateTime.now());
+        int syncType = 1;
+        try {
+            refreshSales();
+            refreshSalesAxsh();
+            ProductSalesSyncs(syncType);
+        } catch (Exception ex) {
+            log.error("全量同步商品销量失败：" + ex.toString());
+            return;
+        } finally {
+            log.info("全量同步商品销售结束-------" + LocalDateTime.now());
+        }
+
+    }
+
+    /**
+     * 将所有Axsh商品销量置0
+     */
+    private void refreshSalesAxsh() {
+        List<ProductIndexAxsh> productIndexAxshes = IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
+        for (ProductIndexAxsh productIndexAxsh : productIndexAxshes) {
+            //先清空所有的销售量
+            productIndexAxsh.setSales(0L);
+        }
+        productIndexAxshRepository.save(productIndexAxshes);
+    }
+
+    /**
+     * 将所有网购商品销量置0
+     */
+    private void refreshSales() {
+        List<ProductIndex> productIndexList = IteratorUtils.toList(productIndexRepository.findAll().iterator());
+        for (ProductIndex productIndex : productIndexList) {
+            //先清空所有的销售量
+            productIndex.setSales(0L);
+        }
+        productIndexRepository.save(productIndexList);
+    }
+
+    /**
+     * 同步商品销量
+     *
+     * @param syncType 同步类型：0或空---增量同步；1---全量同步
+     */
+    public void ProductSalesSyncs(int syncType) {
+        synchronized (ProductSalesOpt.class) {
+            List<ProductSales> productSalesList = sellFeign.getSellList(syncType);
             if (CollectionUtils.isEmpty(productSalesList)) {
                 return;
             }
@@ -91,13 +159,7 @@ public class ProductSalesOpt {
                 productIndexRepository.save(productIndexList);
             }
 
-        } catch (Exception ex) {
-            log.error("同步商品销量失败：" + ex.toString());
-            return;
-        } finally {
-            log.info("同步商品销售结束-------" + LocalDateTime.now());
         }
-
     }
 
 }

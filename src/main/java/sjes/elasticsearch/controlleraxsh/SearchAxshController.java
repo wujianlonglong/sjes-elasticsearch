@@ -16,6 +16,7 @@ import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.domainaxsh.CategoryIndexAxsh;
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.Category;
+import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.serviceaxsh.BackupAxshService;
 import sjes.elasticsearch.serviceaxsh.SearchAxshService;
 import sjes.elasticsearch.serviceaxsh.SearchLogAxshService;
@@ -41,6 +42,9 @@ public class SearchAxshController {
     @Autowired
     private BackupAxshService backupAxshService;
 
+    @Autowired
+    ProductSalesOpt productSalesOpt;
+
     @Value("${elasticsearchbackup.retry.backup}")
     private int backupFailRetryTimes;       //备份失败重试次数
 
@@ -59,7 +63,10 @@ public class SearchAxshController {
         } while (!isBackupSucceed && retryTimes-- > 0);
 
 //        searchAxshService.deleteIndex();
-        return searchAxshService.initService();
+        List<CategoryIndexAxsh> categoryIndexAxshes = searchAxshService.initService();
+        searchAxshService.updatePromotion();//更新商品erp促销信息
+        productSalesOpt.productSalesAllSync();//全量同步商品销售量
+        return categoryIndexAxshes;
     }
 
     /**
@@ -126,12 +133,12 @@ public class SearchAxshController {
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size,String promotionType) throws ServiceException {
+    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size, String promotionType) throws ServiceException {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
         searchLogAxshService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
-        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size,promotionType);
+        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size, promotionType);
     }
 
     /**

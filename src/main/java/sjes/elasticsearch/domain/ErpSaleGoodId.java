@@ -11,4 +11,6 @@ public class ErpSaleGoodId {
     private String promotionType;
 
     private String goodsId;
+
+    private String shopIds;
 }

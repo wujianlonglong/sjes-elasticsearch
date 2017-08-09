@@ -14,6 +14,7 @@ import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
+import sjes.elasticsearch.serviceaxsh.SearchAxshService;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -33,6 +34,9 @@ public class ProductController {
 
     @Autowired
     ProductSalesOpt productSalesOpt;
+
+    @Autowired
+    SearchAxshService searchAxshService;
 
     @RequestMapping(value = "copyProduct", method = RequestMethod.POST)
     @ResponseBody
@@ -58,10 +62,31 @@ public class ProductController {
 
     }
 
-    @RequestMapping(value = "syncSales", method = RequestMethod.POST)
-    public void syncSales() {
-        productSalesOpt.ProductSalesSync();
+
+    /**
+     * 手动增量同步商品销售数量
+     */
+    @RequestMapping(value = "incrSyncSales", method = RequestMethod.POST)
+    public void incrSyncSales() {
+        productSalesOpt.productSalesIncrSync();
     }
 
+
+    /**
+     * 手动全量同步商品销售数量
+     */
+    @RequestMapping(value = "allSyncSales", method = RequestMethod.POST)
+    public void allSyncSales() {
+        productSalesOpt.productSalesAllSync();
+    }
+
+
+    /**
+     * 手动更新商品erp促销活动
+     */
+    @RequestMapping(value="updatePromotion",method=RequestMethod.POST)
+    public void updatePromotion() {
+        searchAxshService.updatePromotion();//更新商品erp促销信息
+    }
 
 }

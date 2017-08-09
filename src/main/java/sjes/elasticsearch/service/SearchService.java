@@ -226,6 +226,7 @@ public class SearchService {
                 if (CollectionUtils.isNotEmpty(productIndexes)) {
                     Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
                     productIndexes.forEach(productIndex -> {
+                        productIndex.setSales(0L);//重新索引时，将销售量置0，重新同步销售量
                         productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
                     });
                     List<ItemPrice> itemPrices = itemPriceService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
@@ -560,9 +561,9 @@ public class SearchService {
     public ResponseMessage indexProductPromotions( List<ErpSaleGoodId> erpSaleGoodIds) {
         LOGGER.info("开始更新商品非erp促销类型！");
         try {
-            Map<String, String> productPromotionMap = new HashMap<>();
+            Map<String, ErpSaleGoodId> productPromotionMap = new HashMap<>();
             erpSaleGoodIds.forEach(erpSaleGoodId -> {
-                productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId.getPromotionType());
+                productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId);
             });
             List<String> sns = new ArrayList<>(productPromotionMap.keySet());
             int length = sns.size();
@@ -581,8 +582,9 @@ public class SearchService {
                 productIndexAxshList.forEach(productIndexAxsh -> {
                     if (!productPromotionMap.containsKey(productIndexAxsh.getSn()))
                         return;
-                    String promotionType = productPromotionMap.get(productIndexAxsh.getSn());
-                    productIndexAxsh.setPromotionType(promotionType);
+                    ErpSaleGoodId erpSaleGoodId = productPromotionMap.get(productIndexAxsh.getSn());
+                    productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
+                    productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
                 });
             }
             productIndexRepository.save(productIndexAxshList);
