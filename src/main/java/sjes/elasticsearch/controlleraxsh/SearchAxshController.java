@@ -130,6 +130,7 @@ public class SearchAxshController {
      * @param endPrice   价格 end
      * @param page       页面
      * @param size       页面大小
+     * @param promotionType 促销类型
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)

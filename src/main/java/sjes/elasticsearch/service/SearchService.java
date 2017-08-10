@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
@@ -29,6 +30,7 @@ import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
@@ -36,6 +38,7 @@ import sjes.elasticsearch.domain.*;
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.item.model.*;
+import sjes.elasticsearch.feigns.sale.feign.ErpSaleFeign;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.utils.DateConvertUtils;
@@ -105,6 +108,11 @@ public class SearchService {
 
     @Autowired
     private ItemPriceService itemPriceService;
+
+    @Autowired
+    ErpSaleFeign erpSaleFeign;
+
+    private static final String sjesShopUrl = "http://193.0.1.158:20002/gateShop/getAllShops";
 
     @Value("${elasticsearchbackup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
@@ -302,9 +310,13 @@ public class SearchService {
      * @param productIndex 商品
      */
     public void index(ProductIndex productIndex) throws ServiceException {
+        productIndex.setSales(0L);
         ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
         if (null != dbProductIndex) {
             productIndex.setId(dbProductIndex.getId());
+            productIndex.setSales(dbProductIndex.getSales());
+//            productIndex.setPromotionType(dbProductIndex.getPromotionType());
+//            productIndex.setPromotionShop(dbProductIndex.getPromotionShop());
         }
         productIndexRepository.save(productIndex);
     }
@@ -319,10 +331,14 @@ public class SearchService {
         LOGGER.info(" 商品productId: {}, index beginning ......", new Long[]{productId});
         if (null != productId) {
             ProductIndex productIndex = buildProductIndex(productService.getProductImageModel(productId));
+            productIndex.setSales(0L);
             if (null != productIndex) {
                 ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
+                    productIndex.setSales(dbProductIndex.getSales());
+//            productIndex.setPromotionType(dbProductIndex.getPromotionType());
+//            productIndex.setPromotionShop(dbProductIndex.getPromotionShop());
                 }
                 productIndexRepository.save(productIndex);
                 LOGGER.info(" 商品productId: {}, index ending ......", new Long[]{productId});
@@ -372,10 +388,14 @@ public class SearchService {
         List<ProductIndex> productIndexes = Lists.newArrayList();
         for (ProductImageModel productImageModel : productImageModels) {
             ProductIndex productIndex = buildProductIndex(productImageModel);
+            productIndex.setSales(0L);
             if (null != productIndex) {
                 ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
+                    productIndex.setSales(dbProductIndex.getSales());
+//            productIndex.setPromotionType(dbProductIndex.getPromotionType());
+//            productIndex.setPromotionShop(dbProductIndex.getPromotionShop());
                 }
                 productIndexes.add(productIndex);
             }
@@ -531,20 +551,18 @@ public class SearchService {
     }
 
 
-
-    public List<ProductIndex> findBySnIn(List<String> sns){
+    public List<ProductIndex> findBySnIn(List<String> sns) {
         org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
         Page<ProductIndex> productIndexPage = productIndexRepository.findBySnIn(sns, pageable);
         return productIndexPage.getContent();
     }
 
 
-    public List<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds){
+    public List<ProductIndex> findByErpGoodsIdIn(List<Long> erpGoodsIds) {
         org.springframework.data.domain.Pageable pageable = new PageRequest(0, 999);
         Page<ProductIndex> productIndexPage = productIndexRepository.findByErpGoodsIdIn(erpGoodsIds, pageable);
         return productIndexPage.getContent();
     }
-
 
 
     public PageModel<ProductIndex> listProductIndex(LinkedList<Long> erpGoodsIds, Integer page, Integer size) {
@@ -557,8 +575,97 @@ public class SearchService {
     }
 
 
+    /**
+     * 更新商品erp促销信息
+     */
+    public void updatePromotion() {
+        List<ErpSaleGoodId> erpSaleGoodIds = erpSaleFeign.getErpSaleGoods();//获取商品erp活动
+        RestTemplate restTemplate = new RestTemplate();
+        // TODO: 2017/8/10 需要小张提供获取网购所有开张商场的接口
+        List<String> sjesShops = restTemplate.getForObject(sjesShopUrl, List.class);
+        //    List<String> axshShops=Arrays.asList(new String[]{"00143","41234","00023","23123"});
+        Map<String, ErpSaleGoodId> goodPromotion = new HashMap<>();
+        for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
+            String promotionType = erpSaleGoodId.getPromotionType();
+            switch (promotionType) {
+                case "A":
+                    erpSaleGoodId.setPromotionType("金额满减");
+                    break;
+                case "D":
+                    erpSaleGoodId.setPromotionType("第N件N折");
+                    break;
+                case "G":
+                    erpSaleGoodId.setPromotionType("数量满减");
+                    break;
+                case "K":
+                    erpSaleGoodId.setPromotionType("捆绑");
+                    break;
+                case "QC":
+                    erpSaleGoodId.setPromotionType("全场打折");
+                    break;
+                default:
+                    erpSaleGoodId.setPromotionType(promotionType);
+                    break;
 
-    public ResponseMessage indexProductPromotions( List<ErpSaleGoodId> erpSaleGoodIds) {
+            }
+            goodPromotion.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId);
+        }
+
+        List<ProductIndex> productIndexList = IteratorUtils.toList(productIndexRepository.findAll().iterator());
+        productIndexList.forEach(productIndex -> {
+            String promotionType = productIndex.getPromotionType();
+            if (StringUtils.isNotEmpty(promotionType)) {
+                //有非erp活动的商品暂时不更新促销类型
+                if (promotionType.equals("秒杀") || promotionType.equals("满赠")) {
+                    return;
+                } else {
+                    String pro = null;
+                    String shopId = null;
+                    String erpgoodsId = productIndex.getErpGoodsId().toString();
+                    if (goodPromotion.containsKey(erpgoodsId)) {
+                        String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
+                        List<String> sjesExitShops = new ArrayList<>();
+                        for (String axshShop : sjesShops) {
+                            if (shopIds.contains(axshShop)) {
+                                sjesExitShops.add(axshShop);
+                            }
+                        }
+                        if (CollectionUtils.isNotEmpty(sjesExitShops)) {
+                            pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                            shopId = StringUtils.join(sjesExitShops, ",");
+                        }
+                    }
+                    productIndex.setPromotionType(pro);
+                    productIndex.setPromotionShop(shopId);
+                }
+            } else {
+                String pro = null;
+                String shopId = null;
+                String erpgoodsId = productIndex.getErpGoodsId().toString();
+                if (goodPromotion.containsKey(erpgoodsId)) {
+                    String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
+                    List<String> sjesExitShops = new ArrayList<>();
+                    for (String axshShop : sjesShops) {
+                        if (shopIds.contains(axshShop)) {
+                            sjesExitShops.add(axshShop);
+                        }
+                    }
+                    if (CollectionUtils.isNotEmpty(sjesExitShops)) {
+                        pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                        shopId = StringUtils.join(sjesExitShops, ",");
+                    }
+                }
+                productIndex.setPromotionType(pro);
+                productIndex.setPromotionShop(shopId);
+            }
+        });
+
+        productIndexRepository.save(productIndexList);
+
+    }
+
+
+    public ResponseMessage indexProductPromotions(List<ErpSaleGoodId> erpSaleGoodIds) {
         LOGGER.info("开始更新商品非erp促销类型！");
         try {
             Map<String, ErpSaleGoodId> productPromotionMap = new HashMap<>();
@@ -823,10 +930,10 @@ public class SearchService {
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.ASC);
             } else if (sortType.equals("price")) {  //价格降序
                 sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.DESC);
-              //  sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
+                //  sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
             } else if (sortType.equals("priceUp")) {  //销价格升序
                 sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.ASC);
-               // sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
+                // sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }

@@ -59,7 +59,7 @@ public class SearchController {
 
         searchService.deleteIndex();
         List<CategoryIndex> categoryIndexList= searchService.initService();
-      //  searchAxshService.updatePromotion();//更新商品erp促销信息
+      //  searchService.updatePromotion();//更新商品erp促销信息
         productSalesOpt.productSalesAllSync();//全量同步商品销售量
         return categoryIndexList;
     }

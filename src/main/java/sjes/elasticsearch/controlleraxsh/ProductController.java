@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import sjes.elasticsearch.common.CommonMethod;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.domain.ProductIndex;
 
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
@@ -76,8 +77,8 @@ public class ProductController {
      * 手动全量同步商品销售数量
      */
     @RequestMapping(value = "allSyncSales", method = RequestMethod.POST)
-    public void allSyncSales() {
-        productSalesOpt.productSalesAllSync();
+    public ResponseMessage allSyncSales() {
+        return productSalesOpt.productSalesAllSync();
     }
 
 
@@ -85,8 +86,9 @@ public class ProductController {
      * 手动更新商品erp促销活动
      */
     @RequestMapping(value="updatePromotion",method=RequestMethod.POST)
-    public void updatePromotion() {
-        searchAxshService.updatePromotion();//更新商品erp促销信息
+    @ResponseBody
+    public ResponseMessage updatePromotion() {
+        return searchAxshService.updatePromotion();//更新商品erp促销信息
     }
 
 }

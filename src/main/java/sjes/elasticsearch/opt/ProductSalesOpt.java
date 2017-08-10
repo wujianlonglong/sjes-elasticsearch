@@ -8,15 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.client.RestTemplate;
+import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.domain.ProductIndex;
+import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.order.feign.SellFeign;
 import sjes.elasticsearch.feigns.order.model.ProductSales;
-import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
-import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
-import sjes.elasticsearch.serviceaxsh.SearchAxshService;
+import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.service.SearchService;
+import sjes.elasticsearch.serviceaxsh.SearchAxshService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,8 +29,7 @@ public class ProductSalesOpt {
 
     private static Logger log = LoggerFactory.getLogger(ProductSalesOpt.class);
 
-    @Autowired
-    RestTemplate restTemplate;
+
 
     @Autowired
     SellFeign sellFeign;
@@ -72,16 +71,17 @@ public class ProductSalesOpt {
      * 自动全量同步商品销售量(暂时不启用)
      */
     // @Scheduled(cron="0 0 1 * * ?")
-    public void productSalesAllSync() {
+    public ResponseMessage productSalesAllSync() {
         log.info("全量同步商品销量开始-------" + LocalDateTime.now());
         int syncType = 1;
         try {
             refreshSales();
             refreshSalesAxsh();
             ProductSalesSyncs(syncType);
+            return ResponseMessage.success("全量同步商品销售成功！");
         } catch (Exception ex) {
             log.error("全量同步商品销量失败：" + ex.toString());
-            return;
+            return ResponseMessage.error("全量同步商品销量失败：" + ex.toString());
         } finally {
             log.info("全量同步商品销售结束-------" + LocalDateTime.now());
         }
