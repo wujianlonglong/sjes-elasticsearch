@@ -581,8 +581,8 @@ public class SearchService {
     public void updatePromotion() {
         List<ErpSaleGoodId> erpSaleGoodIds = erpSaleFeign.getErpSaleGoods();//获取商品erp活动
         RestTemplate restTemplate = new RestTemplate();
-        // TODO: 2017/8/10 需要小张提供获取网购所有开张商场的接口
-        List<String> sjesShops = restTemplate.getForObject(sjesShopUrl, List.class);
+        String platform="10004";
+        List<String> sjesShops = restTemplate.getForObject(sjesShopUrl+"?platform={goodsCode}", List.class,platform);
         //    List<String> axshShops=Arrays.asList(new String[]{"00143","41234","00023","23123"});
         Map<String, ErpSaleGoodId> goodPromotion = new HashMap<>();
         for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
