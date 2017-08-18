@@ -12,6 +12,7 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.domain.ProductIndex;
 
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
+import sjes.elasticsearch.opt.NewFlagOpt;
 import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.repository.ProductIndexRepository;
@@ -38,6 +39,7 @@ public class ProductController {
 
     @Autowired
     SearchAxshService searchAxshService;
+
 
     @RequestMapping(value = "copyProduct", method = RequestMethod.POST)
     @ResponseBody
@@ -91,4 +93,17 @@ public class ProductController {
         return searchAxshService.updatePromotion();//更新商品erp促销信息
     }
 
+
+    /**
+     * 更新是否为新品标志（上架两周内的为新品）--安鲜生活
+     */
+    @RequestMapping(value="updateNewFlagAxsh",method=RequestMethod.POST)
+    @ResponseBody
+    public void updateNewFlagAxsh(){
+        searchAxshService.updateNewFlagAxsh();
+    }
+
 }
+
+
+

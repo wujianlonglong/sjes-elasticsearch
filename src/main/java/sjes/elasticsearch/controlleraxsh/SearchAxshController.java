@@ -83,18 +83,20 @@ public class SearchAxshController {
      * 索引productIndex
      *
      * @param productId productIndex
+     * @param newFlag 是否上架调用接口标志
      */
     @RequestMapping(method = RequestMethod.PUT)
-    public void index(@RequestParam("productId") Long productId) throws ServiceException {
-        searchAxshService.index(productId);
+    public void index(@RequestParam("productId") Long productId, Integer newFlag) throws ServiceException {
+        searchAxshService.index(productId,newFlag);
     }
 
     /**
      * 索引productIndex
+     * @param newFlag 是否上架调用接口标志
      */
     @RequestMapping(value = "index/productIds", method = RequestMethod.PUT)
-    public void index(@RequestBody List<Long> productIds) throws ServiceException {
-        searchAxshService.index(productIds);
+    public void index(@RequestBody List<Long> productIds, Integer newFlag) throws ServiceException {
+        searchAxshService.index(productIds,newFlag);
     }
 
     /**
@@ -104,8 +106,8 @@ public class SearchAxshController {
      * @return ProductIndexAxsh
      */
     @RequestMapping(value = "index/sns", method = RequestMethod.PUT)
-    public void indexSns(@RequestBody List<String> sns) throws ServiceException {
-        searchAxshService.indexSns(sns);
+    public void indexSns(@RequestBody List<String> sns,Integer newFlag) throws ServiceException {
+        searchAxshService.indexSns(sns,newFlag);
     }
 
     /**

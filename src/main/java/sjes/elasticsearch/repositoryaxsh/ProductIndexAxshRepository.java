@@ -30,4 +30,8 @@ public interface ProductIndexAxshRepository extends ElasticsearchRepository<Prod
 
     Page<ProductIndexAxsh> findByErpGoodsIdIn(List<Long> erpGoodsIds, Pageable pageable);
 
+
+
+    List<ProductIndexAxsh> findByNewFlag(Integer newFlag);
+
 }

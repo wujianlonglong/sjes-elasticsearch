@@ -51,6 +51,8 @@ import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
@@ -331,8 +333,8 @@ public class SearchService {
         LOGGER.info(" 商品productId: {}, index beginning ......", new Long[]{productId});
         if (null != productId) {
             ProductIndex productIndex = buildProductIndex(productService.getProductImageModel(productId));
-            productIndex.setSales(0L);
             if (null != productIndex) {
+                productIndex.setSales(0L);
                 ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
@@ -388,8 +390,8 @@ public class SearchService {
         List<ProductIndex> productIndexes = Lists.newArrayList();
         for (ProductImageModel productImageModel : productImageModels) {
             ProductIndex productIndex = buildProductIndex(productImageModel);
-            productIndex.setSales(0L);
             if (null != productIndex) {
+                productIndex.setSales(0L);
                 ProductIndex dbProductIndex = productIndexRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
@@ -581,8 +583,8 @@ public class SearchService {
     public void updatePromotion() {
         List<ErpSaleGoodId> erpSaleGoodIds = erpSaleFeign.getErpSaleGoods();//获取商品erp活动
         RestTemplate restTemplate = new RestTemplate();
-        String platform="10004";
-        List<String> sjesShops = restTemplate.getForObject(sjesShopUrl+"?platform={goodsCode}", List.class,platform);
+        String platform = "10004";
+        List<String> sjesShops = restTemplate.getForObject(sjesShopUrl + "?platform={goodsCode}", List.class, platform);
         //    List<String> axshShops=Arrays.asList(new String[]{"00143","41234","00023","23123"});
         Map<String, ErpSaleGoodId> goodPromotion = new HashMap<>();
         for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
@@ -618,46 +620,26 @@ public class SearchService {
                 //有非erp活动的商品暂时不更新促销类型
                 if (promotionType.equals("秒杀") || promotionType.equals("满赠")) {
                     return;
-                } else {
-                    String pro = null;
-                    String shopId = null;
-                    String erpgoodsId = productIndex.getErpGoodsId().toString();
-                    if (goodPromotion.containsKey(erpgoodsId)) {
-                        String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
-                        List<String> sjesExitShops = new ArrayList<>();
-                        for (String axshShop : sjesShops) {
-                            if (shopIds.contains(axshShop)) {
-                                sjesExitShops.add(axshShop);
-                            }
-                        }
-                        if (CollectionUtils.isNotEmpty(sjesExitShops)) {
-                            pro = goodPromotion.get(erpgoodsId).getPromotionType();
-                            shopId = StringUtils.join(sjesExitShops, ",");
-                        }
-                    }
-                    productIndex.setPromotionType(pro);
-                    productIndex.setPromotionShop(shopId);
                 }
-            } else {
-                String pro = null;
-                String shopId = null;
-                String erpgoodsId = productIndex.getErpGoodsId().toString();
-                if (goodPromotion.containsKey(erpgoodsId)) {
-                    String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
-                    List<String> sjesExitShops = new ArrayList<>();
-                    for (String axshShop : sjesShops) {
-                        if (shopIds.contains(axshShop)) {
-                            sjesExitShops.add(axshShop);
-                        }
-                    }
-                    if (CollectionUtils.isNotEmpty(sjesExitShops)) {
-                        pro = goodPromotion.get(erpgoodsId).getPromotionType();
-                        shopId = StringUtils.join(sjesExitShops, ",");
-                    }
-                }
-                productIndex.setPromotionType(pro);
-                productIndex.setPromotionShop(shopId);
             }
+            String pro = null;
+            String shopId = null;
+            String erpgoodsId = productIndex.getErpGoodsId().toString();
+            if (goodPromotion.containsKey(erpgoodsId)) {
+                String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
+                List<String> sjesExitShops = new ArrayList<>();
+                for (String axshShop : sjesShops) {
+                    if (shopIds.contains(axshShop)) {
+                        sjesExitShops.add(axshShop);
+                    }
+                }
+                if (CollectionUtils.isNotEmpty(sjesExitShops)) {
+                    pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                    shopId = StringUtils.join(sjesExitShops, ",");
+                }
+            }
+            productIndex.setPromotionType(pro);
+            productIndex.setPromotionShop(shopId);
         });
 
         productIndexRepository.save(productIndexList);
@@ -1029,24 +1011,44 @@ public class SearchService {
                 ProductIndex productIndex = content.get(i);
                 Integer stockNum = stockMap.get(productIndex.getErpGoodsId());
                 long stockNumber = null != stockNum ? stockNum : 0;
+                //库存不为0，门店价格不为空
                 if (stockNumber > 0) {
-                    if (addCount >= startIndex && addCount < endIndex) {
-                        List<ItemPrice> itemPrices = productIndex.getItemPrices();
-                        if (CollectionUtils.isNotEmpty(itemPrices)) {
-                            int itemPriceSize = itemPrices.size();
-                            for (int j = 0; j < itemPriceSize; j++) {
-                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
-                                if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
+                    List<ItemPrice> itemPrices = productIndex.getItemPrices();
+                    if (CollectionUtils.isNotEmpty(itemPrices)) {
+                        int itemPriceSize = itemPrices.size();
+                        for (int j = 0; j < itemPriceSize; j++) {
+                            ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
+                            if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
+                                if (addCount >= startIndex && addCount < endIndex) {
                                     productIndex.setSalePrice(itemPrice.getSalePrice());
                                     productIndex.setMemberPrice(itemPrice.getMemberPrice());
-                                    break;
+                                    returnContent.add(productIndex);
                                 }
+                                addCount++;
+                                break;
                             }
                         }
-                        returnContent.add(productIndex);
                     }
-                    addCount++;
+
                 }
+//                if (stockNumber > 0) {
+//                    if (addCount >= startIndex && addCount < endIndex) {
+//                        List<ItemPrice> itemPrices = productIndex.getItemPrices();
+//                        if (CollectionUtils.isNotEmpty(itemPrices)) {
+//                            int itemPriceSize = itemPrices.size();
+//                            for (int j = 0; j < itemPriceSize; j++) {
+//                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
+//                                if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
+//                                    productIndex.setSalePrice(itemPrice.getSalePrice());
+//                                    productIndex.setMemberPrice(itemPrice.getMemberPrice());
+//                                    break;
+//                                }
+//                            }
+//                        }
+//                        returnContent.add(productIndex);
+//                    }
+//                    addCount++;
+//                }
             }
         }
 
@@ -1183,4 +1185,40 @@ public class SearchService {
                         .withPageable(new PageRequest(0, 1)).withIndices("sjes").withTypes("products").build(),
                 searchNameResponse -> searchNameResponse.getHits().getTotalHits() > 0);
     }
+
+
+
+    /**
+     * 更新是否为新品标志（上架两周内的为新品）--网购
+     */
+    public void updateNewFlagAxsh() {
+        try {
+            List<ProductIndex> productIndexes = productIndexRepository.findByNewFlag(1);
+            if (CollectionUtils.isEmpty(productIndexes)) {
+                return;
+            }
+            LocalDateTime now = LocalDateTime.now();
+            List<ProductIndex> updateList = new ArrayList<>();
+            productIndexes.forEach(productIndex -> {
+                LocalDateTime groundingDate = productIndex.getGroundingDate();
+                long daydiff = ChronoUnit.DAYS.between(groundingDate, now);
+                if (daydiff > 14) {
+                    productIndex.setNewFlag(0);
+                    updateList.add(productIndex);
+                }
+
+            });
+
+            if (CollectionUtils.isNotEmpty(updateList)) {
+                productIndexRepository.save(updateList);
+            }
+        } catch (Exception ex) {
+            LOGGER.error("更新是否为新品标志（上架两周内的为新品）--网购失败：" + ex.toString());
+        }
+    }
+
+
+
+
+
 }
