@@ -859,9 +859,13 @@ public class SearchService {
                 boolFilterBuilder.must(brandIdsBoolFilterBuilder);
             }
         }
+        //过滤掉没有该门店价格的商品
+        if (null != shopId) {
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+        }
 
         if ((null != startPrice || null != endPrice) && null != shopId) {
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+          //  boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
             if (null != startPrice && null != endPrice) {
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
             } else if (null != startPrice) {  //限定最低价格

@@ -65,6 +65,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
+import static org.elasticsearch.index.query.FilterBuilders.nestedFilter;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -906,9 +907,12 @@ public class SearchAxshService {
                 boolFilterBuilder.must(brandIdsBoolFilterBuilder);
             }
         }
-
-        if ((null != startPrice || null != endPrice) && null != shopId) {
+        //过滤掉没有查询商场的价格的商品
+        if (null != shopId) {
             boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+        }
+        if ((null != startPrice || null != endPrice) && null != shopId) {
+         //   boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
             if (null != startPrice && null != endPrice) {
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
             } else if (null != startPrice) {  //限定最低价格
