@@ -753,7 +753,7 @@ public class SearchAxshService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
                                    String attributes, Boolean stock, Double startPrice, Double endPrice,
-                                   Boolean isBargains, Integer page, Integer size, String promotionType) throws ServiceException {
+                                   Boolean isBargains, Integer page, Integer size, String promotionName) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
 
         if ((StringUtils.isBlank(keyword) && null == categoryId) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
@@ -763,8 +763,8 @@ public class SearchAxshService {
         BoolQueryBuilder boolQueryBuilder = boolQuery();                 //查询条件
         BoolFilterBuilder boolFilterBuilder = boolFilter();              //过滤条件
 
-        if (StringUtils.isNotBlank(promotionType)) {
-            boolQueryBuilder.must(matchQuery("promotionType", promotionType).analyzer("ik"));
+        if (StringUtils.isNotBlank(promotionName)) {
+            boolQueryBuilder.must(matchQuery("promotionName", promotionName).analyzer("ik"));
             if (StringUtils.isNotBlank(shopId)) {
                 boolQueryBuilder.must(wildcardQuery("promotionShop", "*" + shopId + "*"));
             }

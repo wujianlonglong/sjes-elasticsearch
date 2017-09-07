@@ -132,16 +132,16 @@ public class SearchAxshController {
      * @param endPrice   价格 end
      * @param page       页面
      * @param size       页面大小
-     * @param promotionType 促销类型
+     * @param promotionName 促销名称
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size, String promotionType) throws ServiceException {
+    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size, String promotionName) throws ServiceException {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
         searchLogAxshService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
-        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size, promotionType);
+        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size, promotionName);
     }
 
     /**
