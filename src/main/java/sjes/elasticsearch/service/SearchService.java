@@ -586,7 +586,7 @@ public class SearchService {
         String platform = "10004";
         List<String> sjesShops = restTemplate.getForObject(sjesShopUrl + "?platform={goodsCode}", List.class, platform);
         //    List<String> axshShops=Arrays.asList(new String[]{"00143","41234","00023","23123"});
-        Map<String, ErpSaleGoodId> goodPromotion = new HashMap<>();
+        Map<Long, ErpSaleGoodId> goodPromotion = new HashMap<>();
         for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
             String promotionType = erpSaleGoodId.getPromotionType();
             switch (promotionType) {
@@ -623,8 +623,9 @@ public class SearchService {
                 }
             }
             String pro = null;
+            String proname=null;
             String shopId = null;
-            String erpgoodsId = productIndex.getErpGoodsId().toString();
+            Long erpgoodsId = productIndex.getErpGoodsId();
             if (goodPromotion.containsKey(erpgoodsId)) {
                 String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
                 List<String> sjesExitShops = new ArrayList<>();
@@ -635,10 +636,12 @@ public class SearchService {
                 }
                 if (CollectionUtils.isNotEmpty(sjesExitShops)) {
                     pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                    proname=goodPromotion.get(erpgoodsId).getPromotionName();
                     shopId = StringUtils.join(sjesExitShops, ",");
                 }
             }
             productIndex.setPromotionType(pro);
+            productIndex.setPromotionName(proname);
             productIndex.setPromotionShop(shopId);
         });
 
@@ -650,11 +653,11 @@ public class SearchService {
     public ResponseMessage indexProductPromotions(List<ErpSaleGoodId> erpSaleGoodIds) {
         LOGGER.info("开始更新商品非erp促销类型！");
         try {
-            Map<String, ErpSaleGoodId> productPromotionMap = new HashMap<>();
+            Map<Long, ErpSaleGoodId> productPromotionMap = new HashMap<>();
             erpSaleGoodIds.forEach(erpSaleGoodId -> {
                 productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId);
             });
-            List<String> sns = new ArrayList<>(productPromotionMap.keySet());
+            List<Long> sns = new ArrayList<>(productPromotionMap.keySet());
             int length = sns.size();
             int batch_num = 1000;
             int loop = (length + batch_num - 1) / batch_num;
@@ -663,16 +666,17 @@ public class SearchService {
             for (int i = 0; i < loop; i++) {
                 int start = i * batch_num;
                 int end = (i + 1) * batch_num >= length ? length : (i + 1) * batch_num;
-                List<String> subList = sns.subList(start, end);
-                List<ProductIndex> productIndexAxshes = productIndexRepository.findBySnIn(subList, pageable).getContent();
+                List<Long> subList = sns.subList(start, end);
+                List<ProductIndex> productIndexAxshes = productIndexRepository.findByErpGoodsIdIn(subList, pageable).getContent();
                 productIndexAxshList.addAll(productIndexAxshes);
             }
             if (CollectionUtils.isNotEmpty(productIndexAxshList)) {
                 productIndexAxshList.forEach(productIndexAxsh -> {
-                    if (!productPromotionMap.containsKey(productIndexAxsh.getSn()))
+                    if (!productPromotionMap.containsKey(productIndexAxsh.getErpGoodsId()))
                         return;
-                    ErpSaleGoodId erpSaleGoodId = productPromotionMap.get(productIndexAxsh.getSn());
+                    ErpSaleGoodId erpSaleGoodId = productPromotionMap.get(productIndexAxsh.getErpGoodsId());
                     productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
+                    productIndexAxsh.setPromotionName(erpSaleGoodId.getPromotionName());
                     productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
                 });
             }

@@ -302,7 +302,7 @@ public class SearchAxshService {
             String platform = "10005";
             List<String> axshShops = restTemplate.getForObject(asxhShopUrl + "?platform={goodsCode}", List.class, platform);
             //    List<String> axshShops=Arrays.asList(new String[]{"00143","41234","00023","23123"});
-            Map<String, ErpSaleGoodId> goodPromotion = new HashMap<>();
+            Map<Long, ErpSaleGoodId> goodPromotion = new HashMap<>();
             for (ErpSaleGoodId erpSaleGoodId : erpSaleGoodIds) {
                 String promotionType = erpSaleGoodId.getPromotionType();
                 switch (promotionType) {
@@ -339,8 +339,9 @@ public class SearchAxshService {
                     }
                 }
                 String pro = null;
+                String proname=null;
                 String shopId = null;
-                String erpgoodsId = productIndexAxsh.getErpGoodsId().toString();
+                Long erpgoodsId = productIndexAxsh.getErpGoodsId();
                 if (goodPromotion.containsKey(erpgoodsId)) {
                     String shopIds = goodPromotion.get(erpgoodsId).getShopIds();
                     List<String> axshExitShops = new ArrayList<>();
@@ -351,10 +352,12 @@ public class SearchAxshService {
                     }
                     if (CollectionUtils.isNotEmpty(axshExitShops)) {
                         pro = goodPromotion.get(erpgoodsId).getPromotionType();
+                        proname= goodPromotion.get(erpgoodsId).getPromotionName();
                         shopId = StringUtils.join(axshExitShops, ",");
                     }
                 }
                 productIndexAxsh.setPromotionType(pro);
+                productIndexAxsh.setPromotionName(proname);
                 productIndexAxsh.setPromotionShop(shopId);
 
             });
@@ -692,12 +695,12 @@ public class SearchAxshService {
     public ResponseMessage indexProductPromotions(List<ErpSaleGoodId> erpSaleGoodIds) {
         LOGGER.info("开始更新商品非erp促销类型！");
         try {
-            Map<String, ErpSaleGoodId> productPromotionMap = new HashMap<>();
+            Map<Long, ErpSaleGoodId> productPromotionMap = new HashMap<>();
             erpSaleGoodIds.forEach(erpSaleGoodId -> {
                 productPromotionMap.put(erpSaleGoodId.getGoodsId(), erpSaleGoodId);
             });
-            List<String> sns = new ArrayList<>(productPromotionMap.keySet());
-            int length = sns.size();
+            List<Long> erpGoodsIds = new ArrayList<>(productPromotionMap.keySet());
+            int length = erpGoodsIds.size();
             int batch_num = 1000;
             int loop = (length + batch_num - 1) / batch_num;
             org.springframework.data.domain.Pageable pageable = new PageRequest(0, batch_num);
@@ -705,16 +708,17 @@ public class SearchAxshService {
             for (int i = 0; i < loop; i++) {
                 int start = i * batch_num;
                 int end = (i + 1) * batch_num >= length ? length : (i + 1) * batch_num;
-                List<String> subList = sns.subList(start, end);
-                List<ProductIndexAxsh> productIndexAxshes = productIndexAxshRepository.findBySnIn(subList, pageable).getContent();
+                List<Long> subList = erpGoodsIds.subList(start, end);
+                List<ProductIndexAxsh> productIndexAxshes = productIndexAxshRepository.findByErpGoodsIdIn(subList, pageable).getContent();
                 productIndexAxshList.addAll(productIndexAxshes);
             }
             if (CollectionUtils.isNotEmpty(productIndexAxshList)) {
                 productIndexAxshList.forEach(productIndexAxsh -> {
-                    if (!productPromotionMap.containsKey(productIndexAxsh.getSn()))
+                    if (!productPromotionMap.containsKey(productIndexAxsh.getErpGoodsId()))
                         return;
-                    ErpSaleGoodId erpSaleGoodId = productPromotionMap.get(productIndexAxsh.getSn());
+                    ErpSaleGoodId erpSaleGoodId = productPromotionMap.get(productIndexAxsh.getErpGoodsId());
                     productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
+                    productIndexAxsh.setPromotionName(erpSaleGoodId.getPromotionName());
                     productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
                 });
             }

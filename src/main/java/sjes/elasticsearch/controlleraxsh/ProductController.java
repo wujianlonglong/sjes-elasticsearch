@@ -87,11 +87,11 @@ public class ProductController {
     /**
      * 手动更新商品erp促销活动
      */
-    @RequestMapping(value="updatePromotion",method=RequestMethod.POST)
-    @ResponseBody
-    public ResponseMessage updatePromotion() {
-        return searchAxshService.updatePromotion();//更新商品erp促销信息
-    }
+//    @RequestMapping(value="updatePromotion",method=RequestMethod.POST)
+//    @ResponseBody
+//    public ResponseMessage updatePromotion() {
+//        return searchAxshService.updatePromotion();//更新商品erp促销信息
+//    }
 
 
     /**

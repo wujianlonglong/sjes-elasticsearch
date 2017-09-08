@@ -29,7 +29,7 @@ public class ErpPromotionOpt {
     /**
      * 同步商品erp促销活动（安鲜生活）
      */
-    @Scheduled(cron="0 20 3 * * *")
+//    @Scheduled(cron="0 20 3 * * *")
     public void syncErpPromotionAxsh(){
         searchAxshService.updatePromotion();//更新商品erp促销信息
     }

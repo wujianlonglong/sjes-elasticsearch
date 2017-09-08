@@ -64,7 +64,7 @@ public class SearchAxshController {
 
 //        searchAxshService.deleteIndex();
         List<CategoryIndexAxsh> categoryIndexAxshes = searchAxshService.initService();
-        searchAxshService.updatePromotion();//更新商品erp促销信息
+     //   searchAxshService.updatePromotion();//更新商品erp促销信息
         productSalesOpt.productSalesAllSync();//全量同步商品销售量
         return categoryIndexAxshes;
     }
@@ -89,6 +89,7 @@ public class SearchAxshController {
     public void index(@RequestParam("productId") Long productId, Integer newFlag) throws ServiceException {
         searchAxshService.index(productId,newFlag);
     }
+
 
     /**
      * 索引productIndex
@@ -204,5 +205,9 @@ public class SearchAxshController {
         ResponseMessage responseMessage = searchAxshService.indexProductPromotions(erpSaleGoodIds);
         return responseMessage;
     }
+
+
+
+
 
 }

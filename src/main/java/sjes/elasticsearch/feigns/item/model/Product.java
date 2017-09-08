@@ -129,6 +129,16 @@ public class Product implements Serializable {
 
     private Integer newFlag;//新品标志 0或null :不是新品，1：是新品
 
+
+    /**
+     * 促销价
+     */
+    private double promotionPrice;
+    /**
+     * 促销的图标
+     */
+    private String saleHotTips;
+
     @JsonDeserialize(using = CustomDateDeSerializer.class)
     @JsonSerialize(using = CustomDateSerializer.class)
     private LocalDateTime groundingDate; //上架时间
