@@ -62,9 +62,12 @@ public class SearchAxshController {
             isBackupSucceed = backupAxshService.backup();
         } while (!isBackupSucceed && retryTimes-- > 0);
 
-//        searchAxshService.deleteIndex();
+
+        List<ProductIndexAxsh> newProducts=searchAxshService.getNewFalgProducts();
+        searchAxshService.deleteIndex();
         List<CategoryIndexAxsh> categoryIndexAxshes = searchAxshService.initService();
-     //   searchAxshService.updatePromotion();//更新商品erp促销信息
+        searchAxshService.syncNewFalg(newProducts);//全量同步新品标记
+        searchAxshService.syncPromtionAll();//全量同步促销活动
         productSalesOpt.productSalesAllSync();//全量同步商品销售量
         return categoryIndexAxshes;
     }
@@ -86,7 +89,7 @@ public class SearchAxshController {
      * @param newFlag 是否上架调用接口标志
      */
     @RequestMapping(method = RequestMethod.PUT)
-    public void index(@RequestParam("productId") Long productId, Integer newFlag) throws ServiceException {
+    public void index(@RequestParam("productId") Long productId,@RequestParam("newFlag") Integer newFlag) throws ServiceException {
         searchAxshService.index(productId,newFlag);
     }
 
@@ -207,7 +210,10 @@ public class SearchAxshController {
     }
 
 
-
+    @RequestMapping(value="syncPromotionAll",method=RequestMethod.GET)
+    public void syncPromotionAll(){
+        searchAxshService.syncPromtionAll();
+    }
 
 
 }

@@ -39,7 +39,7 @@ public class Constants {
     /**
      * 应用名称
      */
-    public static final String AXSH_API_ITEM = "sjes-api-item-anxian";
+    public static final String AXSH_API_ITEM = "ANXIAN-SJES-API-ITEM";
 
     public static final String SJES_API_ORDER="sjes-api-order";
 

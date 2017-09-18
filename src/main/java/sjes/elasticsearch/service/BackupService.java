@@ -106,10 +106,14 @@ public class BackupService {
      *
      * @return 有效true，无效false
      */
+//    public boolean isIndexVaild(){
+//        return elasticsearchTemplate.indexExists(backupIndices)             //判断索引存在
+//                && productIndexRepository.count() > checkProductCount       //判断索引的商品数量
+//                && categoryRepository.count() > checkCategoryCount;         //判断索引的分类数量
+//    }
     public boolean isIndexVaild(){
-        return elasticsearchTemplate.indexExists(backupIndices)             //判断索引存在
-                && productIndexRepository.count() > checkProductCount       //判断索引的商品数量
-                && categoryRepository.count() > checkCategoryCount;         //判断索引的分类数量
+        return elasticsearchTemplate.indexExists(backupIndices);             //判断索引存在
+
     }
 
     /**

@@ -96,7 +96,6 @@ public class SearchController {
      * 索引productIndex
      *
      * @param sns sns
-     * @return ProductIndexAxsh
      */
     @RequestMapping(value = "index/sns", method = RequestMethod.PUT)
     public void indexSns(@RequestBody List<String> sns) throws ServiceException {

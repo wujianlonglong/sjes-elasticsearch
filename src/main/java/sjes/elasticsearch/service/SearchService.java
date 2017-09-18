@@ -10,6 +10,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -236,7 +240,6 @@ public class SearchService {
                 if (CollectionUtils.isNotEmpty(productIndexes)) {
                     Map<Long, ProductIndex> productIndexMap = Maps.newHashMap();
                     productIndexes.forEach(productIndex -> {
-                        productIndex.setSales(0L);//重新索引时，将销售量置0，重新同步销售量
                         productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
                     });
                     List<ItemPrice> itemPrices = itemPriceService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
@@ -356,14 +359,16 @@ public class SearchService {
      */
     public void index(List<Long> productIds) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
-        LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
+     //   LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
+        LOGGER.info(" 商品productIds: , index beginning ......");
         if (CollectionUtils.isNotEmpty(productIds)) {
             List<ProductImageModel> productImageModels = productService.listProductsImageModel(productIds);
             List<ProductIndex> productIndexes = getProductIndexes(productImageModels);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexRepository.save(productIndexes);
             }
-            LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+          //  LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+            LOGGER.info(" 商品productId: , index ending ......");
         }
     }
 
@@ -498,7 +503,7 @@ public class SearchService {
             productIndex.setItemPrices(itemPriceService.findByErpGoodsId(productIndex.getErpGoodsId()));
 
         } else {
-            LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
+         //   LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
         }
         return productIndex;
     }
@@ -832,6 +837,15 @@ public class SearchService {
 //            }
 //        }
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
+
+
+//        FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
+//                .add(ScoreFunctionBuilders.scriptFunction("return doc['status'].value;","groovy"))
+////                .add(FilterBuilders.termFilter("newFlag", "1"),ScoreFunctionBuilders.weightFactorFunction(3))
+////                .add(FilterBuilders.existsFilter("promotionType"),ScoreFunctionBuilders.weightFactorFunction(5))
+//                .scoreMode("sum");
+//        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(functionScoreQueryBuilder);
+
 
         //判断是否过滤惠商品
         if (isBargains != null && isBargains) {
@@ -1210,7 +1224,7 @@ public class SearchService {
             productIndexes.forEach(productIndex -> {
                 LocalDateTime groundingDate = productIndex.getGroundingDate();
                 long daydiff = ChronoUnit.DAYS.between(groundingDate, now);
-                if (daydiff > 14) {
+                if (daydiff > 15) {
                     productIndex.setNewFlag(0);
                     updateList.add(productIndex);
                 }
