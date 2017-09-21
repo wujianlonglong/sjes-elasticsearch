@@ -33,6 +33,7 @@ import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import sjes.elasticsearch.common.ResponseMessage;
@@ -505,6 +506,7 @@ public class SearchAxshService {
      * @param newFlag    是否上架调用接口标志
      * @return ProductIndexAxsh
      */
+    @Async
     public void index(List<Long> productIds, Integer newFlag) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
         //LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
