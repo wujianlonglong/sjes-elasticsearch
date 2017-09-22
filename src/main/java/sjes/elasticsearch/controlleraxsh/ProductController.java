@@ -79,6 +79,7 @@ public class ProductController {
      * 手动全量同步商品销售数量
      */
     @RequestMapping(value = "allSyncSales", method = RequestMethod.POST)
+    @ResponseBody
     public ResponseMessage allSyncSales() {
         return productSalesOpt.productSalesAllSync();
     }
