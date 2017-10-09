@@ -933,15 +933,15 @@ public class SearchAxshService {
 //            }
 //        }
 
-        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
+//        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(boolQueryBuilder);
 
 
-//        FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
-//                .add(ScoreFunctionBuilders.scriptFunction("return doc[\'status\'].value;","groovy"))
-//                .add(FilterBuilders.termFilter("newFlag", "1"),ScoreFunctionBuilders.weightFactorFunction(3))
-//                .add(FilterBuilders.existsFilter("promotionType"),ScoreFunctionBuilders.weightFactorFunction(5))
-//                .scoreMode("sum");
-//        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(functionScoreQueryBuilder);
+        FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
+                .add(ScoreFunctionBuilders.scriptFunction("return 2*(doc[\'sales\'].value/(doc[\'sales\'].value+1));","groovy"))
+                .add(FilterBuilders.termFilter("newFlag", "1"),ScoreFunctionBuilders.weightFactorFunction(3))
+                .add(FilterBuilders.existsFilter("promotionName"),ScoreFunctionBuilders.weightFactorFunction(5))
+                .scoreMode("sum");
+        nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(functionScoreQueryBuilder);
 
 
 
