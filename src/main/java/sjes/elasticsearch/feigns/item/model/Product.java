@@ -129,6 +129,7 @@ public class Product implements Serializable {
 
     private Integer newFlag;//新品标志 0或null :不是新品，1：是新品
 
+    private Integer saleType;
 
     /**
      * 促销价

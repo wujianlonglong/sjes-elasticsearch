@@ -2,6 +2,8 @@ package sjes.elasticsearch.domain;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * Created by byinbo on 2017/8/7.
  */
@@ -15,4 +17,10 @@ public class ErpSaleGoodId {
     private Long goodsId;
 
     private String shopIds;
+
+    private BigDecimal promotionPrice;
+
+    private String saleHotTips;
+
+    private Integer saleType;
 }

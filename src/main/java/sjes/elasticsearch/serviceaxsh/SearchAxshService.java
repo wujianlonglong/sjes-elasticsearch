@@ -773,6 +773,9 @@ public class SearchAxshService {
                     productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
                     productIndexAxsh.setPromotionName(erpSaleGoodId.getPromotionName());
                     productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
+                    productIndexAxsh.setPromotionPrice(erpSaleGoodId.getPromotionPrice().doubleValue());
+                    productIndexAxsh.setSaleHotTips(erpSaleGoodId.getSaleHotTips());
+                    productIndexAxsh.setSaleType(erpSaleGoodId.getSaleType());
                 });
             }
             productIndexAxshRepository.save(productIndexAxshList);
@@ -937,7 +940,7 @@ public class SearchAxshService {
 
 
         FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
-                .add(ScoreFunctionBuilders.scriptFunction("return 2*(doc[\'sales\'].value/(doc[\'sales\'].value+1));","groovy"))
+              //  .add(ScoreFunctionBuilders.scriptFunction("return 2*(doc[\'sales\'].value/(doc[\'sales\'].value+1));","groovy"))
                 .add(FilterBuilders.termFilter("newFlag", "1"),ScoreFunctionBuilders.weightFactorFunction(3))
                 .add(FilterBuilders.existsFilter("promotionName"),ScoreFunctionBuilders.weightFactorFunction(5))
                 .scoreMode("sum");
@@ -1133,7 +1136,7 @@ public class SearchAxshService {
                 Integer stockNum = stockMap.get(productIndex.getErpGoodsId());
                 long stockNumber = null != stockNum ? stockNum : 0;
                 //库存不为0，门店价格不为空
-                if (stockNumber >= 0) {
+                if (stockNumber > 0) {
                     List<ItemPrice> itemPrices = productIndex.getItemPrices();
                     if (CollectionUtils.isNotEmpty(itemPrices)) {
                         int itemPriceSize = itemPrices.size();
