@@ -10,8 +10,10 @@ spring:
   profiles: development
   data:
     elasticsearch:
-      cluster-name: elasticsearch
-      cluster-nodes: srv4.sanjiang.info:9300
+#      cluster-name: elasticsearch
+#      cluster-nodes: srv4.sanjiang.info:9300
+      cluster-name: elasticsearch-dev
+      cluster-nodes: srv6.sanjiang.info:9300
 hystrix:
   command:
     default:
@@ -20,7 +22,8 @@ hystrix:
           thread:
             timeoutInMilliseconds: 10000
 elasticsearchbackup:
-  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+#  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+  url: http://srv6.sanjiang.info:9200         #elasticsearch地址
   indices: sjes                               #备份的索引
   axshindex: axsh
   repository:
@@ -51,8 +54,10 @@ spring:
   profiles: local
   data:
     elasticsearch:
-      cluster-name: elasticsearch
-      cluster-nodes: srv4.sanjiang.info:9300
+#      cluster-name: elasticsearch
+#      cluster-nodes: srv4.sanjiang.info:9300
+      cluster-name: elasticsearch-dev
+      cluster-nodes: srv6.sanjiang.info:9300
 hystrix:
   command:
     default:
@@ -61,7 +66,8 @@ hystrix:
           thread:
             timeoutInMilliseconds: 30000
 elasticsearchbackup:
-  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+#  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+  url: http://srv6.sanjiang.info:9200         #elasticsearch地址
   indices: sjes_local                               #备份的索引
   axshindex: axsh_local
   repository:
