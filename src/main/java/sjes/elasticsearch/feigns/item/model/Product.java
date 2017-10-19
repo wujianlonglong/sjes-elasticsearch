@@ -134,7 +134,7 @@ public class Product implements Serializable {
     /**
      * 促销价
      */
-    private double promotionPrice;
+    private Double promotionPrice;
     /**
      * 促销的图标
      */

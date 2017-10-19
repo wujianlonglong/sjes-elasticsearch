@@ -773,7 +773,7 @@ public class SearchAxshService {
                     productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
                     productIndexAxsh.setPromotionName(erpSaleGoodId.getPromotionName());
                     productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
-                    productIndexAxsh.setPromotionPrice(erpSaleGoodId.getPromotionPrice().doubleValue());
+                    productIndexAxsh.setPromotionPrice(erpSaleGoodId.getPromotionPrice()==null?null:erpSaleGoodId.getPromotionPrice().doubleValue());
                     productIndexAxsh.setSaleHotTips(erpSaleGoodId.getSaleHotTips());
                     productIndexAxsh.setSaleType(erpSaleGoodId.getSaleType());
                 });
@@ -881,12 +881,16 @@ public class SearchAxshService {
                 }
             }
 
+//            if (isBandName(searchKeyword)) {
+//                if (isspecificBandName(searchKeyword)) {
+//                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
+//                } else {
+//                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));           //（分词后的）搜索词必须包含商品品牌
+//                }
+//            }
+
             if (isBandName(searchKeyword)) {
-                if (isspecificBandName(searchKeyword)) {
                     boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
-                } else {
-                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));           //（分词后的）搜索词必须包含商品品牌
-                }
             }
 
             if (specificCategories.containsKey(searchKeyword)) {
