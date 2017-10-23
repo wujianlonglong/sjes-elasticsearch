@@ -47,4 +47,13 @@ public class CategoryService {
         return categoryFeign.updateProductNum(categoryProductNumMap);
     }
 
+    /**
+     * 更新分类下的商品数目Axsh
+     * @param categoryProductNumMap 商品分类Id和商品数目
+     * @return
+     */
+    public ResponseMessage updateProductNumAxsh(Map<Long, Integer> categoryProductNumMap) {
+        return categoryFeign.updateProductNumAxsh(categoryProductNumMap);
+    }
+
 }

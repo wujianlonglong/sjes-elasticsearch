@@ -53,7 +53,7 @@ public class Product implements Serializable {
     private String namePinYinAddr; // 商品名称（拼音首字母）
 
     //不索引
-    @Field(index = FieldIndex.no,type = FieldType.String)
+    @Field(index = FieldIndex.no, type = FieldType.String)
     private String displayName; // 展示的商品名称(高亮)
 
     @JsonSerialize(using = MoneySerializer.class)
@@ -113,10 +113,36 @@ public class Product implements Serializable {
 
     private Boolean isPromotionParticular; // 是否是促销例
 
-    private Integer promotionType; // 促销类型
+    //分词,String类型
+    @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    private String promotionType; // 促销类型
+
+    //分词,String类型
+    @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
+    private String promotionName; // 促销名称
+
+    private String promotionShop;//促销门店
 
     // @Field(indexAnalyzer = "ik", searchAnalyzer = "ik", type = FieldType.String)
     private String introduction; // 介绍
+
+
+    private Integer newFlag;//新品标志 0或null :不是新品，1：是新品
+
+    private Integer saleType;
+
+    /**
+     * 促销价
+     */
+    private Double promotionPrice;
+    /**
+     * 促销的图标
+     */
+    private String saleHotTips;
+
+    @JsonDeserialize(using = CustomDateDeSerializer.class)
+    @JsonSerialize(using = CustomDateSerializer.class)
+    private LocalDateTime groundingDate; //上架时间
 
     @JsonDeserialize(using = CustomDateDeSerializer.class)
     @JsonSerialize(using = CustomDateSerializer.class)

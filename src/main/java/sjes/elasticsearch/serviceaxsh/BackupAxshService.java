@@ -1,4 +1,4 @@
-package sjes.elasticsearch.service;
+package sjes.elasticsearch.serviceaxsh;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
@@ -9,7 +9,8 @@ import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.stereotype.Service;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.repository.CategoryRepository;
-import sjes.elasticsearch.repository.ProductIndexRepository;
+import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
+import sjes.elasticsearch.service.SearchService;
 import sjes.elasticsearch.utils.ElasticsearchSnapshotUtils;
 import sjes.elasticsearch.utils.LogWriter;
 
@@ -18,22 +19,22 @@ import java.io.IOException;
 /**
  * Created by 白 on 2016/1/7.
  */
-@Service("backupService")
-public class BackupService {
+@Service("backupAxshService")
+public class BackupAxshService {
 
     @Value("${elasticsearchbackup.url}")
     private String elasticsearchUrl;        //elasticsearch 地址
 
-    @Value("${elasticsearchbackup.repository.name}")
-    private String repositoryName;          //备份仓库的名称
+    @Value("${elasticsearchbackup.repositoryaxsh.name}")
+    private String repositoryName;          //axsh备份仓库的名称
 
-    @Value("${elasticsearchbackup.repository.location}")
-    private String repositoryLocation;      //备份仓库的位置
+    @Value("${elasticsearchbackup.repositoryaxsh.location}")
+    private String repositoryLocation;      //axsh备份仓库的位置
 
-    @Value("${elasticsearchbackup.snapshot}")
-    private String snapshotName;            //快照名称
+    @Value("${elasticsearchbackup.snapshotaxsh}")
+    private String snapshotName;            //axsh快照名称
 
-    @Value("${elasticsearchbackup.indices}")
+    @Value("${elasticsearchbackup.axshindex}")
     private String backupIndices;           //备份的索引
 
     @Value("${elasticsearchbackup.checkindexcount.product}")
@@ -48,7 +49,7 @@ public class BackupService {
     private ElasticsearchTemplate elasticsearchTemplate;
 
     @Autowired
-    private ProductIndexRepository productIndexRepository;
+    private ProductIndexAxshRepository productIndexAxshRepository;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -108,12 +109,11 @@ public class BackupService {
      */
 //    public boolean isIndexVaild(){
 //        return elasticsearchTemplate.indexExists(backupIndices)             //判断索引存在
-//                && productIndexRepository.count() > checkProductCount       //判断索引的商品数量
+//                && productIndexAxshRepository.count() > checkProductCount       //判断索引的商品数量
 //                && categoryRepository.count() > checkCategoryCount;         //判断索引的分类数量
 //    }
     public boolean isIndexVaild(){
         return elasticsearchTemplate.indexExists(backupIndices);             //判断索引存在
-
     }
 
     /**

@@ -1,7 +1,8 @@
 spring:
   cache:
     cache-names: sjes-elasticsearch
-
+  profiles:
+    active: development
 ---
 server:
   port: 10100
@@ -9,8 +10,10 @@ spring:
   profiles: development
   data:
     elasticsearch:
-      cluster-name: elasticsearch
-      cluster-nodes: srv4.sanjiang.info:9300
+#      cluster-name: elasticsearch
+#      cluster-nodes: srv4.sanjiang.info:9300
+      cluster-name: elasticsearch-dev
+      cluster-nodes: srv6.sanjiang.info:9300
 hystrix:
   command:
     default:
@@ -18,22 +21,31 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 10000
-elasticsearch-backup:
-  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+elasticsearchbackup:
+#  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+  url: http://srv6.sanjiang.info:9200         #elasticsearch地址
   indices: sjes                               #备份的索引
+  axshindex: axsh
   repository:
     name: es_backup                           #本地备份仓库的名称
     location: ~/es_backup                     #本地备份仓库的位置
   snapshot: snapshot_auto                     #自动备份快照的名称
+  repositoryaxsh:
+    name: es_backup_axsh                           #本地备份仓库的名称
+    location: ~/es_backup_axsh                     #本地备份仓库的位置
+  snapshotaxsh: snapshot_auto_axsh                    #自动备份快照的名称
   retry:
     backup: 1                                 #备份失败重试次数
     restore: 1                                #恢复失败重试次数
-  check-index-count:
+  checkindexcount:
       product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定当前索引有效
       category: 300
 eureka:
   instance:
     hostname: srv5.sanjiang.info
+  client:
+    serviceUrl:
+      defaultZone: http://srv3.sanjiang.info:8761/eureka/
 
 ---
 server:
@@ -42,8 +54,10 @@ spring:
   profiles: local
   data:
     elasticsearch:
-      cluster-name: elasticsearch
-      cluster-nodes: srv4.sanjiang.info:9300
+#      cluster-name: elasticsearch
+#      cluster-nodes: srv4.sanjiang.info:9300
+      cluster-name: elasticsearch-dev
+      cluster-nodes: srv6.sanjiang.info:9300
 hystrix:
   command:
     default:
@@ -51,20 +65,26 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 30000
-elasticsearch-backup:
-  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+elasticsearchbackup:
+#  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
+  url: http://srv6.sanjiang.info:9200         #elasticsearch地址
   indices: sjes_local                               #备份的索引
+  axshindex: axsh_local
   repository:
     name: es_backup_local                           #本地备份仓库的名称
     location: ~/sjes/es_backup   #本地备份仓库的位置
   snapshot: snapshot_auto                     #自动备份快照的名称
+  repositoryaxsh:
+    name: es_backup_local_axsh                           #本地备份仓库的名称
+    location: ~/axsh/es_backup_axsh                     #本地备份仓库的位置
+  snapshotaxsh: snapshot_auto_axsh                    #自动备份快照的名称
   retry:
     backup: 1                                 #备份失败重试次数
     restore: 1                                #恢复失败重试次数
-  check-index-count:
+  checkindexcount:
       product: 5000                           #如果当前索引的产品数量超过5000且分类数量超过300，则判定当前索引有效
       category: 300
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://prod9.sjes.sanjiang.info:8761/eureka/
+      defaultZone: http://srv3.sanjiang.info:8761/eureka/
