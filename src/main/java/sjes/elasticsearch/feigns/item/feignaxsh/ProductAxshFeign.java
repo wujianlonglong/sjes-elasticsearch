@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import sjes.elasticsearch.constants.Constants;
+import sjes.elasticsearch.feigns.item.model.HomeCategoryRelation;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 
 import java.util.List;
@@ -50,5 +51,14 @@ public interface ProductAxshFeign {
      */
     @RequestMapping(value = "categoryIds", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
     List<ProductImageModel> listByCategoryIds(List<Long> categoryIds);
+
+
+    /**
+     * 查询首页分类-商品关系数据
+     * @return
+     */
+    @RequestMapping(value="/findAllHomeCategoryRelation",method=RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_VALUE)
+     List<HomeCategoryRelation> findAllHomeCategoryRelation();
+
 
 }

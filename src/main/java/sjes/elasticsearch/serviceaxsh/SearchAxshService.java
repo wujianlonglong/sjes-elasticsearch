@@ -517,7 +517,7 @@ public class SearchAxshService {
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexAxshRepository.save(productIndexes);
             }
-           // LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+            // LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
             LOGGER.info(" 商品productId: , index ending ......");
         }
     }
@@ -660,7 +660,7 @@ public class SearchAxshService {
             productIndexAxsh.setItemPrices(itemPriceAxshService.findByErpGoodsId(productIndexAxsh.getErpGoodsId()));
 
         } else {
-          //  LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
+            //  LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
         }
         return productIndexAxsh;
     }
@@ -773,7 +773,7 @@ public class SearchAxshService {
                     productIndexAxsh.setPromotionType(erpSaleGoodId.getPromotionType());
                     productIndexAxsh.setPromotionName(erpSaleGoodId.getPromotionName());
                     productIndexAxsh.setPromotionShop(erpSaleGoodId.getShopIds());
-                    productIndexAxsh.setPromotionPrice(erpSaleGoodId.getPromotionPrice()==null?null:erpSaleGoodId.getPromotionPrice().doubleValue());
+                    productIndexAxsh.setPromotionPrice(erpSaleGoodId.getPromotionPrice() == null ? null : erpSaleGoodId.getPromotionPrice().doubleValue());
                     productIndexAxsh.setSaleHotTips(erpSaleGoodId.getSaleHotTips());
                     productIndexAxsh.setSaleType(erpSaleGoodId.getSaleType());
                 });
@@ -789,18 +789,19 @@ public class SearchAxshService {
     /**
      * 商品搜索
      *
-     * @param keyword    关键字
-     * @param categoryId 分类id
-     * @param brandIds   品牌id
-     * @param shopId     门店id
-     * @param sortType   排序类型
-     * @param attributes 属性
-     * @param stock      库存
-     * @param startPrice 价格satrt
-     * @param endPrice   价格 end
-     * @param isBargains 是否是惠商品
-     * @param page       页面
-     * @param size       页面大小
+     * @param keyword        关键字
+     * @param categoryId     分类id
+     * @param brandIds       品牌id
+     * @param shopId         门店id
+     * @param sortType       排序类型
+     * @param attributes     属性
+     * @param stock          库存
+     * @param startPrice     价格satrt
+     * @param endPrice       价格 end
+     * @param isBargains     是否是惠商品
+     * @param page           页面
+     * @param size           页面大小
+     * @param homeCategoryId 首页分类
      * @return 分页商品信息
      * <p>
      * <p>
@@ -813,10 +814,10 @@ public class SearchAxshService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
                                    String attributes, Boolean stock, Double startPrice, Double endPrice,
-                                   Boolean isBargains, Integer page, Integer size, String promotionName) throws ServiceException {
+                                   Boolean isBargains, Integer page, Integer size, String promotionName, String homeCategoryId) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
 
-        if ((StringUtils.isBlank(keyword) && null == categoryId) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
+        if ((StringUtils.isBlank(keyword) && null == categoryId && homeCategoryId == null) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
             return new PageModel(Lists.newArrayList(), 0, pageable);
         }
         NativeSearchQueryBuilder nativeSearchQueryBuilder;
@@ -890,7 +891,7 @@ public class SearchAxshService {
 //            }
 
             if (isBandName(searchKeyword)) {
-                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
+                boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
             }
 
             if (specificCategories.containsKey(searchKeyword)) {
@@ -944,13 +945,11 @@ public class SearchAxshService {
 
 
         FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
-                .add(ScoreFunctionBuilders.scriptFunction("return 2*((doc[\'sales\'].value+1)/(doc[\'sales\'].value+2));","groovy"))
-                .add(FilterBuilders.termFilter("newFlag", "1"),ScoreFunctionBuilders.weightFactorFunction(3))
-                .add(FilterBuilders.existsFilter("promotionName"),ScoreFunctionBuilders.weightFactorFunction(5))
+                .add(ScoreFunctionBuilders.scriptFunction("return 2*((doc[\'sales\'].value+1)/(doc[\'sales\'].value+2));", "groovy"))
+                .add(FilterBuilders.termFilter("newFlag", "1"), ScoreFunctionBuilders.weightFactorFunction(3))
+                .add(FilterBuilders.existsFilter("promotionName"), ScoreFunctionBuilders.weightFactorFunction(5))
                 .scoreMode("sum");
         nativeSearchQueryBuilder = new NativeSearchQueryBuilder().withQuery(functionScoreQueryBuilder);
-
-
 
 
         //判断是否过滤惠商品
@@ -964,6 +963,9 @@ public class SearchAxshService {
         //判断是否限定搜索结果的分类
         if (null != categoryId) {
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
+        }
+        if (null != homeCategoryId) {
+            boolFilterBuilder.must(termFilter("homeCategoryIds", homeCategoryId));
         }
 
         //去除搜索结果中指定分类的商品
@@ -1057,7 +1059,7 @@ public class SearchAxshService {
 //        });
 
         //限制搜索结果的最低分数线
-        if (null == categoryId) {
+        if (null == categoryId && homeCategoryId == null) {
             if (StringUtils.isNotBlank(keyword) && keyword.matches("[A-Za-z0-9]+")) {
                 nativeSearchQueryBuilder.withMinScore(0.1f);
             } else {
@@ -1345,5 +1347,6 @@ public class SearchAxshService {
             LOGGER.error("更新是否为新品标志（上架两周内的为新品）--安鲜生活失败：" + ex.toString());
         }
     }
+
 
 }
