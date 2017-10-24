@@ -18,6 +18,7 @@ import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.Category;
 import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.serviceaxsh.BackupAxshService;
+import sjes.elasticsearch.serviceaxsh.ProductAxshService;
 import sjes.elasticsearch.serviceaxsh.SearchAxshService;
 import sjes.elasticsearch.serviceaxsh.SearchLogAxshService;
 
@@ -45,6 +46,9 @@ public class SearchAxshController {
     @Autowired
     ProductSalesOpt productSalesOpt;
 
+    @Autowired
+    ProductAxshService productAxshService;
+
     @Value("${elasticsearchbackup.retry.backup}")
     private int backupFailRetryTimes;       //备份失败重试次数
 
@@ -69,6 +73,7 @@ public class SearchAxshController {
         searchAxshService.syncNewFalg(newProducts);//全量同步新品标记
         searchAxshService.syncPromtionAll();//全量同步促销活动
         productSalesOpt.productSalesAllSync();//全量同步商品销售量
+        productAxshService.allHomeCategorySync();//全量同步首页分类-商品关系数据
         return categoryIndexAxshes;
     }
 
@@ -137,15 +142,16 @@ public class SearchAxshController {
      * @param page       页面
      * @param size       页面大小
      * @param promotionName 促销名称
+     * @param homeCategoryId 首页分类
      * @return 分页商品信息
      */
     @RequestMapping(method = RequestMethod.GET)
-    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size, String promotionName) throws ServiceException {
+    public PageModel<ProductIndexAxsh> search(String keyword, Long categoryId, String brandIds, String shopId, String sortType, String attributes, Boolean stock, Double startPrice, Double endPrice, Boolean isBargains, Integer page, Integer size, String promotionName,String homeCategoryId) throws ServiceException {
         if (StringUtils.isNotBlank(keyword)) {
             keyword = keyword.trim();
         }
         searchLogAxshService.index(keyword, categoryId, shopId, sortType, startPrice, endPrice, null, null);//添加搜索记录
-        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size, promotionName);
+        return searchAxshService.productSearch(keyword, categoryId, brandIds, shopId, sortType, attributes, stock, startPrice, endPrice, isBargains, page, size, promotionName,homeCategoryId);
     }
 
     /**
@@ -213,6 +219,15 @@ public class SearchAxshController {
     @RequestMapping(value="syncPromotionAll",method=RequestMethod.GET)
     public void syncPromotionAll(){
         searchAxshService.syncPromtionAll();
+    }
+
+
+    /**
+     * 全量同步首页商品分类数据
+     */
+    @RequestMapping(value="/allHomeCategorySync")
+    public void allHomeCategorySync(){
+        productAxshService.allHomeCategorySync();
     }
 
 

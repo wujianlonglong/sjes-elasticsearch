@@ -40,6 +40,12 @@ public class ProductIndexAxsh extends ProductImageModel {
     private List<String> productCategoryIds;
 
     /**
+     * 首页分类
+     */
+    @Field(type=FieldType.String)
+    private List<String> homeCategoryIds;
+
+    /**
      * 品牌
      *
      * 该字段在mapping中:不分词,String类型
