@@ -782,13 +782,13 @@ public class SearchService {
                 }
             }
 
-            if (isBandName(searchKeyword)) {
-                if (isspecificBandName(searchKeyword)) {
-                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
-                } else {
-                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));           //（分词后的）搜索词必须包含商品品牌
-                }
-            }
+//            if (isBandName(searchKeyword)) {
+//                if (isspecificBandName(searchKeyword)) {
+//                    boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
+//                } else {
+//                    boolQueryBuilder.must(matchQuery("brandName", searchKeyword).analyzer("ik"));           //（分词后的）搜索词必须包含商品品牌
+//                }
+//            }
 
             if (specificCategories.containsKey(searchKeyword)) {
 
