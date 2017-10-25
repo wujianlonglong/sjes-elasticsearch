@@ -47,6 +47,9 @@ eureka:
     serviceUrl:
       defaultZone: http://srv3.sanjiang.info:8761/eureka/
 
+promotion:
+   url: http://srv0.sanjiang.info:20065/anxian/promotions/updateSearch
+
 ---
 server:
   port: 10100
@@ -88,3 +91,6 @@ eureka:
   client:
     serviceUrl:
       defaultZone: http://srv3.sanjiang.info:8761/eureka/
+
+promotion:
+   url: http://srv0.sanjiang.info:20065/anxian/promotions/updateSearch
