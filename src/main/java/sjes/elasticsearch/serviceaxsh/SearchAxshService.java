@@ -128,6 +128,9 @@ public class SearchAxshService {
 
     private static final String asxhShopUrl = "http://193.0.1.158:20002/gateShop/getAllShops";
 
+    @Value("${promotion.url}")
+    private String promotionUrl;
+
     @Value("${elasticsearchbackup.retry.restore}")
     private int restoreFailRetryTimes;      //恢复失败重试次数
 
@@ -331,7 +334,7 @@ public class SearchAxshService {
      */
     public void syncPromtionAll() {
         RestTemplate restTemplate = new RestTemplate();
-        List<ErpSaleGoodId> erpSaleGoodIds = restTemplate.getForObject("http://srv0.sanjiang.info:20065/anxian/promotions/updateSearch", List.class);
+        List<ErpSaleGoodId> erpSaleGoodIds = restTemplate.getForObject(promotionUrl, List.class);
         if (CollectionUtils.isEmpty(erpSaleGoodIds)) {
             return;
         }
