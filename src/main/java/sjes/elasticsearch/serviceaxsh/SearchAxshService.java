@@ -945,7 +945,7 @@ public class SearchAxshService {
 
 
         FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
-                .add(ScoreFunctionBuilders.scriptFunction("return 2*((doc[\'sales\'].value+1)/(doc[\'sales\'].value+2));", "groovy"))
+        //        .add(ScoreFunctionBuilders.scriptFunction("return 2*((doc[\'sales\'].value+1)/(doc[\'sales\'].value+2));", "groovy"))
                 .add(FilterBuilders.termFilter("newFlag", "1"), ScoreFunctionBuilders.weightFactorFunction(3))
                 .add(FilterBuilders.existsFilter("promotionName"), ScoreFunctionBuilders.weightFactorFunction(5))
                 .scoreMode("sum");
