@@ -268,16 +268,17 @@ public class SearchAxshService {
                 LogWriter.append("index", "success");
             }
             List<CategoryIndexAxsh> categoryIndexList = Lists.newArrayList(categoryIndexMap.values());
-            Map<Long, Integer> categoryProductNumMap = Maps.newHashMap();
-            if (CollectionUtils.isNotEmpty(categoryIndexList)) {
-                categoryIndexList.forEach(categoryIndex -> {
-                    categoryProductNumMap.put(categoryIndex.getId(), categoryIndex.getProductIndexAxshes().size());
-                });
-                ResponseMessage responseMessage = categoryService.updateProductNumAxsh(categoryProductNumMap);
-                if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
-                    LOGGER.debug("分类绑定的商品数目统计成功！");
-                }
-            }
+            //初始化索引不进行分类绑定的商品数目统计,现在另外写个定时任务进行统计！;
+//            Map<Long, Integer> categoryProductNumMap = Maps.newHashMap();
+//            if (CollectionUtils.isNotEmpty(categoryIndexList)) {
+//                categoryIndexList.forEach(categoryIndex -> {
+//                    categoryProductNumMap.put(categoryIndex.getId(), categoryIndex.getProductIndexAxshes().size());
+//                });
+//                ResponseMessage responseMessage = categoryService.updateProductNumAxsh(categoryProductNumMap);
+//                if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
+//                    LOGGER.debug("分类绑定的商品数目统计成功！");
+//                }
+//            }
             return categoryIndexList;
         } catch (Exception e) {
             LogWriter.append("index", "fail");
@@ -466,6 +467,7 @@ public class SearchAxshService {
             productIndex.setPromotionShop(dbProductIndex.getPromotionShop());
             productIndex.setNewFlag(dbProductIndex.getNewFlag());
             productIndex.setGroundingDate(dbProductIndex.getGroundingDate());
+            productIndex.setHomeCategoryIds(dbProductIndex.getHomeCategoryIds());
         }
         productIndexAxshRepository.save(productIndex);
     }
@@ -491,6 +493,7 @@ public class SearchAxshService {
                     productIndex.setPromotionShop(dbProductIndex.getPromotionShop());
                     productIndex.setNewFlag(dbProductIndex.getNewFlag());
                     productIndex.setGroundingDate(dbProductIndex.getGroundingDate());
+                    productIndex.setHomeCategoryIds(dbProductIndex.getHomeCategoryIds());
                 }
                 if (newFlag != null && newFlag.equals(1)) {
                     productIndex.setNewFlag(1);
@@ -559,6 +562,7 @@ public class SearchAxshService {
                     productIndex.setPromotionShop(dbProductIndex.getPromotionShop());
                     productIndex.setNewFlag(dbProductIndex.getNewFlag());
                     productIndex.setGroundingDate(dbProductIndex.getGroundingDate());
+                    productIndex.setHomeCategoryIds(dbProductIndex.getHomeCategoryIds());
                 }
                 if (newFlag != null && newFlag.equals(1)) {
                     productIndex.setNewFlag(1);
@@ -948,7 +952,7 @@ public class SearchAxshService {
 
 
         FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(boolQueryBuilder)
-        //        .add(ScoreFunctionBuilders.scriptFunction("return 2*((doc[\'sales\'].value+1)/(doc[\'sales\'].value+2));", "groovy"))
+                //        .add(ScoreFunctionBuilders.scriptFunction("return 2*((doc[\'sales\'].value+1)/(doc[\'sales\'].value+2));", "groovy"))
                 .add(FilterBuilders.termFilter("newFlag", "1"), ScoreFunctionBuilders.weightFactorFunction(3))
                 .add(FilterBuilders.existsFilter("promotionName"), ScoreFunctionBuilders.weightFactorFunction(5))
                 .scoreMode("sum");
@@ -990,7 +994,7 @@ public class SearchAxshService {
         }
         //过滤掉没有查询商场的价格的商品
         if (null != shopId) {
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId)).mustNot(termFilter("itemPrices.salePrice",0)).mustNot(termFilter("itemPrices.memberPrice",0))));
         }
         if ((null != startPrice || null != endPrice) && null != shopId) {
             //   boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
@@ -1348,6 +1352,65 @@ public class SearchAxshService {
             }
         } catch (Exception ex) {
             LOGGER.error("更新是否为新品标志（上架两周内的为新品）--安鲜生活失败：" + ex.toString());
+        }
+    }
+
+
+    /**
+     * 更新分类的商品数量
+     */
+    public void updateCategoryPruductNum(String shopId) {
+        LOGGER.info("更新分类的商品数量开始！");
+        try {
+            List<Category> allCategories = categoryService.all();
+            Map<Long, CategoryIndexAxsh> categoryIndexMap = Maps.newHashMap();//三级分类<分类id,分类对象>
+            if (CollectionUtils.isNotEmpty(allCategories)) {
+                allCategories.forEach(category -> {
+                    Integer grade = category.getGrade();
+                    if (null != grade && Constants.CategoryGradeConstants.GRADE_THREE == grade) {
+                        CategoryIndexAxsh categoryIndex = new CategoryIndexAxsh();
+                        categoryIndex.setProductIndexAxshes(Lists.newArrayList());
+                        BeanUtils.copyProperties(category, categoryIndex);
+                        categoryIndexMap.put(category.getId(), categoryIndex);
+                    }
+                });
+            }
+            List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
+            List<ProductImageModel> productImageModels = productAxshService.listByCategoryIds(categoryIds); //耗时操作
+            List<Long> erpGoodsIdList = new ArrayList<>();
+            if (CollectionUtils.isNotEmpty(productImageModels)) {
+                productImageModels.forEach(productImageModel -> {
+                    erpGoodsIdList.add(productImageModel.getErpGoodsId());
+                });
+                Map<Long, Integer> stockMap = stockService.stockForList(shopId, erpGoodsIdList);
+                productImageModels.forEach(productImageModel -> {
+                    Long erpGoodsId = productImageModel.getErpGoodsId();
+                    if (!stockMap.containsKey(erpGoodsId)) {
+                        return;
+                    }
+                    Integer stockNum = stockMap.get(erpGoodsId);
+                    if (stockNum == null || stockNum <= 0) {
+                        return;
+                    }
+                    ProductIndexAxsh productIndex = new ProductIndexAxsh();
+                    BeanUtils.copyProperties(productImageModel, productIndex);
+                    Long categoryId=productImageModel.getCategoryId();
+                    categoryIndexMap.get(categoryId).getProductIndexAxshes().add(productIndex);
+                });
+            }
+            List<CategoryIndexAxsh> categoryIndexAxshList=new ArrayList<>(categoryIndexMap.values());
+            Map<Long, Integer> categoryProductNumMap = Maps.newHashMap();
+            categoryIndexAxshList.forEach(categoryIndexAxsh -> {
+                categoryProductNumMap.put(categoryIndexAxsh.getId(),categoryIndexAxsh.getProductIndexAxshes().size());
+            });
+
+            ResponseMessage responseMessage = categoryService.updateProductNumAxsh(categoryProductNumMap);
+            if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
+                LOGGER.debug("分类绑定的商品数目统计成功！");
+            }
+            LOGGER.info("更新分类的商品数量结束！");
+        } catch (Exception ex) {
+            LOGGER.error("更新分类的商品数量失败：" + ex.toString());
         }
     }
 
