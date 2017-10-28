@@ -1,0 +1,1 @@
+package sjes.elasticsearch.feigns.hubapi;

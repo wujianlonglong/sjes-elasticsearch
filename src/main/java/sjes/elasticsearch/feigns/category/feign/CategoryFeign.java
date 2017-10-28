@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by qinhailong on 15/8/26.
  */
-@FeignClient(Constants.SJES_API_CATEGORY)
+@FeignClient(name=Constants.SJES_API_CATEGORY)
 @RequestMapping("categorys")
 public interface CategoryFeign {
 
@@ -52,6 +52,6 @@ public interface CategoryFeign {
      * @return
      */
     @RequestMapping(value = "batUpdateProductNumAxsh", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
-    ResponseMessage updateProductNumAxsh(Map<Long, Integer> categoryProductNumMap);
+    ResponseMessage updateProductNumAxsh(@RequestParam("shopId") String shopId,Map<Long, Integer> categoryProductNumMap);
 
 }

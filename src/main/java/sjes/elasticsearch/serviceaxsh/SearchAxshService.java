@@ -46,6 +46,7 @@ import sjes.elasticsearch.domain.Pageable;
 import sjes.elasticsearch.domainaxsh.CategoryIndexAxsh;
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.*;
+import sjes.elasticsearch.feigns.hubapi.feign.GateShopFeign;
 import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.feigns.sale.feign.ErpSaleFeign;
 import sjes.elasticsearch.repository.CategoryRepository;
@@ -125,6 +126,9 @@ public class SearchAxshService {
 
     @Autowired
     ErpSaleFeign erpSaleFeign;
+
+    @Autowired
+    GateShopFeign gateShopFeign;
 
     private static final String asxhShopUrl = "http://193.0.1.158:20002/gateShop/getAllShops";
 
@@ -994,7 +998,7 @@ public class SearchAxshService {
         }
         //过滤掉没有查询商场的价格的商品
         if (null != shopId) {
-            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId)).mustNot(termFilter("itemPrices.salePrice",0)).mustNot(termFilter("itemPrices.memberPrice",0))));
+            boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId)).mustNot(termFilter("itemPrices.salePrice", 0)).mustNot(termFilter("itemPrices.memberPrice", 0))));
         }
         if ((null != startPrice || null != endPrice) && null != shopId) {
             //   boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
@@ -1356,11 +1360,20 @@ public class SearchAxshService {
     }
 
 
+    public void updateAllCategoryPruductNum() {
+        List<String> shopIdList = gateShopFeign.getAllShopIds(10004);
+        if (CollectionUtils.isNotEmpty(shopIdList)) {
+            shopIdList.forEach(shopId -> {
+                this.updateCategoryPruductNum(shopId);
+            });
+        }
+    }
+
     /**
      * 更新分类的商品数量
      */
     public void updateCategoryPruductNum(String shopId) {
-        LOGGER.info("更新分类的商品数量开始！");
+        LOGGER.info("门店：" + shopId + "更新分类的商品数量开始！");
         try {
             List<Category> allCategories = categoryService.all();
             Map<Long, CategoryIndexAxsh> categoryIndexMap = Maps.newHashMap();//三级分类<分类id,分类对象>
@@ -1394,23 +1407,22 @@ public class SearchAxshService {
                     }
                     ProductIndexAxsh productIndex = new ProductIndexAxsh();
                     BeanUtils.copyProperties(productImageModel, productIndex);
-                    Long categoryId=productImageModel.getCategoryId();
+                    Long categoryId = productImageModel.getCategoryId();
                     categoryIndexMap.get(categoryId).getProductIndexAxshes().add(productIndex);
                 });
             }
-            List<CategoryIndexAxsh> categoryIndexAxshList=new ArrayList<>(categoryIndexMap.values());
+            List<CategoryIndexAxsh> categoryIndexAxshList = new ArrayList<>(categoryIndexMap.values());
             Map<Long, Integer> categoryProductNumMap = Maps.newHashMap();
             categoryIndexAxshList.forEach(categoryIndexAxsh -> {
-                categoryProductNumMap.put(categoryIndexAxsh.getId(),categoryIndexAxsh.getProductIndexAxshes().size());
+                categoryProductNumMap.put(categoryIndexAxsh.getId(), categoryIndexAxsh.getProductIndexAxshes().size());
             });
-
-            ResponseMessage responseMessage = categoryService.updateProductNumAxsh(categoryProductNumMap);
+            ResponseMessage responseMessage = categoryService.updateProductNumAxsh(shopId,categoryProductNumMap);
             if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
-                LOGGER.debug("分类绑定的商品数目统计成功！");
+                LOGGER.debug("门店：" + shopId + "分类绑定的商品数目统计成功！");
             }
-            LOGGER.info("更新分类的商品数量结束！");
+            LOGGER.info("门店：" + shopId + "更新分类的商品数量结束！");
         } catch (Exception ex) {
-            LOGGER.error("更新分类的商品数量失败：" + ex.toString());
+            LOGGER.error("门店：" + shopId + "更新分类的商品数量失败：" + ex.toString());
         }
     }
 

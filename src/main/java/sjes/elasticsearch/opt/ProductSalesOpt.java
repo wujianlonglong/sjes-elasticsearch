@@ -168,9 +168,9 @@ public class ProductSalesOpt {
     @Scheduled(cron = "0 */30 7-20 * * ?")
     public void CategoryPruductNumSync() {
         log.info("定时更新分类的商品数量开始-------------" + LocalDateTime.now());
-        String shopId = "00801A";//暂时一家店
+       // String shopId = "00801A";//暂时一家店
         try {
-            searchAxshService.updateCategoryPruductNum(shopId);
+            searchAxshService.updateAllCategoryPruductNum();
         } catch (Exception ex) {
             log.error("定时更新分类的商品数量失败：" + ex.toString());
         } finally {
