@@ -12,6 +12,7 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.domain.ProductIndex;
 
 import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
+import sjes.elasticsearch.feigns.item.model.ItemPrice;
 import sjes.elasticsearch.opt.NewFlagOpt;
 import sjes.elasticsearch.opt.ProductSalesOpt;
 import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
@@ -19,6 +20,7 @@ import sjes.elasticsearch.repository.ProductIndexRepository;
 import sjes.elasticsearch.serviceaxsh.SearchAxshService;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -104,6 +106,31 @@ public class ProductController {
         searchAxshService.updateNewFlagAxsh();
     }
 
+
+    /**
+     * 更新分类的商品数量（安鲜生活）
+     * @parameter shopId 门店id
+     */
+    @RequestMapping(value="updateCategoryPruductNum",method=RequestMethod.GET)
+    @ResponseBody
+    public void updateCategoryPruductNum(String shopId){
+        searchAxshService.updateCategoryPruductNum(shopId);
+    }
+
+
+//    @RequestMapping(value="/testUpdate")
+//    @ResponseBody
+//    public void testUpdate(){
+//        ProductIndexAxsh productIndexAxsh=productIndexAxshRepository.findByErpGoodsId(1180058L);
+//        List<ItemPrice> itemPriceList=productIndexAxsh.getItemPrices();
+//        itemPriceList.forEach(itemPrice -> {
+//            if(itemPrice.getShopId().equals("00801A"))
+//            {
+//                itemPrice.setSalePrice(BigDecimal.ONE);
+//            }
+//        });
+//        productIndexAxshRepository.save(productIndexAxsh);
+//    }
 }
 
 
