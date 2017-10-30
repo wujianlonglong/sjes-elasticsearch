@@ -108,7 +108,7 @@ public class ProductController {
 
 
     /**
-     * 更新分类的商品数量（安鲜生活）
+     * 更新指定门店的分类的商品数量（安鲜生活）
      * @parameter shopId 门店id
      */
     @RequestMapping(value="updateCategoryPruductNum",method=RequestMethod.GET)
@@ -116,6 +116,17 @@ public class ProductController {
     public void updateCategoryPruductNum(String shopId){
         searchAxshService.updateCategoryPruductNum(shopId);
     }
+
+    /**
+     * 更新全部门店的分类的商品数量（安鲜生活）
+     */
+    @RequestMapping(value="updateAllCategoryPruductNum",method=RequestMethod.GET)
+    @ResponseBody
+    public void updateAllCategoryPruductNum(){
+        searchAxshService.updateAllCategoryPruductNum();
+    }
+
+
 
 
 //    @RequestMapping(value="/testUpdate")

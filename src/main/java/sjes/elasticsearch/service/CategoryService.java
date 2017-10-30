@@ -2,6 +2,7 @@ package sjes.elasticsearch.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.feigns.category.feign.CategoryFeign;
 import sjes.elasticsearch.feigns.category.model.Category;
@@ -52,8 +53,8 @@ public class CategoryService {
      * @param categoryProductNumMap 商品分类Id和商品数目
      * @return
      */
-    public ResponseMessage updateProductNumAxsh(Map<Long, Integer> categoryProductNumMap) {
-        return categoryFeign.updateProductNumAxsh(categoryProductNumMap);
+    public ResponseMessage updateProductNumAxsh( String shopId, Map<Long, Integer> categoryProductNumMap) {
+        return categoryFeign.updateProductNumAxsh(shopId,categoryProductNumMap);
     }
 
 }
