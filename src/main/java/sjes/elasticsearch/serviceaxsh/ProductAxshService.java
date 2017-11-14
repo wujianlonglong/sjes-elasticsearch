@@ -2,6 +2,7 @@ package sjes.elasticsearch.serviceaxsh;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +126,45 @@ public class ProductAxshService {
             productIndexAxshRepository.save(productIndexAxshList);
         } catch (Exception ex) {
             log.error("全量同步首页商品分类数据失败："+ex.toString());
+        }
+
+    }
+
+    public void initAllHomeCategorySync() {
+        try {
+            List<ProductIndexAxsh> allProducts= IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
+            List<HomeCategoryRelation> homeCategoryRelations = productAxshFeign.findAllHomeCategoryRelation();
+            if (CollectionUtils.isEmpty(homeCategoryRelations)) {
+                log.error("未查询到首页商品分类数据！");
+                return;
+            }
+            Map<Long, List<String>> map = new HashMap<>();
+            for (HomeCategoryRelation homeCategoryRelation : homeCategoryRelations) {
+                Long erpGoodsId = Long.valueOf(homeCategoryRelation.getErpGoodsId());
+                String homeCategoryId = homeCategoryRelation.getHomeCategoryId();
+                if (map.containsKey(erpGoodsId)) {
+                    List<String> categoryList = map.get(erpGoodsId);
+                    categoryList.add(homeCategoryId);
+                } else {
+                    List<String> categoryList = new ArrayList<>();
+                    categoryList.add(homeCategoryId);
+                    map.put(erpGoodsId, categoryList);
+                }
+            }
+
+            for (ProductIndexAxsh allProduct : allProducts) {
+                Long erpGoodsId=allProduct.getErpGoodsId();
+                if(!map.containsKey(erpGoodsId)){
+                    allProduct.setHomeCategoryIds(null);
+                }else{
+                    allProduct.setHomeCategoryIds(map.get(erpGoodsId));
+                }
+            }
+
+            productIndexAxshRepository.save(allProducts);
+
+        } catch (Exception ex) {
+            log.error("初始化全量同步首页商品分类数据失败："+ex.toString());
         }
 
     }

@@ -223,11 +223,11 @@ public class SearchAxshController {
 
 
     /**
-     * 全量同步首页商品分类数据
+     * 初始化全量同步首页商品分类数据
      */
-    @RequestMapping(value="/allHomeCategorySync")
-    public void allHomeCategorySync(){
-        productAxshService.allHomeCategorySync();
+    @RequestMapping(value="/initAllHomeCategorySync")
+    public void initAllHomeCategorySync(){
+        productAxshService.initAllHomeCategorySync();
     }
 
 

@@ -516,8 +516,7 @@ public class SearchAxshService {
      * @param newFlag    是否上架调用接口标志
      * @return ProductIndexAxsh
      */
-    @Async
-    public void index(List<Long> productIds, Integer newFlag) throws ServiceException {
+    public void index(List<Long> productIds, Integer newFlag) throws ServiceException, InterruptedException {
         String prodIds = StringUtils.join(productIds, ",");
         //LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
         LOGGER.info(" 商品productIds: , index beginning ......");

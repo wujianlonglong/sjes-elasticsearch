@@ -21,6 +21,9 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 10000
+  threadpool:
+    default:
+      coreSize: 10 #缺省为10
 elasticsearchbackup:
 #  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
   url: http://srv6.sanjiang.info:9200         #elasticsearch地址
@@ -68,6 +71,9 @@ hystrix:
         isolation:
           thread:
             timeoutInMilliseconds: 30000
+  threadpool:
+    default:
+      coreSize: 500 #缺省为10
 elasticsearchbackup:
 #  url: http://srv4.sanjiang.info:9200         #elasticsearch地址
   url: http://srv6.sanjiang.info:9200         #elasticsearch地址
