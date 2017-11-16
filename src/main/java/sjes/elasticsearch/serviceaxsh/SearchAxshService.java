@@ -338,6 +338,11 @@ public class SearchAxshService {
      * 全量同步当前时间有促销活动的商品
      */
     public void syncPromtionAll() {
+        List<ProductIndexAxsh> all=IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
+        for (ProductIndexAxsh productIndexAxsh : all) {
+            productIndexAxsh.setPromotionType("");
+        }
+        productIndexAxshRepository.save(all);
         RestTemplate restTemplate = new RestTemplate();
         List<ErpSaleGoodId> erpSaleGoodIds = restTemplate.getForObject(promotionUrl, List.class);
         if (CollectionUtils.isEmpty(erpSaleGoodIds)) {
@@ -516,7 +521,7 @@ public class SearchAxshService {
      * @param newFlag    是否上架调用接口标志
      * @return ProductIndexAxsh
      */
-    public void index(List<Long> productIds, Integer newFlag) throws ServiceException, InterruptedException {
+    public void index(List<Long> productIds, Integer newFlag) throws ServiceException{
         String prodIds = StringUtils.join(productIds, ",");
         //LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
         LOGGER.info(" 商品productIds: , index beginning ......");
