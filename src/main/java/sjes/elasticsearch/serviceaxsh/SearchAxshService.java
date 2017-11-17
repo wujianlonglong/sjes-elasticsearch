@@ -350,11 +350,7 @@ public class SearchAxshService {
         }
         productIndexAxshRepository.save(all);
         RestTemplate restTemplate = new RestTemplate();
-        List<ErpSaleGoodId> erpSaleGoodIds = restTemplate.getForObject(promotionUrl, List.class);
-        if (CollectionUtils.isEmpty(erpSaleGoodIds)) {
-            return;
-        }
-        ResponseMessage result = this.indexProductPromotions(erpSaleGoodIds);
+        restTemplate.getForObject(promotionUrl, List.class);
     }
 
 
