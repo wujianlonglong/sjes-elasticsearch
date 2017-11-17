@@ -835,7 +835,7 @@ public class SearchAxshService {
      */
     public PageModel productSearch(String keyword, Long categoryId, String brandIds, String shopId, String sortType,
                                    String attributes, Boolean stock, Double startPrice, Double endPrice,
-                                   Boolean isBargains, Integer page, Integer size, String promotionName, String homeCategoryId) throws ServiceException {
+                                   Boolean isBargains, Integer page, Integer size, String promotionName, String homeCategoryId, Long userId) throws ServiceException {
         Pageable pageable = new Pageable(page, size);
 
         if ((StringUtils.isBlank(keyword) && null == categoryId && homeCategoryId == null) || (StringUtils.isNotBlank(keyword) && StringUtils.containsAny(keyword, specificChar))) {
@@ -1186,30 +1186,37 @@ public class SearchAxshService {
 
             }
         }
-        Set<Long> productList = new HashSet<>();
-        for (ProductIndexAxsh productIndexAxsh : returnContent) {
-            if (productIndexAxsh.getPromotionType().equals("10")) {
-                Long erpGoodsId = productIndexAxsh.getErpGoodsId();
-                productList.add(erpGoodsId);
-            }
-        }
-        if (CollectionUtils.isNotEmpty(productList)) {
-            PromotionDTO<Set<Long>> promotionDTO = new PromotionDTO<>();
-            promotionDTO.setData(productList);
-            SaleResponseMessage<Map<Long, SecKillModel>> saleResponseMessage = promotionsFeign.getSecKillPromotions(promotionDTO);
-            Map<Long, SecKillModel> map = saleResponseMessage.getData();
-            List<Long> list=new ArrayList<>();
-            if(map!=null){
-                list = new ArrayList<>(map.keySet());
-            }
+
+        if (userId != null) {
+            Set<Long> productList = new HashSet<>();
+            List<ProductIndexAxsh> secProductList=new ArrayList<>();
             for (ProductIndexAxsh productIndexAxsh : returnContent) {
-                Long erpGoodsId = productIndexAxsh.getErpGoodsId();
-                if (!list.contains(erpGoodsId)) {
-                    productIndexAxsh.setPromotionType("");
+                if (productIndexAxsh.getPromotionType().equals("10")) {
+                    Long erpGoodsId = productIndexAxsh.getErpGoodsId();
+                    productList.add(erpGoodsId);
+                    secProductList.add(productIndexAxsh);
+                }
+            }
+            if (CollectionUtils.isNotEmpty(productList)) {
+                PromotionDTO<Set<Long>> promotionDTO = new PromotionDTO<>();
+                promotionDTO.setData(productList);
+                promotionDTO.setShopId(shopId);
+                promotionDTO.setEnv(2);
+                promotionDTO.setUserId(userId);
+                SaleResponseMessage<Map<Long, SecKillModel>> saleResponseMessage = promotionsFeign.getSecKillPromotions(promotionDTO);
+                Map<Long, SecKillModel> map = saleResponseMessage.getData();
+                List<Long> list = new ArrayList<>();
+                if (map != null) {
+                    list = new ArrayList<>(map.keySet());
+                }
+                for (ProductIndexAxsh productIndexAxsh : secProductList) {
+                    Long erpGoodsId = productIndexAxsh.getErpGoodsId();
+                    if (!list.contains(erpGoodsId)) {
+                        productIndexAxsh.setPromotionType("");
+                    }
                 }
             }
         }
-
 
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
