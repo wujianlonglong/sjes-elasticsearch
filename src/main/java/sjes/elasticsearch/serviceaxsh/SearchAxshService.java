@@ -33,7 +33,6 @@ import org.springframework.data.elasticsearch.core.FacetedPage;
 import org.springframework.data.elasticsearch.core.FacetedPageImpl;
 import org.springframework.data.elasticsearch.core.SearchResultMapper;
 import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import sjes.elasticsearch.common.ResponseMessage;
@@ -49,6 +48,10 @@ import sjes.elasticsearch.feigns.category.model.*;
 import sjes.elasticsearch.feigns.hubapi.feign.GateShopFeign;
 import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.feigns.sale.feign.ErpSaleFeign;
+import sjes.elasticsearch.feigns.sale.feign.PromotionsFeign;
+import sjes.elasticsearch.feigns.sale.model.PromotionDTO;
+import sjes.elasticsearch.feigns.sale.model.SaleResponseMessage;
+import sjes.elasticsearch.feigns.sale.model.SecKillModel;
 import sjes.elasticsearch.repository.CategoryRepository;
 import sjes.elasticsearch.repositoryaxsh.ProductIndexAxshRepository;
 import sjes.elasticsearch.service.AttributeService;
@@ -129,6 +132,9 @@ public class SearchAxshService {
 
     @Autowired
     GateShopFeign gateShopFeign;
+
+    @Autowired
+    PromotionsFeign promotionsFeign;
 
     private static final String asxhShopUrl = "http://193.0.1.158:20002/gateShop/getAllShops";
 
@@ -338,6 +344,11 @@ public class SearchAxshService {
      * 全量同步当前时间有促销活动的商品
      */
     public void syncPromtionAll() {
+        List<ProductIndexAxsh> all = IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
+        for (ProductIndexAxsh productIndexAxsh : all) {
+            productIndexAxsh.setPromotionType("");
+        }
+        productIndexAxshRepository.save(all);
         RestTemplate restTemplate = new RestTemplate();
         List<ErpSaleGoodId> erpSaleGoodIds = restTemplate.getForObject(promotionUrl, List.class);
         if (CollectionUtils.isEmpty(erpSaleGoodIds)) {
@@ -516,7 +527,7 @@ public class SearchAxshService {
      * @param newFlag    是否上架调用接口标志
      * @return ProductIndexAxsh
      */
-    public void index(List<Long> productIds, Integer newFlag) throws ServiceException, InterruptedException {
+    public void index(List<Long> productIds, Integer newFlag) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
         //LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
         LOGGER.info(" 商品productIds: , index beginning ......");
@@ -1173,40 +1184,33 @@ public class SearchAxshService {
                 }
 
 
-//                if (stockNumber > 0) {
-//                    if (addCount >= startIndex && addCount < endIndex) {
-//                        List<ItemPrice> itemPrices = productIndex.getItemPrices();
-//                        if (CollectionUtils.isNotEmpty(itemPrices)) {
-//                            int itemPriceSize = itemPrices.size();
-//                            for (int j = 0; j < itemPriceSize; j++) {
-//                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
-//                                if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
-//                                    productIndex.setSalePrice(itemPrice.getSalePrice());
-//                                    productIndex.setMemberPrice(itemPrice.getMemberPrice());
-//
-//                                    break;
-//                                }
-//                            }
-//                        }
-//                        returnContent.add(productIndex);
-//                    }
-//                    addCount++;
-//                }
+            }
+        }
+        Set<Long> productList = new HashSet<>();
+        for (ProductIndexAxsh productIndexAxsh : returnContent) {
+            if (productIndexAxsh.getPromotionType().equals("10")) {
+                Long erpGoodsId = productIndexAxsh.getErpGoodsId();
+                productList.add(erpGoodsId);
+            }
+        }
+        if (CollectionUtils.isNotEmpty(productList)) {
+            PromotionDTO<Set<Long>> promotionDTO = new PromotionDTO<>();
+            promotionDTO.setData(productList);
+            SaleResponseMessage<Map<Long, SecKillModel>> saleResponseMessage = promotionsFeign.getSecKillPromotions(promotionDTO);
+            Map<Long, SecKillModel> map = saleResponseMessage.getData();
+            List<Long> list=new ArrayList<>();
+            if(map!=null){
+                list = new ArrayList<>(map.keySet());
+            }
+            for (ProductIndexAxsh productIndexAxsh : returnContent) {
+                Long erpGoodsId = productIndexAxsh.getErpGoodsId();
+                if (!list.contains(erpGoodsId)) {
+                    productIndexAxsh.setPromotionType("");
+                }
             }
         }
 
-        //对搜索结果重新排序，防止门店获取价格时排序错误
-//        if (null != sortType && !sortType.equals("default")) {
-//            if (sortType.equals("sales")) {  //销量降序
-//                returnContent.sort((h1, h2) -> h2.getSales().compareTo(h1.getSales()));
-//            } else if (sortType.equals("salesUp")) {  //销量升序
-//                returnContent.sort((h1, h2) -> h1.getSales().compareTo(h1.getSales()));
-//            } else if (sortType.equals("price")) {  //价格降序
-//                returnContent.sort((h1, h2) -> h2.getMemberPrice().compareTo(h1.getMemberPrice()));
-//            } else if (sortType.equals("priceUp")) {  //销价格升序
-//                returnContent.sort((h1, h2) -> h1.getMemberPrice().compareTo(h2.getMemberPrice()));
-//            }
-//        }
+
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 
@@ -1415,7 +1419,7 @@ public class SearchAxshService {
             categoryIndexAxshList.forEach(categoryIndexAxsh -> {
                 categoryProductNumMap.put(categoryIndexAxsh.getId(), categoryIndexAxsh.getProductIndexAxshes().size());
             });
-            ResponseMessage responseMessage = categoryService.updateProductNumAxsh(shopId,categoryProductNumMap);
+            ResponseMessage responseMessage = categoryService.updateProductNumAxsh(shopId, categoryProductNumMap);
             if (responseMessage.getType().equals(ResponseMessage.Type.success)) {
                 LOGGER.debug("门店：" + shopId + "分类绑定的商品数目统计成功！");
             }
