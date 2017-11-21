@@ -181,7 +181,7 @@ public class SearchAxshService {
                 categoryRepository.save(thirdCategories);
                 LOGGER.debug("分类索引完成......");
                 List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-                List<ProductImageModel> productImageModels = productAxshService.listByCategoryIds(categoryIds); //耗时操作
+                List<ProductImageModel> productImageModels = productAxshService.listByCategoryIdsnew(categoryIds); //耗时操作
                 List<AttributeModel> attributeModels = attributeService.lists(categoryIds);
                 Map<Long, Attribute> attributeMaps = Maps.newHashMap();
                 Map<Long, AttributeOption> attributeOptionMaps = Maps.newHashMap();
@@ -266,7 +266,7 @@ public class SearchAxshService {
                         productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
 
                     });
-                    List<ItemPrice> itemPrices = itemPriceAxshService.findByErpGoodsIdIn(Lists.newArrayList(productIndexMap.keySet()));
+                    List<ItemPrice> itemPrices = itemPriceAxshService.findByErpGoodsIdInAndStatus(Lists.newArrayList(productIndexMap.keySet()));
                     if (CollectionUtils.isNotEmpty(itemPrices)) {
                         itemPrices.forEach(itemPrice -> {
                             productIndexMap.get(itemPrice.getErpGoodsId()).getItemPrices().add(itemPrice);
@@ -674,7 +674,7 @@ public class SearchAxshService {
                     + "/" + productIndexAxsh.getSn() + "/" + productIndexAxsh.getName());
 
             productIndexAxsh.setTags(tags);
-            productIndexAxsh.setItemPrices(itemPriceAxshService.findByErpGoodsId(productIndexAxsh.getErpGoodsId()));
+            productIndexAxsh.setItemPrices(itemPriceAxshService.findByErpGoodsIdAndStatus(productIndexAxsh.getErpGoodsId()));
 
         } else {
             //  LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
@@ -975,7 +975,7 @@ public class SearchAxshService {
         }
 
         //限制搜索结果的商品状态为0
-        boolFilterBuilder.must(termFilter("status", 0));
+       // boolFilterBuilder.must(termFilter("status", 0));
 
         //判断是否限定搜索结果的分类
         if (null != categoryId) {
@@ -1395,7 +1395,7 @@ public class SearchAxshService {
                 });
             }
             List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-            List<ProductImageModel> productImageModels = productAxshService.listByCategoryIds(categoryIds); //耗时操作
+            List<ProductImageModel> productImageModels = productAxshService.listByCategoryIdsCateNum(shopId,categoryIds); //耗时操作
             List<Long> erpGoodsIdList = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(productImageModels)) {
                 productImageModels.forEach(productImageModel -> {

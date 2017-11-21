@@ -83,6 +83,30 @@ public class ProductAxshService {
         return productImageModels;
     }
 
+    public List<ProductImageModel> listByCategoryIdsnew(List<Long> categoryIds) {
+        List<ProductImageModel> productImageModels = Lists.newArrayList();
+        if (CollectionUtils.isNotEmpty(categoryIds)) {
+            List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, ListUtils.SPLIT_SUB_LIST_SIZE);
+            for (List<Long> cateIds : categoryIdsList) {
+                productImageModels.addAll(productAxshFeign.listByCategoryIdsnew(cateIds));
+            }
+        }
+        return productImageModels;
+    }
+
+
+    public List<ProductImageModel> listByCategoryIdsCateNum(String shopId,List<Long> categoryIds) {
+        List<ProductImageModel> productImageModels = Lists.newArrayList();
+        if (CollectionUtils.isNotEmpty(categoryIds)) {
+            List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, ListUtils.SPLIT_SUB_LIST_SIZE);
+            for (List<Long> cateIds : categoryIdsList) {
+                productImageModels.addAll(productAxshFeign.listByCategoryIdsCateNum(shopId,cateIds));
+            }
+        }
+        return productImageModels;
+    }
+
+
     public void allHomeCategorySync() {
         try {
             List<HomeCategoryRelation> homeCategoryRelations = productAxshFeign.findAllHomeCategoryRelation();
