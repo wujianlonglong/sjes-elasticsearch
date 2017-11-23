@@ -469,6 +469,7 @@ public class SearchAxshService {
      */
     public void index(ProductIndexAxsh productIndex) throws ServiceException {
         productIndex.setSales(0L);
+        productIndex.setPromotionType("");
         ProductIndexAxsh dbProductIndex = productIndexAxshRepository.findBySn(productIndex.getSn());
         if (null != dbProductIndex) {
             productIndex.setId(dbProductIndex.getId());
@@ -495,6 +496,7 @@ public class SearchAxshService {
             ProductIndexAxsh productIndex = buildProductIndex(productAxshService.getProductImageModel(productId));
             if (null != productIndex) {
                 productIndex.setSales(0L);
+                productIndex.setPromotionType("");
                 ProductIndexAxsh dbProductIndex = productIndexAxshRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
@@ -563,6 +565,7 @@ public class SearchAxshService {
             ProductIndexAxsh productIndex = buildProductIndex(productImageModel);
             if (null != productIndex) {
                 productIndex.setSales(0L);
+                productIndex.setPromotionType("");
                 ProductIndexAxsh dbProductIndex = productIndexAxshRepository.findBySn(productIndex.getSn());
                 if (null != dbProductIndex) {
                     productIndex.setId(dbProductIndex.getId());
