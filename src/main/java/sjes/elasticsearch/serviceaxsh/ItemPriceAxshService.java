@@ -36,6 +36,17 @@ public class ItemPriceAxshService {
         return itemPrices;
     }
 
+    public List<ItemPrice> findByErpGoodsIdInAndStatus(List<Long> erpGoodsIds) {
+        List<ItemPrice> itemPrices = Lists.newArrayList();
+        if (CollectionUtils.isNotEmpty(erpGoodsIds)) {
+            List<List<Long>> erpGoodsIdsList = ListUtils.splitList(erpGoodsIds, ListUtils.SPLIT_SUB_LIST_SIZE);
+            for (List<Long> goodsIds : erpGoodsIdsList) {
+                itemPrices.addAll(itemPriceAxshFeign.findByErpGoodsIdInAndStatus(goodsIds));
+            }
+        }
+        return itemPrices;
+    }
+
     /**
      * 根据商品管理码erpGoodsId查询商品价格列表
      * @param erpGoodsId 商品管理码erpGoodsId
@@ -43,5 +54,9 @@ public class ItemPriceAxshService {
      */
     public List<ItemPrice> findByErpGoodsId(Long erpGoodsId) {
         return itemPriceAxshFeign.findByErpGoodsId(erpGoodsId);
+    }
+
+    public List<ItemPrice> findByErpGoodsIdAndStatus(Long erpGoodsId) {
+        return itemPriceAxshFeign.findByErpGoodsIdAndStatus(erpGoodsId);
     }
 }
