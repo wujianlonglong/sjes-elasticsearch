@@ -527,16 +527,16 @@ public class SearchAxshService {
      */
     public void index(List<Long> productIds, Integer newFlag) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
-        //LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
-        LOGGER.info(" 商品productIds: , index beginning ......");
+        LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
+        //LOGGER.info(" 商品productIds: , index beginning ......");
         if (CollectionUtils.isNotEmpty(productIds)) {
             List<ProductImageModel> productImageModels = productAxshService.listProductsImageModel(productIds);
             List<ProductIndexAxsh> productIndexes = getProductIndexes(productImageModels, newFlag);
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexAxshRepository.save(productIndexes);
             }
-            // LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
-            LOGGER.info(" 商品productId: , index ending ......");
+             LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+            //LOGGER.info(" 商品productId: , index ending ......");
         }
     }
 
