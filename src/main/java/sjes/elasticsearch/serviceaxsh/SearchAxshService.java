@@ -531,9 +531,9 @@ public class SearchAxshService {
         //LOGGER.info(" 商品productIds: , index beginning ......");
         if (CollectionUtils.isNotEmpty(productIds)) {
             List<ProductImageModel> productImageModels = productAxshService.listProductsImageModel(productIds);
-            LOGGER.info("productImageModels:{}",productImageModels.toString());
+//            LOGGER.info("productImageModels:{}",productImageModels.toString());
             List<ProductIndexAxsh> productIndexes = getProductIndexes(productImageModels, newFlag);
-            LOGGER.info("productIndexes:{}",productIndexes.toString());
+//            LOGGER.info("productIndexes:{}",productIndexes.toString());
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexAxshRepository.save(productIndexes);
             }
