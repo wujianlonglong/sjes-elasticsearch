@@ -534,7 +534,7 @@ public class SearchAxshService {
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexAxshRepository.save(productIndexes);
             }
-             LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+            LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
         }
     }
 
@@ -976,13 +976,22 @@ public class SearchAxshService {
         }
 
         //限制搜索结果的商品状态为0
-       // boolFilterBuilder.must(termFilter("status", 0));
+        // boolFilterBuilder.must(termFilter("status", 0));
+
+        /**
+         * 首页分类未维护的就改成查询三级分类
+         */
+        if (null != homeCategoryId) {
+            List<ProductIndexAxsh> productIndexAxshList = elasticsearchTemplate.queryForList(new NativeSearchQueryBuilder().withFilter(boolFilter().must(termFilter("homeCategoryIds", homeCategoryId))).withIndices("axsh").withTypes("products").build(), ProductIndexAxsh.class);
+            if (productIndexAxshList.size() <= 0) {
+                categoryId = Long.valueOf(homeCategoryId);
+            }
+        }
 
         //判断是否限定搜索结果的分类
         if (null != categoryId) {
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
-        }
-        if (null != homeCategoryId) {
+        } else if (null != homeCategoryId) {
             boolFilterBuilder.must(termFilter("homeCategoryIds", homeCategoryId));
         }
 
@@ -1186,7 +1195,7 @@ public class SearchAxshService {
 
         if (userId != null) {
             Set<Long> productList = new HashSet<>();
-            List<ProductIndexAxsh> secProductList=new ArrayList<>();
+            List<ProductIndexAxsh> secProductList = new ArrayList<>();
             for (ProductIndexAxsh productIndexAxsh : returnContent) {
                 if (productIndexAxsh.getPromotionType().equals("10")) {
                     Long erpGoodsId = productIndexAxsh.getErpGoodsId();
@@ -1396,7 +1405,7 @@ public class SearchAxshService {
                 });
             }
             List<Long> categoryIds = Lists.newArrayList(categoryIndexMap.keySet());
-            List<ProductImageModel> productImageModels = productAxshService.listByCategoryIdsCateNum(shopId,categoryIds); //耗时操作
+            List<ProductImageModel> productImageModels = productAxshService.listByCategoryIdsCateNum(shopId, categoryIds); //耗时操作
             List<Long> erpGoodsIdList = new ArrayList<>();
             if (CollectionUtils.isNotEmpty(productImageModels)) {
                 productImageModels.forEach(productImageModel -> {
