@@ -912,31 +912,31 @@ public class SearchAxshService {
                 boolQueryBuilder.should(matchQuery("brandName", searchKeyword).analyzer("ik"));         //（分词后的）搜索词可能包含商品品牌
             }
 
-            if (specificCategories.containsKey(searchKeyword)) {
-
-                //指定搜索结果必须为某些分类下的商品
-                BoolQueryBuilder categoryQueryBuilder = boolQuery();
-                specificCategories.get(searchKeyword).forEach(specificCategoryId ->
-                        categoryQueryBuilder.should(termQuery("productCategoryIds", specificCategoryId)));
-                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
-
-            } else if (isCategoryName(searchKeyword)) {
-
-                //搜索结果的分类名中必须包含搜索词
-                BoolQueryBuilder categoryQueryBuilder = boolQuery();
-                StringBuffer likeName = new StringBuffer("");
-                String cateSearchKey = searchKeyword.replaceAll(" ", "");
-                if (!StringUtils.startsWith(cateSearchKey, "*")) {
-                    likeName.append("*");
-                }
-                likeName.append(cateSearchKey);
-                if (!StringUtils.endsWith(cateSearchKey, "*")) {
-                    likeName.append("*");
-                }
-                categoryRepository.findByNameLike(likeName.toString()).forEach(category ->
-                        categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
-                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
-            }
+//            if (specificCategories.containsKey(searchKeyword)) {
+//
+//                //指定搜索结果必须为某些分类下的商品
+//                BoolQueryBuilder categoryQueryBuilder = boolQuery();
+//                specificCategories.get(searchKeyword).forEach(specificCategoryId ->
+//                        categoryQueryBuilder.should(termQuery("productCategoryIds", specificCategoryId)));
+//                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
+//
+//            } else if (isCategoryName(searchKeyword)) {
+//
+//                //搜索结果的分类名中必须包含搜索词
+//                BoolQueryBuilder categoryQueryBuilder = boolQuery();
+//                StringBuffer likeName = new StringBuffer("");
+//                String cateSearchKey = searchKeyword.replaceAll(" ", "");
+//                if (!StringUtils.startsWith(cateSearchKey, "*")) {
+//                    likeName.append("*");
+//                }
+//                likeName.append(cateSearchKey);
+//                if (!StringUtils.endsWith(cateSearchKey, "*")) {
+//                    likeName.append("*");
+//                }
+//                categoryRepository.findByNameLike(likeName.toString()).forEach(category ->
+//                        categoryQueryBuilder.should(termQuery("productCategoryIds", category.getId())));
+//                boolQueryBuilder.must(categoryQueryBuilder.minimumNumberShouldMatch(1)).boost(2.0f);
+//            }
 
             boolQueryBuilder.should(nestedQuery("tags", matchQuery("tags.name", searchKeyword).analyzer("ik")));          //将搜索词与标签匹配查询
 
