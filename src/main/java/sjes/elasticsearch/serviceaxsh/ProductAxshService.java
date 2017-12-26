@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by qinhailong on 15-12-4.
@@ -95,12 +96,12 @@ public class ProductAxshService {
     }
 
 
-    public List<ProductImageModel> listByCategoryIdsCateNum(String shopId,List<Long> categoryIds) {
+    public List<ProductImageModel> listByCategoryIdsCateNum(String shopId, List<Long> categoryIds) {
         List<ProductImageModel> productImageModels = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(categoryIds)) {
             List<List<Long>> categoryIdsList = ListUtils.splitList(categoryIds, ListUtils.SPLIT_SUB_LIST_SIZE);
             for (List<Long> cateIds : categoryIdsList) {
-                productImageModels.addAll(productAxshFeign.listByCategoryIdsCateNum(shopId,cateIds));
+                productImageModels.addAll(productAxshFeign.listByCategoryIdsCateNum(shopId, cateIds));
             }
         }
         return productImageModels;
@@ -114,17 +115,17 @@ public class ProductAxshService {
                 log.error("未查询到首页商品分类数据！");
                 return;
             }
-            Map<Long, List<String>> map = new HashMap<>();
+            Map<Long, List<HomeCategoryRelation>> map = new HashMap<>();
             for (HomeCategoryRelation homeCategoryRelation : homeCategoryRelations) {
                 Long erpGoodsId = Long.valueOf(homeCategoryRelation.getErpGoodsId());
-                String homeCategoryId = homeCategoryRelation.getHomeCategoryId();
+                //   String homeCategoryId = homeCategoryRelation.getHomeCategoryId();
                 if (map.containsKey(erpGoodsId)) {
-                    List<String> categoryList = map.get(erpGoodsId);
-                    categoryList.add(homeCategoryId);
+                    List<HomeCategoryRelation> homeCategoryRelations1 = map.get(erpGoodsId);
+                    homeCategoryRelations1.add(homeCategoryRelation);
                 } else {
-                    List<String> categoryList = new ArrayList<>();
-                    categoryList.add(homeCategoryId);
-                    map.put(erpGoodsId, categoryList);
+                    List<HomeCategoryRelation> homeCategoryRelations1 = new ArrayList<>();
+                    homeCategoryRelations1.add(homeCategoryRelation);
+                    map.put(erpGoodsId, homeCategoryRelations1);
                 }
             }
 
@@ -135,52 +136,52 @@ public class ProductAxshService {
             Pageable pageable = new PageRequest(0, batchNum);
             List<ProductIndexAxsh> productIndexAxshList = new ArrayList<>();
             for (int i = 0; i < roop; i++) {
-                int startIndex=i * batchNum;
-                int endIndex=(i + 1) * batchNum>length?length:(i + 1) * batchNum;
+                int startIndex = i * batchNum;
+                int endIndex = (i + 1) * batchNum > length ? length : (i + 1) * batchNum;
                 List<Long> subList = erpGoodsIds.subList(startIndex, endIndex);
-                List<ProductIndexAxsh>  productIndexAxshes = productIndexAxshRepository.findByErpGoodsIdIn(subList, pageable).getContent();
+                List<ProductIndexAxsh> productIndexAxshes = productIndexAxshRepository.findByErpGoodsIdIn(subList, pageable).getContent();
                 productIndexAxshList.addAll(productIndexAxshes);
             }
 
             for (ProductIndexAxsh productIndexAxsh : productIndexAxshList) {
                 Long erpGoodsId = productIndexAxsh.getErpGoodsId();
-                List<String> homeCategoryIds = map.get(erpGoodsId);
+                List<HomeCategoryRelation> homeCategoryIds = map.get(erpGoodsId);
                 productIndexAxsh.setHomeCategoryIds(homeCategoryIds);
             }
             productIndexAxshRepository.save(productIndexAxshList);
         } catch (Exception ex) {
-            log.error("全量同步首页商品分类数据失败："+ex.toString());
+            log.error("全量同步首页商品分类数据失败：" + ex.toString());
         }
 
     }
 
     public void initAllHomeCategorySync() {
         try {
-            List<ProductIndexAxsh> allProducts= IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
+            List<ProductIndexAxsh> allProducts = IteratorUtils.toList(productIndexAxshRepository.findAll().iterator());
             List<HomeCategoryRelation> homeCategoryRelations = productAxshFeign.findAllHomeCategoryRelation();
             if (CollectionUtils.isEmpty(homeCategoryRelations)) {
                 log.error("未查询到首页商品分类数据！");
                 return;
             }
-            Map<Long, List<String>> map = new HashMap<>();
+            Map<Long, List<HomeCategoryRelation>> map = new HashMap<>();
             for (HomeCategoryRelation homeCategoryRelation : homeCategoryRelations) {
                 Long erpGoodsId = Long.valueOf(homeCategoryRelation.getErpGoodsId());
-                String homeCategoryId = homeCategoryRelation.getHomeCategoryId();
+                //     String homeCategoryId = homeCategoryRelation.getHomeCategoryId();
                 if (map.containsKey(erpGoodsId)) {
-                    List<String> categoryList = map.get(erpGoodsId);
-                    categoryList.add(homeCategoryId);
+                    List<HomeCategoryRelation> homeCategoryRelations1 = map.get(erpGoodsId);
+                    homeCategoryRelations1.add(homeCategoryRelation);
                 } else {
-                    List<String> categoryList = new ArrayList<>();
-                    categoryList.add(homeCategoryId);
-                    map.put(erpGoodsId, categoryList);
+                    List<HomeCategoryRelation> homeCategoryRelations1 = new ArrayList<>();
+                    homeCategoryRelations1.add(homeCategoryRelation);
+                    map.put(erpGoodsId, homeCategoryRelations1);
                 }
             }
 
             for (ProductIndexAxsh allProduct : allProducts) {
-                Long erpGoodsId=allProduct.getErpGoodsId();
-                if(!map.containsKey(erpGoodsId)){
+                Long erpGoodsId = allProduct.getErpGoodsId();
+                if (!map.containsKey(erpGoodsId)) {
                     allProduct.setHomeCategoryIds(null);
-                }else{
+                } else {
                     allProduct.setHomeCategoryIds(map.get(erpGoodsId));
                 }
             }
@@ -188,7 +189,7 @@ public class ProductAxshService {
             productIndexAxshRepository.save(allProducts);
 
         } catch (Exception ex) {
-            log.error("初始化全量同步首页商品分类数据失败："+ex.toString());
+            log.error("初始化全量同步首页商品分类数据失败：" + ex.toString());
         }
 
     }
