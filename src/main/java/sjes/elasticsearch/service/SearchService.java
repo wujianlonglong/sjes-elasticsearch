@@ -10,10 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolFilterBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
-import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.highlight.HighlightBuilder;
@@ -39,8 +35,8 @@ import sjes.elasticsearch.common.ResponseMessage;
 import sjes.elasticsearch.common.ServiceException;
 import sjes.elasticsearch.constants.Constants;
 import sjes.elasticsearch.domain.*;
-import sjes.elasticsearch.domainaxsh.ProductIndexAxsh;
 import sjes.elasticsearch.feigns.category.model.*;
+import sjes.elasticsearch.feigns.item.feign.ItemPriceFeign;
 import sjes.elasticsearch.feigns.item.model.*;
 import sjes.elasticsearch.feigns.sale.feign.ErpSaleFeign;
 import sjes.elasticsearch.repository.CategoryRepository;
@@ -58,6 +54,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.elasticsearch.index.query.FilterBuilders.*;
 import static org.elasticsearch.index.query.QueryBuilders.*;
@@ -117,6 +114,9 @@ public class SearchService {
 
     @Autowired
     ErpSaleFeign erpSaleFeign;
+
+    @Autowired
+    ItemPriceFeign itemPriceFeign;
 
     private static final String sjesShopUrl = "http://193.0.1.158:20002/gateShop/getAllShops";
 
@@ -359,7 +359,7 @@ public class SearchService {
      */
     public void index(List<Long> productIds) throws ServiceException {
         String prodIds = StringUtils.join(productIds, ",");
-     //   LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
+        //   LOGGER.info(" 商品productIds: {}, index beginning ......", new String[]{prodIds});
         LOGGER.info(" 商品productIds: , index beginning ......");
         if (CollectionUtils.isNotEmpty(productIds)) {
             List<ProductImageModel> productImageModels = productService.listProductsImageModel(productIds);
@@ -367,7 +367,7 @@ public class SearchService {
             if (CollectionUtils.isNotEmpty(productIndexes)) {
                 productIndexRepository.save(productIndexes);
             }
-          //  LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
+            //  LOGGER.info(" 商品productId: {}, index ending ......", new String[]{prodIds});
             LOGGER.info(" 商品productId: , index ending ......");
         }
     }
@@ -503,7 +503,7 @@ public class SearchService {
             productIndex.setItemPrices(itemPriceService.findByErpGoodsId(productIndex.getErpGoodsId()));
 
         } else {
-         //   LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
+            //   LOGGER.info(" 商品productId: {}, 分类categoryId为空，索引失败！", new Long[]{productId});
         }
         return productIndex;
     }
@@ -628,7 +628,7 @@ public class SearchService {
                 }
             }
             String pro = null;
-            String proname=null;
+            String proname = null;
             String shopId = null;
             Long erpgoodsId = productIndex.getErpGoodsId();
             if (goodPromotion.containsKey(erpgoodsId)) {
@@ -641,7 +641,7 @@ public class SearchService {
                 }
                 if (CollectionUtils.isNotEmpty(sjesExitShops)) {
                     pro = goodPromotion.get(erpgoodsId).getPromotionType();
-                    proname=goodPromotion.get(erpgoodsId).getPromotionName();
+                    proname = goodPromotion.get(erpgoodsId).getPromotionName();
                     shopId = StringUtils.join(sjesExitShops, ",");
                 }
             }
@@ -883,7 +883,7 @@ public class SearchService {
         }
 
         if ((null != startPrice || null != endPrice) && null != shopId) {
-          //  boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
+            //  boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(termFilter("itemPrices.shopId", shopId))));
             if (null != startPrice && null != endPrice) {
                 boolFilterBuilder.must(nestedFilter("itemPrices", boolFilter().must(rangeFilter("itemPrices.memberPrice").gt(startPrice).lt(endPrice))));
             } else if (null != startPrice) {  //限定最低价格
@@ -1020,6 +1020,12 @@ public class SearchService {
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
+            List<ItemPrice> itemPriceList=new ArrayList<>();
+            itemPriceList = itemPriceFeign.findByErpGoodsIdsOfShop(Lists.newArrayList(productIndexMap.keySet()), shopId);
+            Map<Long, ItemPrice> priceMap = new HashMap<>();
+            for (ItemPrice itemPrice : itemPriceList) {
+                priceMap.put(itemPrice.getErpGoodsId(), itemPrice);
+            }
             if (null == size) {
                 size = pageable.getSize();
             }
@@ -1035,57 +1041,40 @@ public class SearchService {
                 long stockNumber = null != stockNum ? stockNum : 0;
                 //库存不为0，门店价格不为空
                 if (stockNumber > 0) {
-                    List<ItemPrice> itemPrices = productIndex.getItemPrices();
-                    if (CollectionUtils.isNotEmpty(itemPrices)) {
-                        int itemPriceSize = itemPrices.size();
-                        for (int j = 0; j < itemPriceSize; j++) {
-                            ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
-                            if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
-                                if (addCount >= startIndex && addCount < endIndex) {
-                                    productIndex.setSalePrice(itemPrice.getSalePrice());
-                                    productIndex.setMemberPrice(itemPrice.getMemberPrice());
-                                    returnContent.add(productIndex);
-                                }
-                                addCount++;
-                                break;
-                            }
+                    ItemPrice itemPrice = priceMap.get(productIndex.getErpGoodsId());
+                    if (itemPrice != null) {
+                        if (addCount >= startIndex && addCount < endIndex) {
+                            productIndex.setSalePrice(itemPrice.getSalePrice());
+                            productIndex.setMemberPrice(itemPrice.getMemberPrice());
+                            returnContent.add(productIndex);
                         }
+                        addCount++;
                     }
 
-                }
-//                if (stockNumber > 0) {
-//                    if (addCount >= startIndex && addCount < endIndex) {
-//                        List<ItemPrice> itemPrices = productIndex.getItemPrices();
-//                        if (CollectionUtils.isNotEmpty(itemPrices)) {
-//                            int itemPriceSize = itemPrices.size();
-//                            for (int j = 0; j < itemPriceSize; j++) {
-//                                ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
-//                                if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
+//                    List<ItemPrice> itemPrices = productIndex.getItemPrices();
+//                    if (CollectionUtils.isNotEmpty(itemPrices)) {
+//                        int itemPriceSize = itemPrices.size();
+//                        for (int j = 0; j < itemPriceSize; j++) {
+//                            ItemPrice itemPrice = gson.fromJson(gson.toJson(itemPrices.get(j)), ItemPrice.class);
+//                            if (StringUtils.equals(itemPrice.getShopId(), shopId)) {
+//                                if (addCount >= startIndex && addCount < endIndex) {
 //                                    productIndex.setSalePrice(itemPrice.getSalePrice());
 //                                    productIndex.setMemberPrice(itemPrice.getMemberPrice());
-//                                    break;
+//                                    returnContent.add(productIndex);
 //                                }
+//                                addCount++;
+//                                break;
 //                            }
 //                        }
-//                        returnContent.add(productIndex);
 //                    }
-//                    addCount++;
-//                }
+                }
+                if(addCount>=endIndex){
+                    break;
+                }
             }
         }
 
-        //对搜索结果重新排序，防止门店获取价格时排序错误
-//        if (null != sortType && !sortType.equals("default")) {
-//            if (sortType.equals("sales")) {  //销量降序
-//                returnContent.sort((h1, h2) -> h2.getSales().compareTo(h1.getSales()));
-//            } else if (sortType.equals("salesUp")) {  //销量升序
-//                returnContent.sort((h1, h2) -> h1.getSales().compareTo(h1.getSales()));
-//            } else if (sortType.equals("price")) {  //价格降序
-//                returnContent.sort((h1, h2) -> h2.getMemberPrice().compareTo(h1.getMemberPrice()));
-//            } else if (sortType.equals("priceUp")) {  //销价格升序
-//                returnContent.sort((h1, h2) -> h1.getMemberPrice().compareTo(h2.getMemberPrice()));
-//            }
-//        }
+
         return new PageModel(returnContent, addCount, categoryIdSet, pageable);
     }
 
@@ -1209,7 +1198,6 @@ public class SearchService {
     }
 
 
-
     /**
      * 更新是否为新品标志（上架两周内的为新品）--网购
      */
@@ -1238,9 +1226,6 @@ public class SearchService {
             LOGGER.error("更新是否为新品标志（上架两周内的为新品）--网购失败：" + ex.toString());
         }
     }
-
-
-
 
 
 }

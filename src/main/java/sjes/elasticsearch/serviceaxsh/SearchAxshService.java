@@ -1073,7 +1073,7 @@ public class SearchAxshService {
                 sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.ASC);
             }
             nativeSearchQueryBuilder.withSort(sortBuilder);
-        } else if (homeCategoryId != null && sortType == null) {
+        } else if (homeCategoryId != null && StringUtils.isEmpty(sortType)) {
             SortBuilder sortBuilder = null;
             sortBuilder=SortBuilders.fieldSort("homeCategoryIds.sort").setNestedPath("homeCategoryIds").setNestedFilter(termFilter("homeCategoryIds.homeCategoryId", homeCategoryId)).order(SortOrder.ASC);
             nativeSearchQueryBuilder.withSort(sortBuilder);
