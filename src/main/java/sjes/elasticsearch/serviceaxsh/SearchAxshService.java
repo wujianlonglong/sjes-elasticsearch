@@ -982,9 +982,10 @@ public class SearchAxshService {
          * 首页分类未维护的就改成查询三级分类
          */
         if (null != homeCategoryId) {
-            List<ProductIndexAxsh> productIndexAxshList = elasticsearchTemplate.queryForList(new NativeSearchQueryBuilder().withFilter(boolFilter().must(termFilter("homeCategoryIds", homeCategoryId))).withIndices("axsh").withTypes("products").build(), ProductIndexAxsh.class);
+            List<ProductIndexAxsh> productIndexAxshList = elasticsearchTemplate.queryForList(new NativeSearchQueryBuilder().withFilter(boolFilter().must(nestedFilter("homeCategoryIds", termFilter("homeCategoryIds.homeCategoryId", homeCategoryId)))).withIndices("axsh").withTypes("products").build(), ProductIndexAxsh.class);
             if (productIndexAxshList.size() <= 0) {
                 categoryId = Long.valueOf(homeCategoryId);
+                homeCategoryId = null;
             }
         }
 
@@ -992,7 +993,7 @@ public class SearchAxshService {
         if (null != categoryId) {
             boolFilterBuilder.must(termFilter("productCategoryIds", categoryId));
         } else if (null != homeCategoryId) {
-            boolFilterBuilder.must(termFilter("homeCategoryIds", homeCategoryId));
+            boolFilterBuilder.must(nestedFilter("homeCategoryIds", termFilter("homeCategoryIds.homeCategoryId", homeCategoryId)));
         }
 
         //去除搜索结果中指定分类的商品
@@ -1068,11 +1069,13 @@ public class SearchAxshService {
                 sortBuilder = SortBuilders.fieldSort("sales").order(SortOrder.ASC);
             } else if (sortType.equals("price")) {  //价格降序
                 sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.DESC);
-                //  sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.DESC);
             } else if (sortType.equals("priceUp")) {  //销价格升序
                 sortBuilder = SortBuilders.fieldSort("itemPrices.memberPrice").setNestedPath("itemPrices").setNestedFilter(termFilter("itemPrices.shopId", shopId)).order(SortOrder.ASC);
-                // sortBuilder = SortBuilders.fieldSort("memberPrice").order(SortOrder.ASC);
             }
+            nativeSearchQueryBuilder.withSort(sortBuilder);
+        } else if (homeCategoryId != null && StringUtils.isEmpty(sortType)) {
+            SortBuilder sortBuilder = null;
+            sortBuilder=SortBuilders.fieldSort("homeCategoryIds.sort").setNestedPath("homeCategoryIds").setNestedFilter(termFilter("homeCategoryIds.homeCategoryId", homeCategoryId)).order(SortOrder.ASC);
             nativeSearchQueryBuilder.withSort(sortBuilder);
         }
 

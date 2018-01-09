@@ -7,6 +7,7 @@ import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
 import sjes.elasticsearch.domain.AttributeOptionValueModel;
 import sjes.elasticsearch.feigns.category.model.Tag;
+import sjes.elasticsearch.feigns.item.model.HomeCategoryRelation;
 import sjes.elasticsearch.feigns.item.model.ItemPrice;
 import sjes.elasticsearch.feigns.item.model.ProductImageModel;
 
@@ -42,8 +43,8 @@ public class ProductIndexAxsh extends ProductImageModel {
     /**
      * 首页分类
      */
-    @Field(type=FieldType.String)
-    private List<String> homeCategoryIds;
+    @Field(type=FieldType.Nested)
+    private List<HomeCategoryRelation> homeCategoryIds;
 
     /**
      * 品牌
