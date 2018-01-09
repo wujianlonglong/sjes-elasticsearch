@@ -1068,9 +1068,6 @@ public class SearchService {
 //                        }
 //                    }
                 }
-                if(addCount>=endIndex){
-                    break;
-                }
             }
         }
 
