@@ -1002,13 +1002,13 @@ public class SearchService {
                                     } else {
                                         productIndex.setDisplayName(productIndex.getName());
                                     }
-                                    //校验门店是否包含促销
-                                    if (StringUtils.isNotEmpty(productIndex.getPromotionShop()) && StringUtils.isNotEmpty(productIndex.getPromotionName())
-                                            && !productIndex.getPromotionShop().contains(shopId)) {
-                                        productIndex.setPromotionType("");
-                                        productIndex.setPromotionName(null);
-                                        productIndex.setPromotionShop(null);
-                                    }
+//                                    //校验门店是否包含促销
+//                                    if (StringUtils.isNotEmpty(productIndex.getPromotionShop()) && StringUtils.isNotEmpty(productIndex.getPromotionName())
+//                                            && !productIndex.getPromotionShop().contains(shopId)) {
+//                                        productIndex.setPromotionType("");
+//                                        productIndex.setPromotionName(null);
+//                                        productIndex.setPromotionShop(null);
+//                                    }
                                     productIndexes.add(productIndex);
                                 }
                             });
