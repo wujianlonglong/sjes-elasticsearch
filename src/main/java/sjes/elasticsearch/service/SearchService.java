@@ -1002,6 +1002,13 @@ public class SearchService {
                                     } else {
                                         productIndex.setDisplayName(productIndex.getName());
                                     }
+                                    //校验门店是否包含促销
+                                    if (StringUtils.isNotEmpty(productIndex.getPromotionShop()) && StringUtils.isNotEmpty(productIndex.getPromotionName())
+                                            && !productIndex.getPromotionShop().contains(shopId)) {
+                                        productIndex.setPromotionType("");
+                                        productIndex.setPromotionName(null);
+                                        productIndex.setPromotionShop(null);
+                                    }
                                     productIndexes.add(productIndex);
                                 }
                             });
@@ -1020,7 +1027,7 @@ public class SearchService {
                 productIndexMap.put(productIndex.getErpGoodsId(), productIndex);
             });
             Map<Long, Integer> stockMap = stockService.stockForList(shopId, Lists.newArrayList(productIndexMap.keySet()));
-            List<ItemPrice> itemPriceList=new ArrayList<>();
+            List<ItemPrice> itemPriceList = new ArrayList<>();
             itemPriceList = itemPriceFeign.findByErpGoodsIdsOfShop(Lists.newArrayList(productIndexMap.keySet()), shopId);
             Map<Long, ItemPrice> priceMap = new HashMap<>();
             for (ItemPrice itemPrice : itemPriceList) {
